@@ -1,0 +1,189 @@
+"use client"
+
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import api from "../services/api"
+import "./UploadPhoto.css"
+
+const UploadPhoto = () => {
+  const [title, setTitle] = useState("")
+  const [description, setDescription] = useState("")
+  const [file, setFile] = useState(null)
+  const [preview, setPreview] = useState(null)
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [dragActive, setDragActive] = useState(false)
+
+  const navigate = useNavigate()
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0]
+    processFile(selectedFile)
+  }
+
+  const processFile = (selectedFile) => {
+    if (selectedFile) {
+      if (!selectedFile.type.match("image.*")) {
+        setError("Veuillez sélectionner une image")
+        setFile(null)
+        setPreview(null)
+        return
+      }
+
+      setFile(selectedFile)
+
+      // Créer un aperçu de l'image
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPreview(reader.result)
+      }
+      reader.readAsDataURL(selectedFile)
+
+      setError("")
+    }
+  }
+
+  const handleDrag = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true)
+    } else if (e.type === "dragleave") {
+      setDragActive(false)
+    }
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processFile(e.dataTransfer.files[0])
+    }
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    if (!file) {
+      return setError("Veuillez sélectionner une image")
+    }
+
+    try {
+      setLoading(true)
+
+      const formData = new FormData()
+      formData.append("title", title)
+      formData.append("description", description)
+      formData.append("photo", file)
+
+      await api.uploadPhoto(formData)
+      navigate("/dashboard")
+    } catch (err) {
+      setError("Erreur lors du téléchargement de la photo")
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="upload-container">
+      <div className="upload-header">
+        <h1>Ajouter une photo</h1>
+        <p>Téléchargez et protégez vos créations photographiques</p>
+      </div>
+
+      {error && <div className="error-message">{error}</div>}
+
+      <div className="upload-content">
+        <form onSubmit={handleSubmit} className="upload-form">
+          <div className="form-group">
+            <label htmlFor="title">Titre</label>
+            <input
+              type="text"
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Donnez un titre à votre photo"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="description">Description</label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows="4"
+              placeholder="Décrivez votre création (optionnel)"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Photo</label>
+            <div
+              className={`file-drop-area ${dragActive ? "active" : ""}`}
+              onDragEnter={handleDrag}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={handleDrop}
+            >
+              <input type="file" id="photo" accept="image/*" onChange={handleFileChange} className="file-input" />
+              <div className="file-drop-content">
+                <div className="upload-icon">📁</div>
+                <p>Glissez et déposez votre image ici ou</p>
+                <button type="button" className="btn btn-outline btn-sm">
+                  Parcourir
+                </button>
+                <p className="file-format-info">JPG, PNG, GIF, WEBP, JFIF • Max 10MB</p>
+              </div>
+            </div>
+          </div>
+
+          {preview && (
+            <div className="preview-container">
+              <h3>Aperçu</h3>
+              <div className="image-preview-wrapper">
+                <img src={preview || "/placeholder.svg"} alt="Aperçu" className="image-preview" />
+                <button
+                  type="button"
+                  className="remove-preview"
+                  onClick={() => {
+                    setFile(null)
+                    setPreview(null)
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="form-actions">
+            <button type="button" className="btn btn-outline" onClick={() => navigate("/dashboard")} disabled={loading}>
+              Annuler
+            </button>
+            <button type="submit" className="btn btn-primary" disabled={loading || !file}>
+              {loading ? (
+                <>
+                  <span className="loading-spinner-sm"></span>
+                  Téléchargement...
+                </>
+              ) : (
+                "Télécharger la photo"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+export default UploadPhoto
+
+// Compare this snippet from frontend/src/pages/Dashboard.jsx:
