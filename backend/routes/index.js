@@ -10,13 +10,4 @@ router.use('/auth', authRoutes);
 // Routes des photos
 router.use('/photos', photoRoutes);
 
-// Route de test
-router.get('/test', (req, res) => {
-  res.json({
-    success: true,
-    message: 'API is working!',
-    timestamp: new Date().toISOString()
-  });
-});
-
 export default router;
