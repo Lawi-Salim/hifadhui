@@ -11,7 +11,7 @@ export default async function handler(req, res) {
 
 // Le chargement des variables d'environnement est maintenant géré dans app.js
 
-// Démarrer le serveur
+// Démarrage du serveur
 const PORT = process.env.PORT || 5001; // Garder 5001 comme fallback
 
 startServer()
