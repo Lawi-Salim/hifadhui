@@ -1,5 +1,14 @@
 import { startServer } from './app.js';
 
+let cachedApp = null;
+
+export default async function handler(req, res) {
+  if (!cachedApp) {
+    cachedApp = await startServer();
+  }
+  return cachedApp(req, res);
+}
+
 // Le chargement des variables d'environnement est maintenant géré dans app.js
 
 // Démarrer le serveur
