@@ -20,10 +20,10 @@ import { useEffect } from "react"
 // Fonction pour précharger les images
 const preloadImages = () => {
   const imageUrls = [
-    "http://localhost:5000/uploads/MechaByte.png",
-    "http://localhost:5000/uploads/AstroBot.png",
-    "http://localhost:5000/uploads/ByteBot.png",
-    "http://localhost:5000/uploads/Hifahdui.png",
+    "/uploads/MechaByte.png",
+    "/uploads/AstroBot.png",
+    "/uploads/ByteBot.png",
+    "/uploads/Hifahdui.png",
   ]
 
   imageUrls.forEach((url) => {
