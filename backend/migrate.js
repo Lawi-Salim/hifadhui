@@ -1,107 +1,94 @@
 import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-dotenv.config();
+// Configuration des chemins
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Configuration pour la base de données source (MySQL)
-const sourceConfig = {
+dotenv.config({ path: path.resolve(__dirname, '.env.development') });
+
+// Configuration pour la base de données MySQL locale
+const dbConfig = {
   username: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || 'nadalawi',
   database: process.env.DB_NAME || 'db_picture',
-  host: process.env.DB_HOST || 'localhost',
-  dialect: 'mysql'
-};
-
-// Configuration pour la base de données cible (PostgreSQL - Supabase)
-const targetConfig = {
-  username: process.env.PG_USER || 'postgres',
-  password: process.env.PG_PASSWORD || 'LawiSalim@1616',
-  database: process.env.PG_DATABASE || 'postgres',
-  host: process.env.PG_HOST || 'db.YOUR_SUPABASE_REF.supabase.co',
-  dialect: 'postgres',
-  port: process.env.PG_PORT || 5432,
-  dialectOptions: {
-    ssl: process.env.NODE_ENV === 'production' ? {
-      require: true,
-      rejectUnauthorized: false
-    } : false
+  host: process.env.DB_HOST || '127.0.0.1',
+  port: process.env.DB_PORT || 3306,
+  dialect: 'mysql',
+  logging: console.log,
+  define: {
+    timestamps: true,
+    underscored: true
   }
 };
+
+async function createDatabaseIfNotExists() {
+  // Créer une connexion sans spécifier la base de données
+  const tempSequelize = new Sequelize({
+    username: dbConfig.username,
+    password: dbConfig.password,
+    host: dbConfig.host,
+    port: dbConfig.port,
+    dialect: 'mysql',
+    logging: false
+  });
+
+  try {
+    // Créer la base de données si elle n'existe pas
+    await tempSequelize.query(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\`;`);
+    console.log(`✅ Base de données '${dbConfig.database}' vérifiée/créée.`);
+  } catch (error) {
+    console.error('❌ Erreur lors de la création de la base de données:', error);
+    throw error;
+  } finally {
+    await tempSequelize.close();
+  }
+}
 
 async function migrate() {
   console.log('Début de la migration...');
   
-  const sourceSequelize = new Sequelize(sourceConfig);
-  const targetSequelize = new Sequelize(targetConfig);
-
   try {
-    // Vérifier les connexions
-    await sourceSequelize.authenticate();
-    console.log('✅ Connexion à la base source (MySQL) réussie.');
+    // Créer la base de données si elle n'existe pas
+    await createDatabaseIfNotExists();
     
-    await targetSequelize.authenticate();
-    console.log('✅ Connexion à la base cible (PostgreSQL) réussie.');
-
-    // Désactiver temporairement les contraintes de clé étrangère
-    await targetSequelize.query('SET session_replication_role = replica;');
-
-    // Migrer les utilisateurs
-    const [users] = await sourceSequelize.query('SELECT * FROM users');
-    console.log(`📊 ${users.length} utilisateurs à migrer.`);
+    // Se connecter à la base de données
+    const sequelize = new Sequelize(dbConfig);
+    await sequelize.authenticate();
+    console.log('✅ Connexion à la base de données MySQL réussie.');
     
-    for (const user of users) {
-      await targetSequelize.query(
-        `INSERT INTO users (id, username, email, password, created_at, updated_at) 
-         VALUES ($1, $2, $3, $4, $5, $6) 
-         ON CONFLICT (id) DO NOTHING`,
-        {
-          bind: [
-            user.id,
-            user.username,
-            user.email,
-            user.password,
-            user.created_at || new Date(),
-            user.updated_at || new Date()
-          ]
-        }
-      );
-    }
-    console.log('✅ Migration des utilisateurs terminée.');
-
-    // Migrer les photos
-    const [photos] = await sourceSequelize.query('SELECT * FROM photos');
-    console.log(`📸 ${photos.length} photos à migrer.`);
+    // Charger les modèles
+    const User = (await import('./models/User.js')).default;
+    const Photo = (await import('./models/Photo.js')).default;
     
-    for (const photo of photos) {
-      await targetSequelize.query(
-        `INSERT INTO photos (id, user_id, title, description, filepath, upload_date, created_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7) 
-         ON CONFLICT (id) DO NOTHING`,
-        {
-          bind: [
-            photo.id,
-            photo.user_id,
-            photo.title,
-            photo.description || null,
-            photo.filepath,
-            photo.upload_date || new Date(),
-            photo.created_at || new Date()
-          ]
-        }
-      );
-    }
-    console.log('✅ Migration des photos terminée.');
-
-    // Réactiver les contraintes de clé étrangère
-    await targetSequelize.query('SET session_replication_role = origin;');
-
+    // Synchroniser les modèles avec la base de données
+    console.log('🔄 Synchronisation des modèles avec la base de données...');
+    await sequelize.sync({ alter: true });
+    
     console.log('✅ Migration terminée avec succès !');
+    
+    // Vérifier les tables créées
+    const [tables] = await sequelize.query('SHOW TABLES;');
+    console.log('\n📋 Tables disponibles dans la base de données:');
+    console.table(tables.map(t => ({ Table: Object.values(t)[0] })));
+    
+    // Compter les enregistrements
+    try {
+      const usersCount = await User.count();
+      const photosCount = await Photo.count();
+      console.log(`\n📊 Nombre d'utilisateurs: ${usersCount}`);
+      console.log(`📊 Nombre de photos: ${photosCount}`);
+    } catch (countError) {
+      console.log('\nℹ️ Impossible de compter les enregistrements. Les tables sont peut-être vides.');
+    }
+    
+    await sequelize.close();
   } catch (error) {
     console.error('❌ Erreur lors de la migration :', error);
-  } finally {
-    await sourceSequelize.close();
-    await targetSequelize.close();
-    process.exit();
+    process.exit(1);
   }
 }
 
