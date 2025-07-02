@@ -28,10 +28,10 @@ export default async function handler(req, res) {
     }
   }
 
-  const { email, password } = body;
+  const { username, email, password } = body;
 
-  if (!email || !password) {
-    res.status(400).json({ error: 'Email et mot de passe requis' });
+  if (!email || !password || !username) {
+    res.status(400).json({ error: 'Nom, email et mot de passe requis' });
     return;
   }
 
@@ -41,6 +41,24 @@ export default async function handler(req, res) {
   if (error) {
     console.log("ERREUR SUPABASE:", error);
     res.status(400).json({ error: error.message });
+    return;
+  }
+
+  // Insertion dans la table personnalisée 'users'
+  const userId = data.user.id;
+  const { error: dbError } = await supabase
+    .from('users')
+    .insert([
+      {
+        id: userId,
+        username,
+        email,
+        password: '', // On ne stocke pas le mot de passe ici, car il est géré par Supabase Auth
+      }
+    ]);
+  if (dbError) {
+    console.log("ERREUR DB:", dbError);
+    res.status(500).json({ error: dbError.message });
     return;
   }
 
