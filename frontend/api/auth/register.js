@@ -39,6 +39,7 @@ export default async function handler(req, res) {
   const { data, error } = await supabase.auth.signUp({ email, password });
 
   if (error) {
+    console.log("ERREUR SUPABASE:", error);
     res.status(400).json({ error: error.message });
     return;
   }
