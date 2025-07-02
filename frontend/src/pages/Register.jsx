@@ -33,7 +33,7 @@ const Register = () => {
       setError("")
       setLoading(true)
 
-      await register(username, email, password)
+      await register(username, email.trim(), password)
       navigate("/login", { state: { message: "Inscription réussie. Vous pouvez maintenant vous connecter." } })
     } catch (err) {
       setError("Erreur lors de l'inscription. Cet email est peut-être déjà utilisé.")
