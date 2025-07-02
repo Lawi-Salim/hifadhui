@@ -104,8 +104,8 @@ const Navbar = () => {
           {isAuthenticated ? (
             <div className="user-profile" ref={dropdownRef}>
               <div className="user-profile-button" onClick={toggleDropdown}>
-                <div className="user-avatar">{currentUser.username.charAt(0).toUpperCase()}</div>
-                <span className="username">{currentUser.username}</span>
+                <div className="user-avatar">{currentUser && currentUser.username ? currentUser.username.charAt(0).toUpperCase() : "?"}</div>
+                <span className="username">{currentUser && currentUser.username ? currentUser.username : ""}</span>
                 <span className={`dropdown-arrow ${isDropdownOpen ? "up" : "down"}`}></span>
               </div>
 
