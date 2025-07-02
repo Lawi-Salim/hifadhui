@@ -17,12 +17,16 @@ const ForgotPassword = () => {
       setError("")
       setLoading(true)
 
-      // Simuler l'envoi d'un email de réinitialisation
-      // Dans une application réelle, vous appelleriez votre API
-      // await api.forgotPassword(email)
-
-      // Simulation d'un délai pour l'envoi d'email
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      // Appel réel à l'API de réinitialisation
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || "Erreur lors de l'envoi de l'email")
+      }
 
       setSuccess(true)
     } catch (err) {
