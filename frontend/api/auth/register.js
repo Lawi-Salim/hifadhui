@@ -1,8 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 
-let body = req.body;
-console.log("BODY reçu sur /register:", body);
-
 console.log("SUPABASE_URL", process.env.REACT_APP_SUPABASE_URL);
 console.log("SUPABASE_ANON_KEY", process.env.REACT_APP_SUPABASE_ANON_KEY);
 
@@ -17,9 +14,11 @@ export default async function handler(req, res) {
     return;
   }
 
+  let body = req.body;
+  console.log("BODY reçu sur /register:", body);
+
   // Pour Vercel, req.body peut être vide si le bodyParser n'est pas activé
   // On parse le body manuellement si besoin
-  let body = req.body;
   if (!body || typeof body === 'string') {
     try {
       body = JSON.parse(body);
