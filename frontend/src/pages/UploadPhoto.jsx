@@ -5,6 +5,9 @@ import { useNavigate } from "react-router-dom"
 import api from "../services/api"
 import "./UploadPhoto.css"
 
+const cloudName = "ddxypgvuh"
+const uploadPreset = "pitcha"
+
 const UploadPhoto = () => {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -13,6 +16,8 @@ const UploadPhoto = () => {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
+  const [imageUrl, setImageUrl] = useState("")
+  const [uploading, setUploading] = useState(false)
 
   const navigate = useNavigate()
 
@@ -86,6 +91,36 @@ const UploadPhoto = () => {
       console.error(err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+    setUploading(true)
+    setError("")
+    setImageUrl("")
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("upload_preset", uploadPreset)
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      )
+      const data = await res.json()
+      if (data.secure_url) {
+        setImageUrl(data.secure_url)
+      } else {
+        setError("Erreur lors de l'upload : " + (data.error?.message || ""))
+      }
+    } catch (e) {
+      setError("Erreur lors de l'upload")
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -179,6 +214,19 @@ const UploadPhoto = () => {
             </button>
           </div>
         </form>
+
+        <div className="upload-photo-container">
+          <h2>Uploader une photo sur Cloudinary</h2>
+          <input type="file" accept="image/*" onChange={handleUpload} disabled={uploading} />
+          {uploading && <p>Upload en cours...</p>}
+          {imageUrl && (
+            <div>
+              <p>Image uploadée :</p>
+              <img src={imageUrl} alt="Upload Cloudinary" style={{ maxWidth: 300 }} />
+              <p><a href={imageUrl} target="_blank" rel="noopener noreferrer">Voir sur Cloudinary</a></p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
