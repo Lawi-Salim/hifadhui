@@ -55,12 +55,20 @@ router.get('/user/:userId', async (req, res) => {
   }
 });
 
-// Téléverser une nouvelle photo (protégée par authentification)
+// Télécharger une nouvelle photo (protégée par authentification)
 router.post('/', authenticateToken, async (req, res) => {
+  console.log('--- Tentative d\'upload de photo ---');
+  console.log('Body reçu :', req.body);
+  console.log('Utilisateur authentifié :', req.user);
   try {
     const { title, description, photoUrl } = req.body;
     if (!title || !photoUrl) {
+      console.warn('Titre ou photoUrl manquant');
       return res.status(400).json({ error: 'Titre et URL de la photo requis' });
+    }
+    if (!req.user || !req.user.id) {
+      console.error('Utilisateur non authentifié ou id manquant');
+      return res.status(401).json({ error: 'Utilisateur non authentifié' });
     }
     const photo = await Photo.create({
       title,
@@ -69,10 +77,11 @@ router.post('/', authenticateToken, async (req, res) => {
       user_id: req.user.id,
       upload_date: new Date()
     });
+    console.log('Photo créée avec succès :', photo);
     res.status(201).json(photo);
   } catch (error) {
     console.error('Erreur lors du téléchargement de la photo:', error);
-    res.status(500).json({ error: 'Erreur lors du téléchargement de la photo' });
+    res.status(500).json({ error: 'Erreur lors du téléchargement de la photo', details: error.message });
   }
 });
 
