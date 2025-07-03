@@ -56,7 +56,10 @@ router.get('/user/:userId', async (req, res) => {
 });
 
 // Télécharger une nouvelle photo (protégée par authentification)
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', (req, res, next) => {
+  console.log('Route /api/photos appelée');
+  next();
+}, authenticateToken, async (req, res) => {
   console.log('--- Tentative d\'upload de photo ---');
   console.log('Body reçu :', req.body);
   console.log('Utilisateur authentifié :', req.user);
