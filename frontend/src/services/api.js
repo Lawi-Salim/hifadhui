@@ -56,11 +56,14 @@ const login = async (email, password) => {
 }
 
 // Photos
-const getPhotos = async () => {
+const getPhotos = async (accessToken) => {
+  const headers = { "Content-Type": "application/json" }
+  if (accessToken) {
+    headers["Authorization"] = `Bearer ${accessToken}`
+  }
   const response = await fetch(`${API_URL}/photos`, {
-    headers: getHeaders(),
+    headers,
   })
-
   return handleResponse(response)
 }
 
