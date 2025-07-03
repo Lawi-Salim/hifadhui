@@ -5,12 +5,10 @@ import { useNavigate } from "react-router-dom"
 import api from "../services/api"
 import "./UploadPhoto.css"
 import { useAuth } from "../contexts/AuthContext"
-import { createClient } from '@supabase/supabase-js'
+import supabase from '../supabaseClient'
 
 const cloudName = "ddxypgvuh"
 const uploadPreset = "pitcha"
-
-const supabase = createClient(process.env.REACT_APP_SUPABASE_URL, process.env.REACT_APP_SUPABASE_ANON_KEY)
 
 const UploadPhoto = () => {
   const [title, setTitle] = useState("")
