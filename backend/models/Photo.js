@@ -3,9 +3,9 @@ import { sequelize } from '../config/database.js';
 
 const Photo = sequelize.define('Photo', {
   id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
     primaryKey: true,
-    autoIncrement: true
+    defaultValue: DataTypes.UUIDV4
   },
   title: {
     type: DataTypes.STRING,
@@ -20,7 +20,7 @@ const Photo = sequelize.define('Photo', {
     allowNull: false
   },
   user_id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
     allowNull: false,
     references: {
       model: 'users',

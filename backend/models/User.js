@@ -4,9 +4,9 @@ import bcrypt from 'bcrypt';
 
 const User = sequelize.define('User', {
   id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
     primaryKey: true,
-    autoIncrement: true
+    defaultValue: DataTypes.UUIDV4
   },
   username: {
     type: DataTypes.STRING,
@@ -32,6 +32,7 @@ const User = sequelize.define('User', {
 }, {
   timestamps: true,
   updatedAt: false,
+  tableName: 'users',
   hooks: {
     beforeCreate: async (user) => {
       if (user.password) {
