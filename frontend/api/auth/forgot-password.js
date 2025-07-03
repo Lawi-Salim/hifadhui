@@ -28,7 +28,7 @@ export default async function handler(req, res) {
   }
 
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: process.env.NEXT_PUBLIC_SITE_URL || 'https://hifadhui.vercel.app/reset-password'
+    redirectTo: process.env.REACT_APP_SITE_URL || 'https://hifadhui.vercel.app/reset-password'
   });
 
   if (error) {
