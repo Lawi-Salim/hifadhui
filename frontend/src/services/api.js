@@ -72,19 +72,16 @@ const getPhoto = async (id) => {
   return handleResponse(response)
 }
 
-const uploadPhoto = async (formData) => {
-  const headers = {}
-
+const uploadPhoto = async (photoData) => {
+  const headers = { "Content-Type": "application/json" }
   if (authToken) {
     headers["Authorization"] = `Bearer ${authToken}`
   }
-
   const response = await fetch(`${API_URL}/photos`, {
     method: "POST",
     headers,
-    body: formData,
+    body: JSON.stringify(photoData),
   })
-
   return handleResponse(response)
 }
 

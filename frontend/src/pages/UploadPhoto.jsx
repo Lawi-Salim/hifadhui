@@ -95,11 +95,11 @@ const UploadPhoto = () => {
         throw new Error("Erreur lors de l'upload sur Cloudinary : " + (data.error?.message || ""))
       }
       // 2. Envoi à l'API avec l'URL Cloudinary
-      const formData = new FormData()
-      formData.append("title", title)
-      formData.append("description", description)
-      formData.append("photoUrl", data.secure_url)
-      await api.uploadPhoto(formData)
+      await api.uploadPhoto({
+        title,
+        description,
+        photoUrl: data.secure_url
+      })
       navigate("/dashboard")
     } catch (err) {
       setError(err.message || "Erreur lors du téléchargement de la photo")
