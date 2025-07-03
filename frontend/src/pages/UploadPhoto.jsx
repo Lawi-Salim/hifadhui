@@ -78,16 +78,31 @@ const UploadPhoto = () => {
 
     try {
       setLoading(true)
-
+      setError("")
+      // 1. Upload sur Cloudinary
+      const formDataCloud = new FormData()
+      formDataCloud.append("file", file)
+      formDataCloud.append("upload_preset", uploadPreset)
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        {
+          method: "POST",
+          body: formDataCloud,
+        }
+      )
+      const data = await res.json()
+      if (!data.secure_url) {
+        throw new Error("Erreur lors de l'upload sur Cloudinary : " + (data.error?.message || ""))
+      }
+      // 2. Envoi à l'API avec l'URL Cloudinary
       const formData = new FormData()
       formData.append("title", title)
       formData.append("description", description)
-      formData.append("photo", file)
-
+      formData.append("photoUrl", data.secure_url)
       await api.uploadPhoto(formData)
       navigate("/dashboard")
     } catch (err) {
-      setError("Erreur lors du téléchargement de la photo")
+      setError(err.message || "Erreur lors du téléchargement de la photo")
       console.error(err)
     } finally {
       setLoading(false)
@@ -233,5 +248,3 @@ const UploadPhoto = () => {
 }
 
 export default UploadPhoto
-
-// Compare this snippet from frontend/src/pages/Dashboard.jsx:

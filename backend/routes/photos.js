@@ -56,38 +56,21 @@ router.get('/user/:userId', async (req, res) => {
 });
 
 // Téléverser une nouvelle photo (protégée par authentification)
-router.post('/', authenticateToken, upload.single('image'), async (req, res) => {
-  const t = await sequelize.transaction();
-  
+router.post('/', authenticateToken, async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'Aucun fichier téléchargé' });
+    const { title, description, photoUrl } = req.body;
+    if (!title || !photoUrl) {
+      return res.status(400).json({ error: 'Titre et URL de la photo requis' });
     }
-    
-    const { title, description, category, isPublic } = req.body;
-    
     const photo = await Photo.create({
       title,
       description: description || null,
-      imageUrl: `/uploads/${req.file.filename}`,
-      userId: req.user.id,
-      category: category || null,
-      isPublic: isPublic !== 'false' // Par défaut, la photo est publique
-    }, { transaction: t });
-    
-    await t.commit();
-    
+      filepath: photoUrl, // On stocke l'URL Cloudinary dans filepath
+      user_id: req.user.id,
+      upload_date: new Date()
+    });
     res.status(201).json(photo);
   } catch (error) {
-    await t.rollback();
-    
-    // Supprimer le fichier téléchargé en cas d'erreur
-    if (req.file && req.file.path) {
-      fs.unlink(req.file.path, (err) => {
-        if (err) console.error('Erreur lors de la suppression du fichier:', err);
-      });
-    }
-    
     console.error('Erreur lors du téléchargement de la photo:', error);
     res.status(500).json({ error: 'Erreur lors du téléchargement de la photo' });
   }
