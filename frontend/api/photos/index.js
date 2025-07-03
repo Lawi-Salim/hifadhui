@@ -6,8 +6,30 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-  console.log('API /api/photos appelé, méthode :', req.method);
-  if (req.method === 'POST') {
+  if (req.method === 'GET') {
+    // Récupérer toutes les photos de l'utilisateur connecté
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace('Bearer ', '');
+    if (!token) {
+      res.status(401).json({ error: 'Non authentifié' });
+      return;
+    }
+    // On utilise le token pour initialiser le client Supabase avec le contexte utilisateur
+    const userSupabase = createClient(
+      process.env.REACT_APP_SUPABASE_URL,
+      process.env.REACT_APP_SUPABASE_ANON_KEY,
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
+    const { data, error } = await userSupabase
+      .from('photos')
+      .select('*')
+      .order('upload_date', { ascending: false });
+    if (error) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+    res.status(200).json(data);
+  } else if (req.method === 'POST') {
     let body = req.body;
     console.log('Body brut reçu :', body);
     if (!body || typeof body === 'string') {
