@@ -101,6 +101,7 @@ const UploadPhoto = () => {
       // Récupérer le token d'accès Supabase
       const { data: sessionData } = await supabase.auth.getSession();
       const access_token = sessionData.session.access_token;
+      console.log("Données envoyées à l'API :", { title, description, photoUrl: data.secure_url });
       await api.uploadPhoto({
         title,
         description,
