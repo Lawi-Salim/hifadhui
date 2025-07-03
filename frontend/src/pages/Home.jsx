@@ -53,7 +53,7 @@ const Home = () => {
         </div>
         <div className="hero-image animate-slide-up">
           <img
-            src="/uploads/Hifahdui.png"
+            src="/images/Hifahdui.png"
             alt="Protection de photos"
             className="rounded-lg shadow-lg"
             onContextMenu={(e) => e.preventDefault()}
@@ -142,7 +142,7 @@ const Home = () => {
         <div className="gallery-grid">
           <div className="gallery-item">
             <img
-              src="/uploads/MechaByte.png"
+              src="/images/MechaByte.png"
               alt="MechaByte"
               className="gallery-image"
               onContextMenu={(e) => e.preventDefault()}
@@ -155,7 +155,7 @@ const Home = () => {
 
           <div className="gallery-item">
             <img
-              src="/uploads/AstroBot.png"
+              src="/images/AstroBot.png"
               alt="AstroBot"
               className="gallery-image"
               onContextMenu={(e) => e.preventDefault()}
@@ -168,7 +168,7 @@ const Home = () => {
 
           <div className="gallery-item">
             <img
-              src="/uploads/ByteBot.png"
+              src="/images/ByteBot.png"
               alt="ByteBot"
               className="gallery-image"
               onContextMenu={(e) => e.preventDefault()}
