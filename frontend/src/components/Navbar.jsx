@@ -85,11 +85,11 @@ const Navbar = () => {
 
         <div className={`navbar-menu ${isMobileMenuOpen ? "active" : ""}`}>
           <div className="navbar-links">
-            <Link to="/" className={`navbar-item ${location.pathname === "/" ? "active" : ""}`}>
-              Accueil
-            </Link>
-
-            {isAuthenticated && (
+            {!isAuthenticated ? (
+              <Link to="/" className={`navbar-item ${location.pathname === "/" ? "active" : ""}`}>
+                Accueil
+              </Link>
+            ) : (
               <>
                 <Link to="/dashboard" className={`navbar-item ${location.pathname === "/dashboard" ? "active" : ""}`}>
                   Photos
@@ -101,7 +101,23 @@ const Navbar = () => {
             )}
           </div>
 
-          {isAuthenticated ? (
+          {!isAuthenticated ? (
+            <div className="auth-buttons">
+              <Link to="/login" className="btn btn-ghost">
+                Connexion
+              </Link>
+              <Link to="/register" className="btn btn-primary">
+                Inscription
+              </Link>
+              <button
+                onClick={toggleTheme}
+                className="btn btn-icon theme-toggle-btn"
+                aria-label={theme === "dark" ? "Passer au thème clair" : "Passer au thème sombre"}
+              >
+                {theme === "dark" ? "☀️" : "🌙"}
+              </button>
+            </div>
+          ) : (
             <div className="user-profile" ref={dropdownRef}>
               <div className="user-profile-button" onClick={toggleDropdown}>
                 <div className="user-avatar">{currentUser && currentUser.username ? currentUser.username.charAt(0).toUpperCase() : "?"}</div>
@@ -137,27 +153,10 @@ const Navbar = () => {
                   </div>
                   <div className="dropdown-divider"></div>
                   <button onClick={handleLogout} className="dropdown-item logout-btn">
-                    {/* <span className="dropdown-icon">🚪</span> */}
                     Déconnexion
                   </button>
                 </div>
               )}
-            </div>
-          ) : (
-            <div className="auth-buttons">
-              <Link to="/login" className="btn btn-ghost">
-                Connexion
-              </Link>
-              <Link to="/register" className="btn btn-primary">
-                Inscription
-              </Link>
-              <button
-                onClick={toggleTheme}
-                className="btn btn-icon theme-toggle-btn"
-                aria-label={theme === "dark" ? "Passer au thème clair" : "Passer au thème sombre"}
-              >
-                {theme === "dark" ? "☀️" : "🌙"}
-              </button>
             </div>
           )}
         </div>
