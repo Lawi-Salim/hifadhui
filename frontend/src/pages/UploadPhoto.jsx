@@ -5,9 +5,12 @@ import { useNavigate } from "react-router-dom"
 import api from "../services/api"
 import "./UploadPhoto.css"
 import { useAuth } from "../contexts/AuthContext"
+import { createClient } from '@supabase/supabase-js'
 
 const cloudName = "ddxypgvuh"
 const uploadPreset = "pitcha"
+
+const supabase = createClient(process.env.REACT_APP_SUPABASE_URL, process.env.REACT_APP_SUPABASE_ANON_KEY)
 
 const UploadPhoto = () => {
   const [title, setTitle] = useState("")
@@ -97,12 +100,15 @@ const UploadPhoto = () => {
         throw new Error("Erreur lors de l'upload sur Cloudinary : " + (data.error?.message || ""))
       }
       // 2. Envoi à l'API avec l'URL Cloudinary
+      // Récupérer le token d'accès Supabase
+      const { data: sessionData } = await supabase.auth.getSession();
+      const access_token = sessionData.session.access_token;
       await api.uploadPhoto({
         title,
         description,
         photoUrl: data.secure_url,
         user_id: currentUser.id
-      })
+      }, access_token)
       navigate("/dashboard")
     } catch (err) {
       setError(err.message || "Erreur lors du téléchargement de la photo")
