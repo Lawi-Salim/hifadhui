@@ -29,29 +29,14 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null)
       const response = await api.login(email, password)
-      const { token, user } = response
+      const { user } = response
 
-      // Récupérer le username depuis la nouvelle API
-      let username = ''
-      try {
-        const profileRes = await fetch(`/api/auth/profile?id=${user.id}`)
-        if (profileRes.ok) {
-          const profile = await profileRes.json()
-          username = profile.username
-        }
-      } catch (e) {
-        // ignore
-      }
+      localStorage.setItem("user", JSON.stringify(user))
 
-      const userWithUsername = { ...user, username }
-      localStorage.setItem("token", token)
-      localStorage.setItem("user", JSON.stringify(userWithUsername))
-
-      setCurrentUser(userWithUsername)
+      setCurrentUser(user)
       setIsAuthenticated(true)
-      api.setAuthToken(token)
 
-      return userWithUsername
+      return user
     } catch (err) {
       setError(err.message || "Erreur de connexion")
       throw err
