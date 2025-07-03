@@ -31,12 +31,25 @@ export const AuthProvider = ({ children }) => {
       const response = await api.login(email, password)
       const { user } = response
 
-      localStorage.setItem("user", JSON.stringify(user))
+      // Récupérer le username depuis la nouvelle API
+      let username = ''
+      try {
+        const profileRes = await fetch(`/api/auth/profile?id=${user.id}`)
+        if (profileRes.ok) {
+          const profile = await profileRes.json()
+          username = profile.username
+        }
+      } catch (e) {
+        console.warn("Erreur lors de la récupération de username :", e);
+      }
 
-      setCurrentUser(user)
+      const userWithUsername = { ...user, username }
+      localStorage.setItem("user", JSON.stringify(userWithUsername))
+
+      setCurrentUser(userWithUsername)
       setIsAuthenticated(true)
 
-      return user
+      return userWithUsername
     } catch (err) {
       setError(err.message || "Erreur de connexion")
       throw err
