@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
       const { user } = response
 
       // Récupérer le username depuis la nouvelle API
-      let username = ''
+      let username = '';
       try {
         const profileRes = await fetch(`/api/auth/profile?id=${user.id}`)
         if (profileRes.ok) {
