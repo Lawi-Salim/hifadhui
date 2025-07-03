@@ -229,19 +229,6 @@ const UploadPhoto = () => {
             </button>
           </div>
         </form>
-
-        <div className="upload-photo-container">
-          <h2>Uploader une photo sur Cloudinary</h2>
-          <input type="file" accept="image/*" onChange={handleUpload} disabled={uploading} />
-          {uploading && <p>Upload en cours...</p>}
-          {imageUrl && (
-            <div>
-              <p>Image uploadée :</p>
-              <img src={imageUrl} alt="Upload Cloudinary" style={{ maxWidth: 300 }} />
-              <p><a href={imageUrl} target="_blank" rel="noopener noreferrer">Voir sur Cloudinary</a></p>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   )

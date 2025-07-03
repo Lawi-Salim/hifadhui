@@ -29,7 +29,7 @@ const PhotoCard = ({ photo, onDelete }) => {
       <Link to={`/photos/${photo.id}`} className="photo-link">
         <div className="photo-image-container">
           <img
-            src={`http://localhost:5000${photo.filepath}`}
+            src={photo.filepath}
             alt={photo.title}
             className="photo-image"
             loading="lazy"
