@@ -1,12 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import supabase from '../../src/supabaseClient';
 
 // console.log("SUPABASE_URL", process.env.REACT_APP_SUPABASE_URL);
 // console.log("SUPABASE_ANON_KEY", process.env.REACT_APP_SUPABASE_ANON_KEY);
-
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_ANON_KEY
-);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
