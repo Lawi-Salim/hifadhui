@@ -104,7 +104,7 @@ const UploadPhoto = () => {
       await api.uploadPhoto({
         title,
         description,
-        photoUrl
+        photoUrl: data.secure_url
       }, access_token)
       navigate("/dashboard")
     } catch (err) {
