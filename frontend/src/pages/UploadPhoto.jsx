@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import api from "../services/api"
 import "./UploadPhoto.css"
+import { useAuth } from "../contexts/AuthContext"
 
 const cloudName = "ddxypgvuh"
 const uploadPreset = "pitcha"
@@ -20,6 +21,7 @@ const UploadPhoto = () => {
   const [uploading, setUploading] = useState(false)
 
   const navigate = useNavigate()
+  const { currentUser } = useAuth();
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0]
@@ -98,7 +100,8 @@ const UploadPhoto = () => {
       await api.uploadPhoto({
         title,
         description,
-        photoUrl: data.secure_url
+        photoUrl: data.secure_url,
+        user_id: currentUser.id
       })
       navigate("/dashboard")
     } catch (err) {

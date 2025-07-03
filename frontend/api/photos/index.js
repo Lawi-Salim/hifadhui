@@ -20,16 +20,16 @@ export default async function handler(req, res) {
         return;
       }
     }
-    const { title, description, photoUrl } = body;
-    if (!title || !photoUrl) {
-      console.error('Titre ou photoUrl manquant');
-      res.status(400).json({ error: 'Titre et URL de la photo requis' });
+    const { title, description, photoUrl, user_id } = body;
+    if (!title || !photoUrl || !user_id) {
+      console.error('Titre, URL de la photo et user_id manquants');
+      res.status(400).json({ error: 'Titre, URL de la photo et user_id requis' });
       return;
     }
     try {
       const { data, error } = await supabase
         .from('photos')
-        .insert([{ title, description, filepath: photoUrl }]);
+        .insert([{ title, description, filepath: photoUrl, user_id }]);
       if (error) {
         console.error('Erreur Supabase lors de l\'insertion :', error);
         res.status(500).json({ error: error.message });
