@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Vérifier la session Supabase
     const checkSession = async () => {
-      const { data: sessionData } = await getSupabaseClient.auth.getSession();
+      const { data: sessionData } = await getSupabaseClient().auth.getSession();
       if (sessionData.session) {
         // Récupérer le user du localStorage (pour le username)
         const user = JSON.parse(localStorage.getItem("user"));
