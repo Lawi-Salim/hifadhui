@@ -100,13 +100,16 @@ const UploadPhoto = () => {
       // 2. Envoi à l'API avec l'URL Cloudinary
       // Récupérer le token d'accès Supabase
       const { data: sessionData } = await supabase.auth.getSession();
-      const access_token = sessionData.session.access_token;
-      console.log("Données envoyées à l'API :", { title, description, photoUrl: data.secure_url });
-      await api.uploadPhoto({
+      const access_token = sessionData.session ? sessionData.session.access_token : null;
+      const user_id = currentUser && currentUser.id ? currentUser.id : null;
+      const payload = {
         title,
         description,
-        photoUrl: data.secure_url
-      }, access_token)
+        photoUrl: data.secure_url,
+        user_id
+      };
+      console.log("Données envoyées à l'API :", payload);
+      await api.uploadPhoto(payload, access_token)
       navigate("/dashboard")
     } catch (err) {
       setError(err.message || "Erreur lors du téléchargement de la photo")
