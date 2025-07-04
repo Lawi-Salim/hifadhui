@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom"
 import api from "../services/api"
 import "./UploadPhoto.css"
 import { useAuth } from "../contexts/AuthContext"
-import supabase from '../supabaseClient'
+import { getSupabaseClient } from '../supabaseClient'
 
 const cloudName = "ddxypgvuh"
 const uploadPreset = "pitcha"
@@ -99,7 +99,7 @@ const UploadPhoto = () => {
       }
       // 2. Envoi à l'API avec l'URL Cloudinary
       // Récupérer le token d'accès Supabase
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await getSupabaseClient().auth.getSession();
       const access_token = sessionData.session ? sessionData.session.access_token : null;
       console.log("currentUser au moment de l'upload :", currentUser);
       // On essaie plusieurs variantes pour l'id utilisateur

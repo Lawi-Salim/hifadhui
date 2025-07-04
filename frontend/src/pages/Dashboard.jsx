@@ -5,7 +5,7 @@ import { Link } from "react-router-dom"
 import PhotoCard from "../components/PhotoCard"
 import api from "../services/api"
 import "./Dashboard.css"
-import supabase from '../supabaseClient'
+import { getSupabaseClient } from '../supabaseClient'
 
 const Dashboard = () => {
   const [photos, setPhotos] = useState([])
@@ -21,7 +21,7 @@ const Dashboard = () => {
   const fetchPhotos = async () => {
     try {
       setLoading(true)
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await getSupabaseClient.auth.getSession();
       const access_token = sessionData.session ? sessionData.session.access_token : null;
       const data = await api.getPhotos(access_token)
       setPhotos(data)
