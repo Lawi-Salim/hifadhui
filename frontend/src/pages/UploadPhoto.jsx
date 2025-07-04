@@ -101,7 +101,10 @@ const UploadPhoto = () => {
       // Récupérer le token d'accès Supabase
       const { data: sessionData } = await supabase.auth.getSession();
       const access_token = sessionData.session ? sessionData.session.access_token : null;
-      const user_id = currentUser && currentUser.id ? currentUser.id : null;
+      console.log("currentUser au moment de l'upload :", currentUser);
+      // On essaie plusieurs variantes pour l'id utilisateur
+      const user_id = currentUser && (currentUser.id || currentUser.user_id || currentUser.uuid) ? (currentUser.id || currentUser.user_id || currentUser.uuid) : null;
+      console.log("user_id utilisé :", user_id);
       const payload = {
         title,
         description,
