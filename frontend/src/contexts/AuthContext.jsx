@@ -2,6 +2,7 @@
 
 import { createContext, useState, useContext, useEffect } from "react"
 import api from "../services/api"
+import { supabase } from "../services/supabase"
 
 const AuthContext = createContext()
 
@@ -14,16 +15,22 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    // Vérifier si un token existe dans le localStorage
-    const token = localStorage.getItem("token")
-    if (token) {
-      const user = JSON.parse(localStorage.getItem("user"))
-      setCurrentUser(user)
-      setIsAuthenticated(true)
-      api.setAuthToken(token)
-    }
-    setLoading(false)
-  }, [])
+    // Vérifier la session Supabase
+    const checkSession = async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session) {
+        // Récupérer le user du localStorage (pour le username)
+        const user = JSON.parse(localStorage.getItem("user"));
+        setCurrentUser(user);
+        setIsAuthenticated(true);
+      } else {
+        setCurrentUser(null);
+        setIsAuthenticated(false);
+      }
+      setLoading(false);
+    };
+    checkSession();
+  }, []);
 
   const login = async (email, password) => {
     try {

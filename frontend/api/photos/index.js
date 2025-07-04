@@ -41,8 +41,13 @@ export default async function handler(req, res) {
         res.status(400).json({ error: 'Corps de requête invalide' });
         return;
       }
+    } else {
+      console.log('Body parsé (déjà objet) :', body);
     }
-    const { title, description, photoUrl, user_id } = body;
+    // On gère user_id ou userId
+    const user_id = body.user_id || body.userId || null;
+    const { title, description, photoUrl } = body;
+    console.log('Valeur user_id utilisée :', user_id);
     if (!title || !photoUrl || !user_id) {
       console.error('Titre, URL de la photo et user_id manquants');
       res.status(400).json({ error: 'Titre, URL de la photo et user_id requis' });
