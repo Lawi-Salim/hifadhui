@@ -1,20 +1,23 @@
-import supabase from '../../src/supabaseClient';
+import { getSupabaseClient } from '../../src/supabaseClient';
 
-console.log('Début du fichier /api/photos/index.js');
+console.log('Début du handler /api/photos');
 
 export default async function handler(req, res) {
-  console.log('API /api/photos appelée, méthode :', req.method);
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace('Bearer ', '');
+  console.log('Token JWT reçu :', token ? token.substring(0, 20) + '...' : 'Aucun');
+
+  const supabase = getSupabaseClient(token);
+
   if (req.method === 'GET') {
-    // Récupérer toutes les photos de l'utilisateur connecté
-    const authHeader = req.headers.authorization || '';
-    const token = authHeader.replace('Bearer ', '');
     if (!token) {
       res.status(401).json({ error: 'Non authentifié' });
       return;
     }
-    // On utilise le token pour initialiser le client Supabase avec le contexte utilisateur
-    const userSupabase = supabase.from('photos').select('*').order('upload_date', { ascending: false });
-    const { data, error } = await userSupabase;
+    const { data, error } = await supabase
+      .from('photos')
+      .select('*')
+      .order('upload_date', { ascending: false });
     if (error) {
       res.status(500).json({ error: error.message });
       return;
@@ -35,13 +38,16 @@ export default async function handler(req, res) {
     } else {
       console.log('Body parsé (déjà objet) :', body);
     }
-    // On gère user_id ou userId
     const user_id = body.user_id || body.userId || null;
     const { title, description, photoUrl } = body;
     console.log('Valeur user_id utilisée :', user_id);
     if (!title || !photoUrl || !user_id) {
       console.error('Titre, URL de la photo et user_id manquants');
       res.status(400).json({ error: 'Titre, URL de la photo et user_id requis' });
+      return;
+    }
+    if (!token) {
+      res.status(401).json({ error: 'Token JWT manquant pour l\'insertion protégée par RLS' });
       return;
     }
     try {
