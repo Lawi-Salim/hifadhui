@@ -6,6 +6,7 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
+  console.log('API /api/photos appelée, méthode :', req.method);
   if (req.method === 'GET') {
     // Récupérer toutes les photos de l'utilisateur connecté
     const authHeader = req.headers.authorization || '';
@@ -65,8 +66,8 @@ export default async function handler(req, res) {
       console.log('Photo insérée avec succès :', data[0]);
       res.status(201).json(data[0]);
     } catch (err) {
-      console.error('Erreur inattendue lors de l\'insertion :', err);
-      res.status(500).json({ error: 'Erreur serveur inattendue' });
+      console.error('Erreur inattendue lors de l\'insertion :', err, err.stack);
+      res.status(500).json({ error: 'Erreur serveur inattendue', details: err.message, stack: err.stack });
     }
   } else {
     res.status(405).json({ error: 'Méthode non autorisée' });
