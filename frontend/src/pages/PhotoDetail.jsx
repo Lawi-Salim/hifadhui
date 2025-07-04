@@ -93,7 +93,7 @@ const PhotoDetail = () => {
         <div className="photo-detail-main">
           <div className="photo-image-container">
             <img
-              src={`http://localhost:5000${photo.filepath}`}
+              src={photo.filepath}
               alt={photo.title}
               className="photo-detail-image"
               onContextMenu={handleContextMenu}

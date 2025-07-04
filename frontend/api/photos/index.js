@@ -51,14 +51,62 @@ export default async function handler(req, res) {
       return;
     }
     try {
-      const { data, error } = await supabase
+      console.log('Tentative d\'insertion avec les données :', { title, description, filepath: photoUrl, user_id });
+      
+      // Première tentative avec .select()
+      let { data, error } = await supabase
         .from('photos')
-        .insert([{ title, description, filepath: photoUrl, user_id }]);
+        .insert([{ title, description, filepath: photoUrl, user_id }])
+        .select();
+      
+      console.log('Réponse Supabase - data:', data, 'error:', error);
+      
       if (error) {
         console.error('Erreur Supabase lors de l\'insertion :', error);
-        res.status(500).json({ error: error.message });
+        
+        // Si l'erreur est liée à .select(), essayer sans
+        if (error.message.includes('select') || error.message.includes('permission')) {
+          console.log('Tentative d\'insertion sans .select()...');
+          const { error: insertError } = await supabase
+            .from('photos')
+            .insert([{ title, description, filepath: photoUrl, user_id }]);
+          
+          if (insertError) {
+            console.error('Erreur lors de l\'insertion sans select :', insertError);
+            res.status(500).json({ error: insertError.message });
+            return;
+          }
+          
+          // Si l'insertion réussit, récupérer la photo insérée
+          const { data: insertedData, error: selectError } = await supabase
+            .from('photos')
+            .select('*')
+            .eq('user_id', user_id)
+            .eq('title', title)
+            .eq('filepath', photoUrl)
+            .order('upload_date', { ascending: false })
+            .limit(1);
+          
+          if (selectError) {
+            console.error('Erreur lors de la récupération de la photo insérée :', selectError);
+            res.status(500).json({ error: 'Photo insérée mais erreur lors de la récupération' });
+            return;
+          }
+          
+          data = insertedData;
+        } else {
+          res.status(500).json({ error: error.message });
+          return;
+        }
+      }
+      
+      // Vérifier que data existe et contient au moins un élément
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        console.error('Aucune donnée retournée après insertion');
+        res.status(500).json({ error: 'Erreur lors de l\'insertion : aucune donnée retournée' });
         return;
       }
+      
       console.log('Photo insérée avec succès :', data[0]);
       res.status(201).json(data[0]);
     } catch (err) {
