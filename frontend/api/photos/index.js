@@ -1,11 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+import supabase from '../../src/supabaseClient';
 
 console.log('Début du fichier /api/photos/index.js');
-
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_ANON_KEY
-);
 
 export default async function handler(req, res) {
   console.log('API /api/photos appelée, méthode :', req.method);
@@ -18,15 +13,8 @@ export default async function handler(req, res) {
       return;
     }
     // On utilise le token pour initialiser le client Supabase avec le contexte utilisateur
-    const userSupabase = createClient(
-      process.env.REACT_APP_SUPABASE_URL,
-      process.env.REACT_APP_SUPABASE_ANON_KEY,
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
-    );
-    const { data, error } = await userSupabase
-      .from('photos')
-      .select('*')
-      .order('upload_date', { ascending: false });
+    const userSupabase = supabase.from('photos').select('*').order('upload_date', { ascending: false });
+    const { data, error } = await userSupabase;
     if (error) {
       res.status(500).json({ error: error.message });
       return;
