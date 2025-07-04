@@ -21,7 +21,7 @@ const Dashboard = () => {
   const fetchPhotos = async () => {
     try {
       setLoading(true)
-      const { data: sessionData } = await getSupabaseClient.auth.getSession();
+      const { data: sessionData } = await getSupabaseClient().auth.getSession();
       const access_token = sessionData.session ? sessionData.session.access_token : null;
       const data = await api.getPhotos(access_token)
       setPhotos(data)
