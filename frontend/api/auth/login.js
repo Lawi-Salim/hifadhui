@@ -1,4 +1,4 @@
-import supabase from '../../src/supabaseClient';
+import { getSupabaseClient } from '../../src/supabaseClient';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
   }
 
   // Connexion de l'utilisateur via Supabase Auth
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
 
   if (error) {
     res.status(401).json({ error: error.message });

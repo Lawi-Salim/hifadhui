@@ -1,4 +1,4 @@
-import supabase from '../../src/supabaseClient';
+import { getSupabaseClient } from '../../src/supabaseClient';
 
 // console.log("SUPABASE_URL", process.env.REACT_APP_SUPABASE_URL);
 // console.log("SUPABASE_ANON_KEY", process.env.REACT_APP_SUPABASE_ANON_KEY);
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
   }
 
   // Création de l'utilisateur sur Supabase Auth
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await getSupabaseClient().auth.signUp({ email, password });
 
   if (error) {
     console.log("ERREUR SUPABASE:", error);
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
 
   // Insertion dans la table personnalisée 'users'
   const userId = data.user.id;
-  const { error: dbError } = await supabase
+  const { error: dbError } = await getSupabaseClient()
     .from('users')
     .insert([
       {

@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         setCurrentUser(null);
         setIsAuthenticated(false);
-      }
+    }
       setLoading(false);
     };
     checkSession();

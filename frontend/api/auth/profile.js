@@ -1,4 +1,4 @@
-import supabase from '../../src/supabaseClient';
+import { getSupabaseClient } from '../../src/supabaseClient';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('users')
     .select('username, email')
     .eq('id', id)

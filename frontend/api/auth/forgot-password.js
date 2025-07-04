@@ -1,4 +1,4 @@
-import supabase from '../../src/supabaseClient';
+import { getSupabaseClient } from '../../src/supabaseClient';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+  const { data, error } = await getSupabaseClient().auth.resetPasswordForEmail(email, {
     redirectTo: process.env.REACT_APP_SITE_URL || 'https://hifadhui.vercel.app/reset-password'
   });
 
