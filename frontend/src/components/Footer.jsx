@@ -57,7 +57,7 @@ const Footer = () => {
                   <Link to="/terms">Conditions d'utilisation</Link>
                 </li>
                 <li>
-                  <Link to="/privacy">Politique de confidentialité</Link>
+                  <Link to="/privacy-policy">Politique de confidentialité</Link>
                 </li>
                 <li>
                   <Link to="/about">À propos</Link>
