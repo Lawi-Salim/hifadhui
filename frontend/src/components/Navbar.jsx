@@ -160,9 +160,6 @@ const Navbar = () => {
                     </button>
                   </div>
                   <div className="dropdown-divider"></div>
-                  <Link to="/about" className="dropdown-item">
-                    À propos
-                  </Link>
                   <button onClick={handleLogout} className="dropdown-item logout-btn">
                     Déconnexion
                   </button>
