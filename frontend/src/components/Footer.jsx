@@ -44,6 +44,9 @@ const Footer = () => {
                 <li>
                   <Link to="/register">Inscription</Link>
                 </li>
+                <li>
+                  <Link to="/contact">Contactez-nous</Link>
+                </li>
               </ul>
             </div>
 
@@ -57,7 +60,7 @@ const Footer = () => {
                   <Link to="/privacy">Politique de confidentialité</Link>
                 </li>
                 <li>
-                  <Link to="#">Conformité RGPD</Link>
+                  <Link to="/about">À propos</Link>
                 </li>
               </ul>
             </div>
@@ -69,7 +72,7 @@ const Footer = () => {
           <p className="footer-credits">
             Conçu avec ❤️ pour protéger vos créations développé par
             <em>
-              <strong> Wakati Mapessa</strong>
+              <strong> Wakati Mavuna</strong>
             </em>
           </p>
         </div>

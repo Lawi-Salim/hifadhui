@@ -86,9 +86,17 @@ const Navbar = () => {
         <div className={`navbar-menu ${isMobileMenuOpen ? "active" : ""}`}>
           <div className="navbar-links">
             {!isAuthenticated ? (
-              <Link to="/" className={`navbar-item ${location.pathname === "/" ? "active" : ""}`}>
-                Accueil
-              </Link>
+              <>
+                <Link to="/" className={`navbar-item ${location.pathname === "/" ? "active" : ""}`}>
+                  Accueil
+                </Link>
+                <Link to="/about" className={`navbar-item ${location.pathname === "/about" ? "active" : ""}`}>
+                  À propos
+                </Link>
+                <Link to="/contact" className={`navbar-item ${location.pathname === "/contact" ? "active" : ""}`}>
+                  Contactez-nous
+                </Link>
+              </>
             ) : (
               <>
                 <Link to="/dashboard" className={`navbar-item ${location.pathname === "/dashboard" ? "active" : ""}`}>
@@ -133,25 +141,28 @@ const Navbar = () => {
                       onClick={() => changeTheme("light")}
                       className={`dropdown-item theme-option ${theme === "light" ? "active" : ""}`}
                     >
-                      {/* <span className="theme-icon">☀️</span> */}
+                      { <span className="theme-icon">☀️</span> }
                       Clair
                     </button>
                     <button
                       onClick={() => changeTheme("dark")}
                       className={`dropdown-item theme-option ${theme === "dark" ? "active" : ""}`}
                     >
-                      {/* <span className="theme-icon">🌙</span> */}
+                      { <span className="theme-icon">🌙</span> }
                       Sombre
                     </button>
                     <button
                       onClick={() => changeTheme("system")}
                       className={`dropdown-item theme-option ${theme === "system" ? "active" : ""}`}
                     >
-                      {/* <span className="theme-icon">💻</span> */}
+                      { <span className="theme-icon">💻</span> }
                       Système
                     </button>
                   </div>
                   <div className="dropdown-divider"></div>
+                  <Link to="/about" className="dropdown-item">
+                    À propos
+                  </Link>
                   <button onClick={handleLogout} className="dropdown-item logout-btn">
                     Déconnexion
                   </button>
