@@ -24,33 +24,14 @@ const getHeaders = () => {
 }
 
 const handleResponse = async (response) => {
-  // Vérifier le type de contenu pour éviter les erreurs de parsing JSON
-  const contentType = response.headers.get("content-type")
-  
-  if (!contentType || !contentType.includes("application/json")) {
-    // Si ce n'est pas du JSON, lire comme texte
-    const text = await response.text()
-    if (!response.ok) {
-      throw new Error(`Erreur ${response.status}: ${text}`)
-    }
-    throw new Error("Réponse invalide du serveur")
+  const data = await response.json()
+
+  if (!response.ok) {
+    const error = (data && data.message) || response.statusText
+    throw new Error(error)
   }
 
-  try {
-    const data = await response.json()
-
-    if (!response.ok) {
-      const error = (data && data.message) || (data && data.error) || response.statusText
-      throw new Error(error)
-    }
-
-    return data
-  } catch (error) {
-    if (error.name === "SyntaxError") {
-      throw new Error("Réponse invalide du serveur")
-    }
-    throw error
-  }
+  return data
 }
 
 // Authentification

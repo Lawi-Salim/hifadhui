@@ -25,18 +25,8 @@ const PhotoDetail = () => {
       setPhoto(data)
       setError(null)
     } catch (err) {
-      console.error("Erreur lors du chargement de la photo:", err)
-      
-      // Messages d'erreur plus spécifiques
-      if (err.message.includes("404")) {
-        setError("Photo non trouvée. Elle a peut-être été supprimée ou déplacée.")
-      } else if (err.message.includes("403")) {
-        setError("Vous n'avez pas l'autorisation d'accéder à cette photo.")
-      } else if (err.message.includes("Réponse invalide")) {
-        setError("Erreur de communication avec le serveur. Veuillez réessayer.")
-      } else {
-        setError(`Erreur lors du chargement de la photo: ${err.message}`)
-      }
+      setError("Erreur lors du chargement de la photo")
+      console.error(err)
     } finally {
       setLoading(false)
     }

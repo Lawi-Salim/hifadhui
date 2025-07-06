@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { authenticateToken } from '../middlewares/auth.js';
 import { Photo, User } from '../models/index.js';
 import { upload } from '../config/multer.js';
-import { sequelize } from '../config/database.js';
 import path from 'path';
 import fs from 'fs';
 
@@ -12,11 +11,12 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const photos = await Photo.findAll({
+      where: { isPublic: true },
       include: [{
         model: User,
         attributes: ['id', 'username']
       }],
-      order: [['upload_date', 'DESC']]
+      order: [['createdAt', 'DESC']]
     });
     
     res.json(photos);
@@ -32,10 +32,10 @@ router.get('/user/:userId', async (req, res) => {
     const { userId } = req.params;
     const { includePrivate } = req.query;
     
-    const whereClause = { user_id: userId };
+    const whereClause = { userId };
     
     // Si l'utilisateur ne demande pas les photos privées ou n'est pas l'utilisateur lui-même
-    if (includePrivate !== 'true' || (req.user && req.user.id !== userId)) {
+    if (includePrivate !== 'true' || (req.user && req.user.id !== parseInt(userId))) {
       whereClause.isPublic = true;
     }
     
@@ -45,43 +45,13 @@ router.get('/user/:userId', async (req, res) => {
         model: User,
         attributes: ['id', 'username']
       }],
-      order: [['upload_date', 'DESC']]
+      order: [['createdAt', 'DESC']]
     });
     
     res.json(photos);
   } catch (error) {
     console.error('Erreur lors de la récupération des photos utilisateur:', error);
     res.status(500).json({ error: 'Erreur lors de la récupération des photos utilisateur' });
-  }
-});
-
-// Récupérer une photo spécifique par ID
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const photo = await Photo.findOne({
-      where: { id },
-      include: [{
-        model: User,
-        attributes: ['id', 'username']
-      }]
-    });
-    
-    if (!photo) {
-      return res.status(404).json({ error: 'Photo non trouvée' });
-    }
-    
-    // Vérifier si l'utilisateur peut accéder à cette photo
-    // Si la photo n'est pas publique et que l'utilisateur n'est pas le propriétaire
-    if (!photo.isPublic && (!req.user || req.user.id !== photo.user_id)) {
-      return res.status(403).json({ error: 'Accès non autorisé à cette photo' });
-    }
-    
-    res.json(photo);
-  } catch (error) {
-    console.error('Erreur lors de la récupération de la photo:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération de la photo' });
   }
 });
 
@@ -128,7 +98,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const { title, description, category, isPublic } = req.body;
     
     const photo = await Photo.findOne({
-      where: { id, user_id: req.user.id },
+      where: { id, userId: req.user.id },
       transaction: t
     });
     
@@ -162,7 +132,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     
     const photo = await Photo.findOne({
-      where: { id, user_id: req.user.id },
+      where: { id, userId: req.user.id },
       transaction: t
     });
     
@@ -172,7 +142,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     }
     
     // Supprimer le fichier physique
-    const filePath = path.join(__dirname, '..', photo.filepath);
+    const filePath = path.join(__dirname, '..', photo.imageUrl);
     
     await photo.destroy({ transaction: t });
     await t.commit();
