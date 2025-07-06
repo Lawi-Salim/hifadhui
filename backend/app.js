@@ -27,11 +27,35 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Middleware de debug pour les requêtes API
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  console.log('Headers:', req.headers);
+  next();
+});
+
 // Servir les fichiers statiques du dossier uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes de l'API
 app.use('/api', routes);
+
+// Middleware spécifique pour les routes API non trouvées
+app.use('/api/*', (req, res) => {
+  console.log(`Route API non trouvée: ${req.originalUrl}`);
+  res.status(404).json({
+    success: false,
+    message: 'Endpoint API non trouvé',
+    path: req.originalUrl,
+    availableEndpoints: [
+      '/api/auth/login',
+      '/api/auth/register',
+      '/api/photos',
+      '/api/photos/:id',
+      '/api/photos/user/:userId'
+    ]
+  });
+});
 
 // Gestion des erreurs 404
 app.use((req, res, next) => {
