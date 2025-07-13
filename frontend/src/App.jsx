@@ -56,23 +56,26 @@ const ProtectedRoute = ({ children }) => {
 }
 
 function App() {
+  const { isAuthenticated } = useAuth();
+
   // Précharger les images au chargement de l'application
   useEffect(() => {
     preloadImages()
   }, [])
 
-  // Réinitialiser le token d'authentification depuis le localStorage au démarrage
+  // Injecter le token dans le service API dès que l'utilisateur est authentifié
   useEffect(() => {
-    // Clé corrigée selon le localStorage réel
-    const tokenData = localStorage.getItem('sb-lclzvpeqzkiwabtrplu-auth-token')
-    if (tokenData) {
-      const { access_token } = JSON.parse(tokenData)
-      api.setAuthToken(access_token)
-      console.log("Token réinitialisé depuis le localStorage :", access_token)
-    } else {
-      console.log("Aucun token trouvé dans le localStorage")
+    if (isAuthenticated) {
+      const tokenData = localStorage.getItem('sb-lclzvpeqzkiwabtrplu-auth-token');
+      if (tokenData) {
+        const { access_token } = JSON.parse(tokenData);
+        api.setAuthToken(access_token);
+        console.log("Token réinitialisé depuis le localStorage (après auth) :", access_token);
+      } else {
+        console.log("Aucun token trouvé dans le localStorage (après auth)");
+      }
     }
-  }, [])
+  }, [isAuthenticated]);
 
   return (
     <ThemeProvider>
