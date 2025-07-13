@@ -53,6 +53,8 @@ router.post('/', authenticateToken, async (req, res) => {
   console.log('--- Tentative d\'upload de photo ---');
   console.log('Body reçu :', req.body);
   console.log('Utilisateur authentifié :', req.user);
+  // Log supplémentaire pour debug
+  console.log('req.user dans POST /api/photos :', req.user);
   try {
     const { title, description, photoUrl } = req.body;
     if (!title || !photoUrl) {

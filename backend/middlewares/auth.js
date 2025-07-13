@@ -11,11 +11,15 @@ const authenticateToken = (req, res, next) => {
     return res.status(401).json({ error: 'Token d\'authentification manquant' });
   }
 
+  // Log du secret utilisé
+  console.log('JWT_SECRET utilisé :', JWT_SECRET);
+
   jwt.verify(token, JWT_SECRET, async (err, user) => {
     if (err) {
       return res.status(403).json({ error: 'Token invalide ou expiré' });
     }
-    console.log('Playload JWT décodé :', user);
+    // Log du payload décodé
+    console.log('Payload JWT décodé :', user);
 
     try {
       // Pour Supabase, l'ID utilisateur est dans user.sub
