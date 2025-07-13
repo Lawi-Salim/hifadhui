@@ -15,23 +15,6 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    // Synchroniser le token avec le service API via Supabase
-    const supabase = getSupabaseClient();
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session && session.access_token) {
-        api.setAuthToken(session.access_token);
-        console.log("Token injecté dans le service API via onAuthStateChange :", session.access_token);
-      } else {
-        api.removeAuthToken();
-        console.log("Token supprimé du service API via onAuthStateChange");
-      }
-    });
-    return () => {
-      listener?.subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
     // Vérifier la session Supabase
     const checkSession = async () => {
       const { data: sessionData } = await getSupabaseClient().auth.getSession();
@@ -40,6 +23,13 @@ export const AuthProvider = ({ children }) => {
         const user = JSON.parse(localStorage.getItem("user"));
         setCurrentUser(user);
         setIsAuthenticated(true);
+        // Injection du token dans le service API
+        const tokenData = localStorage.getItem('sb-lclzvpeqzkiwabtrplu-auth-token');
+        if (tokenData) {
+          const { access_token } = JSON.parse(tokenData);
+          api.setAuthToken(access_token);
+          console.log("Token injecté dans le service API depuis AuthContext :", access_token);
+        }
       } else {
         setCurrentUser(null);
         setIsAuthenticated(false);
@@ -73,8 +63,6 @@ export const AuthProvider = ({ children }) => {
 
       setCurrentUser(userWithUsername)
       setIsAuthenticated(true)
-
-      // Synchronisation du token retirée ici, gérée par onAuthStateChange
 
       return userWithUsername
     } catch (err) {
