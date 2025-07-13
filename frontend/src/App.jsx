@@ -63,8 +63,8 @@ function App() {
 
   // Réinitialiser le token d'authentification depuis le localStorage au démarrage
   useEffect(() => {
-    // Adapter la clé selon ton projet
-    const tokenData = localStorage.getItem('sb-clzvpeqzkiwabtrplu-auth-token')
+    // Clé corrigée selon le localStorage réel
+    const tokenData = localStorage.getItem('sb-lclzvpeqzkiwabtrplu-auth-token')
     if (tokenData) {
       const { access_token } = JSON.parse(tokenData)
       api.setAuthToken(access_token)
