@@ -58,18 +58,8 @@ const ProtectedRoute = ({ children }) => {
 function AppWithAuth() {
   const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      const tokenData = localStorage.getItem('sb-lclzvpeqzkiwabtrplu-auth-token');
-      if (tokenData) {
-        const { access_token } = JSON.parse(tokenData);
-        api.setAuthToken(access_token);
-        console.log("Token réinitialisé depuis le localStorage (après auth) :", access_token);
-      } else {
-        console.log("Aucun token trouvé dans le localStorage (après auth)");
-      }
-    }
-  }, [isAuthenticated]);
+  // Le token est maintenant géré directement par Supabase dans AuthContext
+  // Plus besoin de chercher dans le localStorage
 
   return (
     <Router>

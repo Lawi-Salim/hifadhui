@@ -23,13 +23,10 @@ export const AuthProvider = ({ children }) => {
         const user = JSON.parse(localStorage.getItem("user"));
         setCurrentUser(user);
         setIsAuthenticated(true);
-        // Injection du token dans le service API
-        const tokenData = localStorage.getItem('sb-lclzvpeqzkiwabtrplu-auth-token');
-        if (tokenData) {
-          const { access_token } = JSON.parse(tokenData);
-          api.setAuthToken(access_token);
-          console.log("Token injecté dans le service API depuis AuthContext :", access_token);
-        }
+        // Injection du token dans le service API via Supabase
+        const { access_token } = sessionData.session;
+        api.setAuthToken(access_token);
+        console.log("Token injecté dans le service API depuis Supabase :", access_token);
       } else {
         setCurrentUser(null);
         setIsAuthenticated(false);
