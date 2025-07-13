@@ -108,8 +108,8 @@ const UploadPhoto = () => {
       const payload = {
         title,
         description,
-        photoUrl: data.secure_url,
-        user_id
+        photoUrl: data.secure_url
+        // PAS de user_id ici !
       };
       console.log("Données envoyées à l'API :", payload);
       await api.uploadPhoto(payload, access_token)
