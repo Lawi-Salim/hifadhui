@@ -15,11 +15,11 @@ const getHeaders = () => {
   const headers = {
     "Content-Type": "application/json",
   }
-
   if (authToken) {
     headers["Authorization"] = `Bearer ${authToken}`
   }
-
+  // Log pour debug
+  console.log("Headers envoyés pour API :", headers)
   return headers
 }
 

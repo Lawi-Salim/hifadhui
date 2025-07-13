@@ -18,6 +18,7 @@ import About from "./pages/About"
 import Contact from "./pages/Contact"
 import "./App.css"
 import { useEffect } from "react"
+import api from "./services/api";
 
 // Fonction pour précharger les images
 const preloadImages = () => {
@@ -58,6 +59,19 @@ function App() {
   // Précharger les images au chargement de l'application
   useEffect(() => {
     preloadImages()
+  }, [])
+
+  // Réinitialiser le token d'authentification depuis le localStorage au démarrage
+  useEffect(() => {
+    // Adapter la clé selon ton projet
+    const tokenData = localStorage.getItem('sb-clzvpeqzkiwabtrplu-auth-token')
+    if (tokenData) {
+      const { access_token } = JSON.parse(tokenData)
+      api.setAuthToken(access_token)
+      console.log("Token réinitialisé depuis le localStorage :", access_token)
+    } else {
+      console.log("Aucun token trouvé dans le localStorage")
+    }
   }, [])
 
   return (
