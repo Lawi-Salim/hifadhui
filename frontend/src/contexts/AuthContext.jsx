@@ -64,6 +64,17 @@ export const AuthProvider = ({ children }) => {
       setCurrentUser(userWithUsername)
       setIsAuthenticated(true)
 
+      // === Synchronisation du token dans le service API ===
+      const tokenData = localStorage.getItem('sb-lclzvpeqzkiwabtrplu-auth-token');
+      if (tokenData) {
+        const { access_token } = JSON.parse(tokenData);
+        api.setAuthToken(access_token);
+        console.log("Token injecté dans le service API après login :", access_token);
+      } else {
+        console.log("Aucun token trouvé dans le localStorage après login");
+      }
+      // === FIN synchronisation ===
+
       return userWithUsername
     } catch (err) {
       setError(err.message || "Erreur de connexion")
