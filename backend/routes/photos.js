@@ -26,12 +26,16 @@ router.get('/', authenticateToken, async (req, res) => {
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
+    console.log('--- Requête GET /api/photos/:id ---');
+    console.log('ID demandé :', id);
+    console.log('Utilisateur authentifié :', req.user);
     const photo = await Photo.findOne({
       where: { 
         id: id,
         user_id: req.user.id 
       }
     });
+    console.log('Résultat de la recherche photo :', photo ? 'Photo trouvée' : 'Photo non trouvée');
     
     if (!photo) {
       return res.status(404).json({ error: 'Photo non trouvée' });
