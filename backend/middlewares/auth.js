@@ -18,7 +18,7 @@ const authenticateToken = (req, res, next) => {
 
     try {
       // Pour Supabase, l'ID utilisateur est dans user.sub
-      const userId = user.id || user.sub;
+      const userId = user.sub || user.id;
       const userExists = await User.findByPk(userId);
       if (!userExists) {
         return res.status(403).json({ error: 'Utilisateur non trouvé' });
