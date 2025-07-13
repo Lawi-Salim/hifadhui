@@ -55,15 +55,9 @@ const ProtectedRoute = ({ children }) => {
   return children
 }
 
-function App() {
+function AppWithAuth() {
   const { isAuthenticated } = useAuth();
 
-  // Précharger les images au chargement de l'application
-  useEffect(() => {
-    preloadImages()
-  }, [])
-
-  // Injecter le token dans le service API dès que l'utilisateur est authentifié
   useEffect(() => {
     if (isAuthenticated) {
       const tokenData = localStorage.getItem('sb-lclzvpeqzkiwabtrplu-auth-token');
@@ -78,52 +72,63 @@ function App() {
   }, [isAuthenticated]);
 
   return (
+    <Router>
+      <div className="app">
+        <Navbar />
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/upload"
+              element={
+                <ProtectedRoute>
+                  <UploadPhoto />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/photos/:id"
+              element={
+                <ProtectedRoute>
+                  <PhotoDetail />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+    </Router>
+  );
+}
+
+function App() {
+  // Précharger les images au chargement de l'application
+  useEffect(() => {
+    preloadImages()
+  }, [])
+
+  return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
-          <div className="app">
-            <Navbar />
-            <main className="main-content">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password/:token" element={<ResetPassword />} />
-                <Route path="/terms" element={<TermsOfService />} />
-                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/upload"
-                  element={
-                    <ProtectedRoute>
-                      <UploadPhoto />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/photos/:id"
-                  element={
-                    <ProtectedRoute>
-                      <PhotoDetail />
-                    </ProtectedRoute>
-                  }
-                />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
-        </Router>
+        <AppWithAuth />
       </AuthProvider>
     </ThemeProvider>
   )
