@@ -15,6 +15,7 @@ const authenticateToken = (req, res, next) => {
     if (err) {
       return res.status(403).json({ error: 'Token invalide ou expiré' });
     }
+    console.log('Playload JWT décodé :', user);
 
     try {
       // Pour Supabase, l'ID utilisateur est dans user.sub
