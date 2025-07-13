@@ -9,12 +9,11 @@ const User = sequelize.define('User', {
     defaultValue: DataTypes.UUIDV4
   },
   username: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
+    type: DataTypes.STRING(50),
+    allowNull: false
   },
   email: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(100),
     allowNull: false,
     unique: true,
     validate: {
@@ -22,16 +21,19 @@ const User = sequelize.define('User', {
     }
   },
   password: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(255),
     allowNull: false
   },
-  role: {
-    type: DataTypes.ENUM('admin', 'user'),
-    defaultValue: 'user'
+  created_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  },
+  updated_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
   }
 }, {
-  timestamps: true,
-  updatedAt: false,
+  timestamps: false,
   tableName: 'users',
   hooks: {
     beforeCreate: async (user) => {

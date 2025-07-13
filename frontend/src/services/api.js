@@ -24,6 +24,16 @@ const getHeaders = () => {
 }
 
 const handleResponse = async (response) => {
+  // Vérifier le type de contenu de la réponse
+  const contentType = response.headers.get('content-type');
+  
+  if (!contentType || !contentType.includes('application/json')) {
+    // Si ce n'est pas du JSON, on lit le texte pour le debug
+    const text = await response.text();
+    console.error('Réponse non-JSON reçue:', text);
+    throw new Error(`Réponse invalide du serveur: ${response.status} ${response.statusText}`);
+  }
+
   const data = await response.json()
 
   if (!response.ok) {

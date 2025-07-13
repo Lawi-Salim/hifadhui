@@ -8,7 +8,7 @@ const Photo = sequelize.define('Photo', {
     defaultValue: DataTypes.UUIDV4
   },
   title: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(100),
     allowNull: false
   },
   description: {
@@ -16,7 +16,7 @@ const Photo = sequelize.define('Photo', {
     allowNull: true
   },
   filepath: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(500),
     allowNull: false
   },
   user_id: {
@@ -28,6 +28,14 @@ const Photo = sequelize.define('Photo', {
     }
   },
   upload_date: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  },
+  created_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  },
+  updated_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW
   }
