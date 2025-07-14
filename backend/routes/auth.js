@@ -27,9 +27,9 @@ router.post('/register', async (req, res) => {
 
     // Générer un token JWT
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { sub: user.id, email: user.email, role: user.role },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '30d' } // Durée prolongée à 30 jours
     );
 
     // Renvoyer la réponse sans le mot de passe
@@ -64,9 +64,9 @@ router.post('/login', async (req, res) => {
 
     // Générer un token JWT
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { sub: user.id, email: user.email, role: user.role },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '30d' } // Durée prolongée à 30 jours
     );
 
     // Renvoyer la réponse sans le mot de passe
