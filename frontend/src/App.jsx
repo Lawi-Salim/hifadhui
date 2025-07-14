@@ -1,5 +1,5 @@
 "use client"
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom"
 import { AuthProvider, useAuth } from "./contexts/AuthContext"
 import { ThemeProvider } from "./contexts/ThemeContext"
 import Navbar from "./components/Navbar"
@@ -57,7 +57,8 @@ const ProtectedRoute = ({ children }) => {
 }
 
 function AppWithAuth() {
-  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const isPitchaDetail = location.pathname.startsWith("/pitcha-detail/");
 
   // Le token est maintenant géré directement par Supabase dans AuthContext
   // Plus besoin de chercher dans le localStorage
@@ -65,7 +66,7 @@ function AppWithAuth() {
   return (
     <Router>
       <div className="app">
-        <Navbar />
+        {!isPitchaDetail && <Navbar />}
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Home />} />
@@ -105,7 +106,7 @@ function AppWithAuth() {
             <Route path="/pitcha-detail/:id" element={<PitchaDetail />} />
           </Routes>
         </main>
-        <Footer />
+        {!isPitchaDetail && <Footer />}
       </div>
     </Router>
   );
