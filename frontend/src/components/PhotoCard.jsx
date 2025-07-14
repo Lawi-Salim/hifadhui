@@ -17,13 +17,24 @@ const PhotoCard = ({ photo, onDelete }) => {
   }
 
   const handleShare = async (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    const url = `${window.location.origin}/pitcha-detail/${photo.id}`
-    await navigator.clipboard.writeText(url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }
+    e.preventDefault();
+    e.stopPropagation();
+    // 1. Rendre la photo publique pour 10 minutes
+    await fetch('/api/photos/publicity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: photo.id,
+        is_public: true,
+        public_until: new Date(Date.now() + 10 * 60 * 1000).toISOString()
+      })
+    });
+    // 2. Copier le lien
+    const url = `${window.location.origin}/pitcha-detail/${photo.id}`;
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   const formatDate = (dateString) => {
     const options = { year: "numeric", month: "long", day: "numeric" }

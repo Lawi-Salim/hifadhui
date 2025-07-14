@@ -33,6 +33,9 @@ create table photos (
     on delete cascade
 );
 
+-- Ajout du champ is_public pour la gestion de la visibilité publique des photos
+alter table photos add column if not exists is_public boolean not null default false;
+
 -- Créer les index pour les performances
 create index idx_photos_user_id on photos(user_id);
 create index idx_users_email on users(email);
@@ -66,6 +69,14 @@ create policy "Les utilisateurs peuvent mettre à jour leurs propres photos"
 create policy "Les utilisateurs peuvent supprimer leurs propres photos"
   on photos for delete
   using (auth.uid() = user_id);
+
+-- Politique RLS pour permettre la lecture publique des photos partagées
+create policy "Voir les photos publiques"
+  on photos for select
+  using (
+    is_public = true
+    AND (public_until IS NULL OR public_until > now())
+  );
 
 -- Fonction pour mettre à jour automatiquement updated_at
 create or replace function update_updated_at_column()

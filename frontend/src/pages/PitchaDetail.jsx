@@ -21,6 +21,26 @@ const PitchaDetail = () => {
     fetchPhoto();
   }, [id]);
 
+  useEffect(() => {
+    const handleUnload = async () => {
+      await fetch('/api/photos/publicity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          is_public: false,
+          public_until: null
+        })
+      });
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+      // Appel aussi lors du démontage du composant (navigation)
+      handleUnload();
+    };
+  }, [id]);
+
   if (loading) return <div style={{ textAlign: "center", marginTop: 40 }}>Chargement...</div>;
   if (!photo) return <div style={{ textAlign: "center", marginTop: 40 }}>Photo non trouvée</div>;
 
