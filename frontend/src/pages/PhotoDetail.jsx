@@ -99,60 +99,43 @@ const PhotoDetail = () => {
               onContextMenu={handleContextMenu}
               draggable="false"
             />
+            {/* Filigrane toujours affiché, bouton masqué */}
             {showWatermark && <div className="photo-watermark">© Hifadhui</div>}
           </div>
-          <div className="photo-controls">
-            <button
-              className={`btn ${showWatermark ? "btn-outline" : "btn-primary"}`}
-              onClick={() => setShowWatermark(!showWatermark)}
-            >
-              {showWatermark ? "Masquer le filigrane" : "Afficher le filigrane"}
-            </button>
-          </div>
+          {/* Le bouton 'Masquer le filigrane' est retiré */}
         </div>
-
-        <div className="photo-info">
-          <div className="info-card">
+        <div className="photo-detail-sidebar">
+          <div className="photo-details-card">
             <h2>Détails</h2>
-
-            <div className="info-group">
-              <h3>Description</h3>
-              <p>{photo.description || "Aucune description"}</p>
+            {/* Miniature de la photo */}
+            <div className="photo-thumbnail" style={{ marginBottom: 12 }}>
+              <img src={photo.filepath} alt="Miniature" style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 8 }} />
             </div>
-
-            <div className="info-group">
-              <h3>Date d'ajout</h3>
-              <p>{formatDate(photo.upload_date)}</p>
+            <div>
+              <strong>Description</strong>
+              <div>{photo.description || "Aucune description"}</div>
             </div>
-
-            <div className="info-group">
-              <h3>Identifiant</h3>
-              <p className="photo-id">#{photo.id}</p>
+            <div>
+              <strong>Date d'ajout</strong>
+              <div>{formatDate(photo.upload_date)}</div>
             </div>
-          </div>
-
-          <div className="info-card">
-            <h2>Protection</h2>
-            <p className="protection-info">
-              Cette photo est protégée et stockée en toute sécurité dans votre espace personnel Hifadhui.
-            </p>
-            <div className="protection-status">
-              <div className="status-item">
-                <span className="status-label">Accès privé</span>
-                <span className="status-value active">Activé</span>
-              </div>
-              <div className="status-item">
-                <span className="status-label">Filigrane</span>
-                <span className={`status-value ${showWatermark ? "active" : "inactive"}`}>
-                  {showWatermark ? "Activé" : "Désactivé"}
-                </span>
-              </div>
-              <div className="status-item">
-                <span className="status-label">Protection contre copie</span>
-                <span className="status-value active">Activée</span>
+            {/* Identifiant copiable */}
+            <div>
+              <strong>Identifiant</strong>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <span style={{ fontSize: 12, background: "#222", padding: "2px 6px", borderRadius: 4 }}>{photo.id}</span>
+                <button
+                  className="btn btn-xs"
+                  style={{ marginLeft: 8 }}
+                  onClick={() => navigator.clipboard.writeText(photo.id)}
+                  title="Copier l'identifiant"
+                >
+                  Copier
+                </button>
               </div>
             </div>
           </div>
+          {/* ... Protection ... */}
         </div>
       </div>
     </div>
