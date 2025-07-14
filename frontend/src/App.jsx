@@ -19,6 +19,7 @@ import Contact from "./pages/Contact"
 import "./App.css"
 import { useEffect } from "react"
 import api from "./services/api";
+import PitchaDetail from "./pages/PitchaDetail";
 
 // Fonction pour précharger les images
 const preloadImages = () => {
@@ -101,6 +102,7 @@ function AppWithAuth() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/pitcha-detail/:id" element={<PitchaDetail />} />
           </Routes>
         </main>
         <Footer />

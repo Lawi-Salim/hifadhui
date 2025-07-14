@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { FaShareAlt } from "react-icons/fa" // Ajout de l'icône de partage
+import { FaShareAlt } from "react-icons/fa"
 import "./PhotoCard.css"
 
 const PhotoCard = ({ photo, onDelete }) => {
@@ -19,7 +19,7 @@ const PhotoCard = ({ photo, onDelete }) => {
   const handleShare = async (e) => {
     e.preventDefault()
     e.stopPropagation()
-    const url = `${window.location.origin}/photos/${photo.id}`
+    const url = `${window.location.origin}/pitcha-detail/${photo.id}`
     await navigator.clipboard.writeText(url)
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
@@ -36,7 +36,47 @@ const PhotoCard = ({ photo, onDelete }) => {
   }
 
   return (
-    <div className="photo-card" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
+    <div className="photo-card" style={{ position: "relative" }} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
+      {/* Bouton de partage en haut à droite */}
+      <button
+        onClick={handleShare}
+        className="share-btn"
+        title="Partager"
+        style={{
+          position: "absolute",
+          top: 10,
+          right: 10,
+          borderRadius: "50%",
+          width: 36,
+          height: 36,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#222",
+          color: "#fff",
+          border: "none",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+          zIndex: 2,
+          cursor: "pointer",
+        }}
+      >
+        <FaShareAlt size={18} />
+      </button>
+      {copied && (
+        <span style={{
+          position: "absolute",
+          top: 12,
+          right: 56,
+          color: "#4caf50",
+          fontSize: 12,
+          background: "#222",
+          padding: "2px 8px",
+          borderRadius: 6,
+          zIndex: 2,
+        }}>
+          Lien copié !
+        </span>
+      )}
       <Link to={`/photos/${photo.id}`} className="photo-link">
         <div className="photo-image-container">
           <img
@@ -66,31 +106,6 @@ const PhotoCard = ({ photo, onDelete }) => {
         <button onClick={handleDelete} className="action-btn delete-btn">
           Supprimer
         </button>
-        <button
-          onClick={handleShare}
-          className="action-btn share-btn"
-          title="Partager"
-          style={{
-            borderRadius: "50%",
-            width: 36,
-            height: 36,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            marginLeft: 8,
-            background: "#222",
-            color: "#fff",
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          <FaShareAlt size={18} />
-        </button>
-        {copied && (
-          <span style={{ marginLeft: 8, color: "#4caf50", fontSize: 12 }}>
-            Lien copié !
-          </span>
-        )}
       </div>
     </div>
   )
