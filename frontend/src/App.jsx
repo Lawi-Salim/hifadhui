@@ -64,11 +64,10 @@ function AppWithAuth() {
   // Plus besoin de chercher dans le localStorage
 
   return (
-    <Router>
-      <div className="app">
-        {!isPitchaDetail && <Navbar />}
-        <main className="main-content">
-          <Routes>
+    <div className="app">
+      {!isPitchaDetail && <Navbar />}
+      <main className="main-content">
+        <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -108,7 +107,6 @@ function AppWithAuth() {
         </main>
         {!isPitchaDetail && <Footer />}
       </div>
-    </Router>
   );
 }
 
@@ -121,7 +119,9 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppWithAuth />
+        <Router>
+          <AppWithAuth />
+        </Router>
       </AuthProvider>
     </ThemeProvider>
   )
