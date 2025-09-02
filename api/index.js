@@ -4,7 +4,8 @@ const app = require('../backend/server.js');
 (async () => {
   try {
     console.log('Initialisation de l\'admin par défaut...');
-    require('../backend/scripts/create-admin.js');
+    const createAdmin = require('../backend/scripts/create-admin.js');
+    await createAdmin();
   } catch (error) {
     console.error('Erreur lors de l\'initialisation admin:', error);
   }
