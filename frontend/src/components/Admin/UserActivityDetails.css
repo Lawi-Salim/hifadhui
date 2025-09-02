@@ -1,0 +1,113 @@
+.user-activity-details {
+  padding: 1rem;
+}
+
+.stats-container {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background-color: #2c3e50;
+  padding: 1rem;
+  border-radius: 8px;
+  flex-grow: 1;
+  text-align: center;
+}
+
+.stat-card h5 {
+  margin-top: 0;
+  font-size: 0.9rem;
+  color: #bdc3c7;
+}
+
+.stat-card p {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0;
+}
+
+.recent-activities h4 {
+  margin: 0;
+}
+
+.info-bar-activity {
+  border-bottom: 1px solid #34495e;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.5rem;
+}
+
+.info-bar-activity > span {
+  color: var(--error-color);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.activities-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.activities-table th,
+.activities-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #34495e;
+}
+
+.activities-table th {
+  font-weight: bold;
+  color: #ecf0f1;
+}
+
+.action-type-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  background-color: #3498db;
+  color: white;
+}
+
+.action-type-badge.delete-action {
+  background-color: var(--error-color);
+}
+
+.action-type-badge.upload-action {
+  background-color: var(--success-color);
+}
+
+.activities-table-container {
+  max-height: 300px; /* Hauteur maximale avant que le scroll n'apparaisse */
+  overflow-y: auto; /* Active le scroll vertical si nécessaire */
+  border-radius: 4px;
+  border: 1px solid #34495e;
+  padding: 0 0.5rem;
+}
+
+/* Masquer la bordure inférieure du dernier élément pour éviter un double-bord */
+.activities-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Style de la scrollbar pour Webkit (Chrome, Safari, etc.) */
+.activities-table-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.activities-table-container::-webkit-scrollbar-track {
+  background: transparent; /* Fond de la piste transparent */
+}
+
+.activities-table-container::-webkit-scrollbar-thumb {
+  background-color: #566573; /* Couleur du curseur */
+  border-radius: 4px;
+}
+
+.activities-table-container::-webkit-scrollbar-thumb:hover {
+  background-color: #808b96; /* Couleur du curseur au survol */
+}

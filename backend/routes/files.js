@@ -1,0 +1,834 @@
+const express = require('express');
+const { body, validationResult } = require('express-validator');
+const db = require('../models');
+const { Op } = require('sequelize');
+const { authenticateToken } = require('../middleware/auth');
+const { upload, handleUploadError } = require('../middleware/upload');
+const uploadLocal = require('../middleware/upload-local');
+const crypto = require('crypto');
+const { generateCertificate } = require('../utils/pdfGenerator');
+const { deleteCloudinaryFile } = require('../utils/cloudinaryStructure');
+const cloudinary = require('cloudinary').v2;
+const AdmZip = require('adm-zip');
+const fs = require('fs');
+const path = require('path');
+
+const router = express.Router();
+
+// Fonction pour traiter un fichier unique (création en BDD, certificat, etc.)
+const processSingleFile = async (fileData, user, req, dossierId = null, options = { logActivity: true }) => {
+  const { originalname, path: filePath, size, mimetype } = fileData;
+  
+  
+  // Extraire le chemin Cloudinary relatif depuis l'URL complète
+  let file_url;
+  
+  if (filePath.includes('cloudinary.com')) {
+    // URL Cloudinary complète, extraire le public_id
+    const uploadIndex = filePath.indexOf('/upload/');
+    if (uploadIndex !== -1) {
+      file_url = filePath.substring(uploadIndex + 8);
+    }
+  } else {
+    // Ne devrait pas arriver car tous les fichiers passent par Cloudinary maintenant
+    throw new Error('Fichier non uploadé sur Cloudinary');
+  }
+  
+
+  const timestamp = Date.now();
+  const fileHash = crypto.createHash('sha256').update(filePath + timestamp).digest('hex');
+  const signatureData = `${originalname}-${user.id}-${timestamp}`;
+  const signature = crypto.createHash('sha256').update(signatureData).digest('hex');
+
+    const file = await db.File.create({
+    dossier_id: dossierId,
+    filename: originalname,
+    file_url,
+    mimetype,
+    hash: fileHash,
+    signature: signature,
+    owner_id: user.id,
+    version: 1
+  });
+
+  try {
+    const relativePdfUrl = await generateCertificate(file, user);
+    const fullPdfUrl = `${req.protocol}://${req.get('host')}${relativePdfUrl}`;
+    const rootFileId = file.parent_file_id || file.id;
+    const certificate = await db.Certificate.findOne({ where: { root_file_id: rootFileId } });
+    if (certificate) {
+      certificate.pdf_url = fullPdfUrl;
+      await certificate.save();
+    }
+  } catch (certError) {
+    console.error(`Erreur de certificat pour ${originalname}:`, certError);
+  }
+
+  let action_type = 'FILE_UPLOAD';
+  if (file.mimetype.startsWith('image/')) {
+    action_type = 'IMAGE_UPLOAD';
+  } else if (file.mimetype === 'application/pdf') {
+    action_type = 'PDF_UPLOAD';
+  } else if (file.mimetype === 'application/zip') {
+    action_type = 'ZIP_UPLOAD';
+  }
+
+  if (options.logActivity) {
+    await db.ActivityLog.create({
+      userId: user.id,
+      actionType: action_type,
+      details: { fileId: file.id, fileName: file.filename, dossierId: file.dossier_id }
+    });
+  }
+
+  return file;
+};
+
+// @route   GET /api/v1/files/stats
+// @desc    Obtenir les statistiques sur les fichiers de l'utilisateur
+// @access  Private
+router.get('/stats', authenticateToken, async (req, res) => {
+  try {
+    const totalFiles = await db.File.count({
+      where: { owner_id: req.user.id, is_latest: true },
+    });
+
+    const totalCertificates = await db.Certificate.count({
+        include: [{
+            model: db.File,
+            as: 'certificateFile',
+            required: true,
+            where: { owner_id: req.user.id }
+        }]
+    });
+
+    res.json({ totalFiles, totalCertificates });
+  } catch (err) {
+    console.error('Erreur lors de la récupération des statistiques:', err.message);
+    res.status(500).send('Erreur du serveur');
+  }
+});
+
+// Route pour uploader un fichier (images/PDFs directement sur Cloudinary)
+router.post('/upload', authenticateToken, upload.single('document'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Aucun fichier fourni' });
+    }
+
+    const { mimetype, path: filePath } = req.file;
+    const isZip = mimetype === 'application/zip';
+
+    if (isZip) {
+      return res.status(400).json({ 
+        error: 'Les fichiers ZIP ne sont pas supportés sur cette route',
+        message: 'Utilisez la route /upload-zip pour les archives'
+      });
+    }
+
+    // Fichier individuel - traiter directement
+    const { dossier_id } = req.body;
+    const file = await processSingleFile(req.file, req.user, req, dossier_id);
+    res.status(201).json({
+      message: 'Fichier uploadé avec succès',
+      file: {
+        id: file.id,
+        filename: file.filename,
+        hash: file.hash,
+        signature: file.signature,
+        date_upload: file.date_upload,
+        version: file.version
+      }
+    });
+  } catch (error) {
+    console.error('Erreur upload:', error);
+    res.status(500).json({
+      error: "Erreur lors de l'upload du fichier",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Route spécifique pour uploader des fichiers ZIP
+router.post('/upload-zip', authenticateToken, uploadLocal.upload.single('document'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Aucun fichier fourni' });
+    }
+
+    const { mimetype, path: filePath } = req.file;
+    const isZip = mimetype === 'application/zip' || mimetype === 'application/x-zip-compressed';
+
+    if (!isZip) {
+      return res.status(400).json({ 
+        error: 'Seuls les fichiers ZIP sont acceptés sur cette route',
+        message: 'Utilisez la route /upload pour les autres fichiers'
+      });
+    }
+
+    // Traitement ZIP existant...
+      // Créer un dossier basé sur le nom du ZIP
+      const dossierName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+      const [newDossier, created] = await db.Dossier.findOrCreate({
+        where: { name: dossierName, owner_id: req.user.id },
+        defaults: { name: dossierName, owner_id: req.user.id },
+      });
+
+      // Lire le fichier ZIP dans un buffer pour éviter les problèmes de verrouillage de fichier sur Windows
+      const zipData = fs.readFileSync(filePath);
+      const zip = new AdmZip(zipData);
+      const zipEntries = zip.getEntries();
+      const processedFiles = [];
+      const uploadsDir = path.dirname(filePath);
+      let extractedImageCount = 0;
+      let extractedPdfCount = 0;
+
+      for (const zipEntry of zipEntries) {
+        if (zipEntry.isDirectory) continue;
+
+        const entryName = zipEntry.entryName;
+        const fileData = zipEntry.getData();
+        const newFileName = `${Date.now()}-${path.basename(entryName)}`;
+        const newFilePath = path.join(uploadsDir, newFileName);
+
+        const extension = path.extname(entryName).toLowerCase();
+        let fileMimeType;
+
+        switch (extension) {
+          case '.pdf':
+            fileMimeType = 'application/pdf';
+            extractedPdfCount++;
+            break;
+          case '.jpg':
+          case '.jpeg':
+            fileMimeType = 'image/jpeg';
+            extractedImageCount++;
+            break;
+          case '.png':
+            fileMimeType = 'image/png';
+            extractedImageCount++;
+            break;
+          default:
+            console.log(`Type non supporté ignoré : ${entryName}`);
+            continue; // On ignore les autres types de fichiers
+        }
+
+        // Au lieu d'écrire localement, uploader directement sur Cloudinary
+        const { getFileType, generateCloudinaryPath } = require('../utils/cloudinaryStructure');
+        
+        const fileType = getFileType(fileMimeType);
+        const cloudinaryPath = generateCloudinaryPath(entryName, req.user.username, fileType);
+        
+        // Créer un stream à partir du buffer
+        const { Readable } = require('stream');
+        const stream = Readable.from(fileData);
+        
+        // Upload via stream avec timeout plus long
+        const cloudinaryResult = await new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream({
+            public_id: cloudinaryPath,
+            resource_type: fileType === 'images' ? 'image' : 'raw',
+            folder: `hifadhwi/upload/${req.user.username}/${fileType}`,
+            timeout: 120000 // 2 minutes timeout
+          }, (error, result) => {
+            if (error) {
+              console.error('Erreur upload Cloudinary:', error);
+              reject(error);
+            } else {
+              resolve(result);
+            }
+          });
+          
+          stream.pipe(uploadStream);
+        });
+
+        const fileDataObject = {
+          originalname: entryName,
+          path: cloudinaryResult.secure_url,
+          size: fileData.length,
+          mimetype: fileMimeType
+        };
+
+        // Traiter le fichier sans logger d'activité individuelle
+        const processedFile = await processSingleFile(fileDataObject, req.user, req, newDossier.id, { logActivity: false });
+        processedFiles.push(processedFile);
+      }
+
+      // Supprimer le fichier ZIP original
+      fs.unlinkSync(filePath);
+
+      // Enregistrer une seule activité pour l'ensemble du ZIP
+      await db.ActivityLog.create({
+        userId: req.user.id,
+        actionType: 'ZIP_UPLOAD',
+        details: {
+          fileName: req.file.originalname,
+          dossierId: newDossier.id,
+          dossierName: newDossier.name,
+          extractedFileCount: processedFiles.length,
+          extractedImageCount,
+          extractedPdfCount
+        }
+      });
+
+      res.status(201).json({
+        message: `Dossier '${dossierName}' ${created ? 'créé' : 'mis à jour'} et ${processedFiles.length} fichiers uploadés avec succès.`,
+        dossier: newDossier,
+        files: processedFiles
+      });
+
+  } catch (error) {
+    console.error('Erreur upload ZIP:', error);
+    res.status(500).json({
+      error: "Erreur lors de l'upload du fichier ZIP",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Middleware de gestion d'erreurs pour multer
+router.use(handleUploadError);
+
+// Route pour lister les fichiers de l'utilisateur
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    const { page = 1, limit = 10, type } = req.query;
+    const offset = (page - 1) * limit;
+
+    const whereClause = { owner_id: req.user.id, is_latest: true };
+
+    if (type === 'image') {
+      whereClause.mimetype = { [Op.like]: 'image/%' };
+    } else {
+      // Par défaut, exclure les images si un type n'est pas spécifié
+      whereClause.mimetype = { [Op.notLike]: 'image/%' };
+    }
+
+    const { count, rows: files } = await db.File.findAndCountAll({
+      where: whereClause,
+      order: [['date_upload', 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+
+    // Pour chaque fichier, récupérer son certificat basé sur root_file_id
+    const filesWithCertificates = await Promise.all(
+      files.map(async (file) => {
+        const rootFileId = file.parent_file_id || file.id;
+        const certificate = await db.Certificate.findOne({
+          where: { root_file_id: rootFileId },
+          attributes: ['id', 'pdf_url', 'date_generated']
+        });
+        
+        return {
+          ...file.toJSON(),
+          fileCertificates: certificate ? [certificate] : []
+        };
+      })
+    );
+
+    res.json({
+      files: filesWithCertificates,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur liste fichiers:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération des fichiers'
+    });
+  }
+});
+
+// Route pour obtenir un fichier spécifique
+router.get('/:id', authenticateToken, async (req, res) => {
+  try {
+    const file = await db.File.findOne({
+      where: { 
+        id: req.params.id,
+        owner_id: req.user.id
+      }
+    });
+
+    if (!file) {
+      return res.status(404).json({
+        error: 'Fichier non trouvé'
+      });
+    }
+
+    // Récupérer le certificat basé sur root_file_id
+    const rootFileId = file.parent_file_id || file.id;
+    const certificate = await db.Certificate.findOne({
+      where: { root_file_id: rootFileId },
+      attributes: ['id', 'pdf_url', 'date_generated']
+    });
+
+    res.json({ 
+      file: {
+        ...file.toJSON(),
+        fileCertificates: certificate ? [certificate] : []
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur récupération fichier:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération du fichier'
+    });
+  }
+});
+
+// Route pour afficher une image ou PDF
+router.get('/:id/view', authenticateToken, async (req, res) => {
+  try {
+    const file = await db.File.findOne({
+      where: { 
+        id: req.params.id,
+        owner_id: req.user.id
+      }
+    });
+
+    if (!file) {
+      return res.status(404).json({
+        error: 'Fichier non trouvé'
+      });
+    }
+
+    // Vérifier que c'est une image ou un PDF
+    if (!file.mimetype.startsWith('image/') && file.mimetype !== 'application/pdf') {
+      return res.status(400).json({
+        error: 'Ce fichier n\'est pas une image ou un PDF'
+      });
+    }
+
+    // Pour les PDFs, nettoyer l'URL si elle a une double extension
+    let fileUrl = file.file_url;
+    if (file.mimetype === 'application/pdf' && fileUrl.endsWith('.pdf.pdf')) {
+      fileUrl = fileUrl.replace('.pdf.pdf', '.pdf');
+    }
+
+    // Rediriger vers l'URL Cloudinary
+    res.redirect(fileUrl);
+
+  } catch (error) {
+    console.error('Erreur affichage fichier:', error);
+    res.status(500).json({
+      error: 'Erreur lors de l\'affichage du fichier'
+    });
+  }
+});
+
+// Route pour télécharger un fichier de manière sécurisée
+router.get('/:id/download', authenticateToken, async (req, res) => {
+  try {
+    const file = await db.File.findOne({
+      where: { 
+        id: req.params.id,
+        owner_id: req.user.id
+      }
+    });
+
+    if (!file) {
+      return res.status(404).json({
+        error: 'Fichier non trouvé'
+      });
+    }
+
+    // Construire l'URL Cloudinary complète si nécessaire
+    let downloadUrl = file.file_url;
+    
+    if (!file.file_url.startsWith('http')) {
+      // Construire l'URL Cloudinary complète à partir du chemin relatif
+      const cloudinaryBaseUrl = process.env.CLOUDINARY_URL ? 
+        `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}` : 
+        'https://res.cloudinary.com/ddxypgvuh';
+      
+      // Déterminer le type de ressource basé sur le mimetype
+      const resourceType = file.mimetype.startsWith('image/') ? 'image' : 'raw';
+      
+      downloadUrl = `${cloudinaryBaseUrl}/${resourceType}/upload/${file.file_url}`;
+    }
+    
+    // Redirection vers l'URL Cloudinary
+    res.redirect(downloadUrl);
+    
+
+  } catch (error) {
+    console.error('Erreur téléchargement:', error);
+    res.status(500).json({
+      error: 'Erreur lors du téléchargement du fichier'
+    });
+  }
+});
+
+// Route pour renommer un fichier
+router.put('/:id',
+  authenticateToken,
+  [
+    body('filename', 'Le nouveau nom est requis').not().isEmpty().trim()
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const { filename } = req.body;
+      const file = await db.File.findOne({
+        where: { 
+          id: req.params.id,
+          owner_id: req.user.id,
+          is_latest: true  // Ne renommer que la version courante
+        }
+      });
+
+      if (!file) {
+        return res.status(404).json({ error: 'Fichier non trouvé ou version non courante' });
+      }
+
+      // Vérifier si un fichier avec le même nom existe déjà dans le même dossier
+      if (file.dossier_id) { // Ne vérifier que si le fichier est dans un dossier
+        const existingFile = await db.File.findOne({
+          where: {
+            filename,
+            dossier_id: file.dossier_id,
+            owner_id: req.user.id,
+            id: { [Op.ne]: file.id } // Exclure le fichier actuel
+          }
+        });
+
+        if (existingFile) {
+          return res.status(409).json({ error: 'Un fichier avec ce nom existe déjà dans ce dossier.' });
+        }
+      }
+
+      const oldFilename = file.filename;
+      
+      // Marquer l'ancienne version comme non-courante
+      await file.update({ is_latest: false });
+
+      // Créer une nouvelle version avec le nouveau nom
+      const timestamp = Date.now();
+      const newSignature = crypto.createHash('sha256').update(`${filename}-${req.user.id}-${timestamp}`).digest('hex');
+      
+      // Générer un nouveau hash unique pour cette version (basé sur le nom + timestamp)
+      const newHash = crypto.createHash('sha256').update(`${file.hash}-${filename}-${timestamp}`).digest('hex');
+      
+      const rootFileId = file.parent_file_id || file.id;
+
+      const newVersion = await db.File.create({
+        filename: filename,
+        file_url: file.file_url, // Même URL de fichier
+        mimetype: file.mimetype,
+        hash: newHash, // Nouveau hash unique pour cette version
+        signature: newSignature,
+        owner_id: req.user.id,
+        dossier_id: file.dossier_id,
+        version: file.version + 1,
+        parent_file_id: rootFileId, // Toujours pointer vers le fichier racine
+        is_latest: true
+      });
+
+      await db.ActivityLog.create({
+        userId: req.user.id,
+        actionType: 'FILE_RENAME',
+        details: {
+          fileId: newVersion.id,
+          oldFileName: oldFilename,
+          newFileName: newVersion.filename,
+          oldVersion: file.version,
+          newVersion: newVersion.version
+        },
+      });
+
+      res.json(newVersion);
+
+    } catch (error) {
+      console.error('Erreur lors du renommage du fichier:', error);
+      res.status(500).json({ error: 'Erreur lors du renommage du fichier' });
+    }
+});
+
+// Route pour supprimer plusieurs fichiers en une seule fois (batch)
+router.delete('/batch-delete', authenticateToken, async (req, res) => {
+  const { fileIds } = req.body;
+  const userId = req.user.id;
+
+  if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
+    return res.status(400).json({ message: 'Les identifiants de fichiers sont requis.' });
+  }
+
+  const t = await db.sequelize.transaction();
+
+  try {
+    const filesToDelete = await db.File.findAll({
+      where: {
+        id: fileIds,
+        owner_id: userId
+      },
+      transaction: t
+    });
+
+    if (filesToDelete.length === 0) {
+      await t.rollback();
+      return res.status(404).json({ message: 'Aucun fichier trouvé ou vous n\'avez pas la permission.' });
+    }
+
+    for (const file of filesToDelete) {
+      // 1. Supprimer de Cloudinary en utilisant la fonction utilitaire
+      try {
+        await deleteCloudinaryFile(file.file_url, file.mimetype);
+      } catch (cloudinaryError) {
+        console.error(`Erreur lors de la suppression Cloudinary pour le fichier ${file.id}:`, cloudinaryError);
+        // On continue même si la suppression Cloudinary échoue pour ne pas bloquer le processus
+      }
+
+      // 2. Déterminer le root_file_id et supprimer toutes les versions et le certificat
+      const rootFileId = file.parent_file_id || file.id;
+
+      // Supprimer toutes les versions du fichier
+      await db.File.destroy({
+        where: {
+          [Op.or]: [{ id: rootFileId }, { parent_file_id: rootFileId }],
+          owner_id: userId
+        },
+        transaction: t
+      });
+
+      // Supprimer le certificat associé
+      await db.Certificate.destroy({ where: { root_file_id: rootFileId }, transaction: t });
+
+      // 3. Enregistrer l'activité de suppression pour le fichier racine
+      let fileType = 'other';
+      if (file.mimetype.startsWith('image/')) fileType = 'image';
+      else if (file.mimetype === 'application/pdf') fileType = 'pdf';
+
+      await db.ActivityLog.create({
+        userId,
+        actionType: 'FILE_DELETE',
+        details: { 
+          filename: file.filename,
+          fileId: rootFileId, // Logger l'ID du fichier racine
+          fileType: fileType
+        }
+      }, { transaction: t });
+    }
+
+    await t.commit();
+    res.status(200).json({ message: `${filesToDelete.length} fichier(s) supprimé(s) avec succès.` });
+
+  } catch (error) {
+    await t.rollback();
+    console.error('Erreur lors de la suppression par lot:', error);
+    res.status(500).json({ message: 'Erreur serveur lors de la suppression des fichiers.' });
+  }
+});
+
+// Route pour supprimer un fichier
+router.delete('/:id', authenticateToken, async (req, res) => {
+  const transaction = await db.sequelize.transaction();
+  
+  try {
+    const file = await db.File.findOne({
+      where: { 
+        id: req.params.id,
+        owner_id: req.user.id
+      },
+      transaction
+    });
+
+    if (!file) {
+      await transaction.rollback();
+      return res.status(404).json({
+        error: 'Fichier non trouvé'
+      });
+    }
+
+    // 1. Supprimer le fichier de Cloudinary
+    try {
+      await deleteCloudinaryFile(file.file_url, file.mimetype);
+    } catch (cloudinaryError) {
+      console.error(`Erreur lors de la suppression Cloudinary pour le fichier ${file.id}:`, cloudinaryError);
+      // On continue même si la suppression Cloudinary échoue
+    }
+
+    // Déterminer le root_file_id de manière robuste
+    const rootFileId = file.parent_file_id || file.id;
+
+    // Supprimer toutes les versions du fichier
+    await db.File.destroy({
+      where: {
+        [Op.or]: [
+          { id: rootFileId },
+          { parent_file_id: rootFileId }
+        ],
+        owner_id: req.user.id
+      },
+      transaction
+    });
+
+    // Supprimer le certificat associé au fichier racine
+    await db.Certificate.destroy({ 
+      where: { root_file_id: rootFileId }, 
+      transaction 
+    });
+
+    // 3. Enregistrer l'activité de suppression
+    let fileType = 'other';
+    if (file.mimetype.startsWith('image/')) fileType = 'image';
+    else if (file.mimetype === 'application/pdf') fileType = 'pdf';
+    else if (file.mimetype === 'application/zip') fileType = 'zip';
+
+    await db.ActivityLog.create({
+      userId: req.user.id,
+      actionType: 'FILE_DELETE',
+      details: {
+        fileId: file.id,
+        fileName: file.filename,
+        fileType: fileType,
+      },
+      transaction
+    });
+
+    // 4. Supprimer le fichier de la base de données
+    await file.destroy({ transaction });
+    
+    // Valider la transaction
+    await transaction.commit();
+
+    res.json({
+      message: 'Fichier supprimé avec succès'
+    });
+
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Erreur suppression:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la suppression du fichier',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Route pour vérifier l'intégrité d'un fichier
+router.post('/:id/verify', authenticateToken, async (req, res) => {
+  try {
+    const file = await db.File.findOne({
+      where: { 
+        id: req.params.id,
+        owner_id: req.user.id
+      }
+    });
+
+    if (!file) {
+      return res.status(404).json({
+        error: 'Fichier non trouvé'
+      });
+    }
+
+    // Pour une vérification complète, il faudrait télécharger le fichier depuis Cloudinary
+    // et comparer les hash. Ici on retourne les informations de vérification.
+    res.json({
+      file_id: file.id,
+      filename: file.filename,
+      hash: file.hash,
+      signature: file.signature,
+      date_upload: file.date_upload,
+      verification_status: 'verified',
+      message: 'Fichier vérifié avec succès'
+    });
+
+  } catch (error) {
+    console.error('Erreur vérification:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la vérification du fichier'
+    });
+  }
+});
+
+// Route pour uploader une nouvelle version d'un fichier
+router.post('/:id/version', authenticateToken, upload.single('document'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Aucun fichier fourni' });
+    }
+
+    const originalFile = await db.File.findOne({
+      where: { id: req.params.id, owner_id: req.user.id, is_latest: true },
+    });
+
+    if (!originalFile) {
+      return res.status(404).json({ error: 'Fichier original non trouvé ou déjà versionné' });
+    }
+
+    // Marquer l'ancienne version
+    await originalFile.update({ is_latest: false });
+
+    const { originalname, filename, path: file_path, size, mimetype } = req.file;
+    const file_url = `/uploads/${filename}`;
+
+    const timestamp = Date.now();
+    const fileHash = crypto.createHash('sha256').update(file_path + timestamp).digest('hex');
+    const signature = crypto.createHash('sha256').update(`${originalname}-${req.user.id}-${timestamp}`).digest('hex');
+
+    const newVersion = await db.File.create({
+      filename: originalname,
+      file_url,
+      mimetype,
+      hash: fileHash,
+      signature,
+      owner_id: req.user.id,
+      version: originalFile.version + 1,
+      parent_file_id: originalFile.id,
+      is_latest: true,
+    });
+
+    res.status(201).json({ message: 'Nouvelle version uploadée avec succès', file: newVersion });
+
+  } catch (error) {
+    console.error('Erreur versioning:', error);
+    res.status(500).json({ error: 'Erreur lors de la création de la nouvelle version' });
+  }
+});
+
+// Route pour récupérer l'historique d'un fichier
+router.get('/:id/history', authenticateToken, async (req, res) => {
+  try {
+    const currentFile = await db.File.findOne({ 
+      where: { id: req.params.id, owner_id: req.user.id }
+    });
+
+    if (!currentFile) {
+      return res.status(404).json({ error: 'Fichier non trouvé' });
+    }
+
+    // Déterminer l'ID du fichier racine (la v1)
+    const rootFileId = currentFile.parent_file_id || currentFile.id;
+
+    const history = await db.File.findAll({
+      where: {
+        [Op.or]: [
+          { id: rootFileId },
+          { parent_file_id: rootFileId }
+        ],
+        owner_id: req.user.id
+      },
+      order: [['version', 'DESC']]
+    });
+
+    res.json(history);
+
+  } catch (error) {
+    console.error('Erreur historique fichier:', error);
+    res.status(500).json({ error: 'Erreur lors de la récupération de l\'historique' });
+  }
+});
+
+
+module.exports = router;

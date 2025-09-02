@@ -1,0 +1,56 @@
+.view-mode-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface-color);
+  border-radius: 8px;
+  padding: 4px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.view-mode-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  min-width: 40px;
+  height: 36px;
+}
+
+.view-mode-btn.active {
+  background: var(--bg-primary);
+  color: var(--primary-color);
+}
+
+
+/* Animation pour les icônes */
+.view-mode-btn svg {
+  transition: transform 0.2s ease;
+}
+
+.view-mode-btn.active svg {
+  transform: scale(1.05);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .view-mode-switcher {
+    gap: 0.25rem;
+    padding: 2px;
+  }
+  
+  .view-mode-btn {
+    padding: 6px 10px;
+    min-width: 36px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+}

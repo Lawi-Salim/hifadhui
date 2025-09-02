@@ -1,0 +1,431 @@
+/* Styles pour la liste des images (Ancien) */
+.images-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 1rem;
+}
+
+.image-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.image-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-color);
+}
+
+.image-preview {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--bg-tertiary);
+}
+
+.image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.image-preview:hover img {
+  transform: scale(1.05);
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  color: white;
+}
+
+.image-preview:hover .image-overlay {
+  opacity: 1;
+}
+
+.image-info {
+  padding: 1rem;
+  flex: 1;
+}
+
+.image-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0 0 0.25rem 0;
+}
+
+.image-status {
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+.image-actions {
+  padding: 0 1rem 1rem;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+/* Responsive design (Ancien) */
+@media (max-width: 768px) {
+  .images-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    padding: 0.5rem;
+  }
+  
+  .image-preview {
+    height: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .images-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Styles Modernes --- */
+
+.images-container {
+  padding: 1rem;
+}
+
+.images-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.image-card-modern {
+  position: relative;
+  border-radius: 16px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.image-card-modern:not(.menu-open):hover {
+  transform: translateY(-.5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  /* border-color: var(--primary-color-light); */
+}
+
+.image-card-modern .image-preview-modern {
+  position: relative;
+  height: 145px;
+  cursor: pointer;
+  overflow: hidden;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+}
+
+.image-card-modern img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.image-card-modern:not(.menu-open):hover img {
+  transform: scale(1.05);
+}
+
+.image-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+.image-details .image-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px; /* Adjust as needed */
+}
+
+.image-details .image-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.image-action.hash-text {
+  word-break: break-all;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+.image-actions-menu {
+  position: relative;
+}
+
+.kebab-menu-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+}
+
+.kebab-menu-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Styles pour le menu d'actions supprimés - utiliser ActionMenuDropdown */
+
+.image-actions-menu {
+  position: relative;
+}
+
+.kebab-menu-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.kebab-menu-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Styles pour le menu d'actions supprimés - utiliser ActionMenuDropdown */
+
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .images-grid-modern {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .image-card-modern .image-preview-modern {
+    height: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .images-grid-modern {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .images-container {
+    padding: 0.5rem;
+  }
+}
+
+/* --- Card & Layout Styles --- */
+
+.file-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  /* border-bottom: 1px solid var(--border-color); */
+}
+
+/* --- Modal Details Styles --- */
+
+.modal-content-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .modal-content-grid {
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+  }
+}
+
+.modal-image-container {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.modal-image-preview {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  display: block;
+}
+
+.watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  color: rgba(0, 0, 0, 0.15);
+  font-size: 1.75rem;
+  font-weight: bold;
+  pointer-events: none;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.685);
+}
+
+.modal-details-container h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.75rem;
+}
+
+.detail-section:not(:last-child) {
+  margin-bottom: 1.5rem;
+}
+
+.details-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.6rem 1rem;
+  font-size: 0.9rem;
+}
+
+.details-list dt {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.details-list dd {
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.details-list dd.hash-text {
+  font-size: 0.8rem;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+/* --- Styles pour la sélection multiple --- */
+
+.selection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: var(--primary-color-light);
+  border-radius: var(--border-radius);
+  margin-bottom: 1rem;
+  color: var(--primary-color-dark);
+}
+
+.image-card-modern.selected {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.image-card-modern .selection-checkbox {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 5;
+}
+
+.image-card-modern .selection-checkbox input {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.image-card-modern.selected .image-preview-modern::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(var(--primary-color-rgb), 0.1);
+  border-radius: 16px 16px 0 0;
+}
+
+.image-preview-modern::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0);
+  transition: background-color 0.3s ease;
+  border-radius: 16px 16px 0 0;
+}
+
+.image-card-modern:hover .image-preview-modern::after {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.watermark-grid {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 1.1rem;
+  font-weight: 600;
+  pointer-events: none;
+  opacity: 1; /* Toujours visible */
+  transition: color 0.3s ease;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.image-card-modern:hover .watermark-grid {
+  color: rgba(255, 255, 255, 0.7);
+}

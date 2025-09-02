@@ -1,0 +1,21 @@
+.activity-list table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.activity-list th,
+.activity-list td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.activity-list th {
+  background-color: var(--secondary-background-color);
+  font-weight: 600;
+}
+
+.activity-list tbody tr:hover {
+  background-color: var(--hover-color);
+}

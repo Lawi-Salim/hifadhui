@@ -1,0 +1,57 @@
+.actions-menu {
+  position: absolute;
+  right: 0;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 9999;
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+}
+
+.actions-menu.position-bottom {
+  top: 100%;
+}
+
+.actions-menu.position-top {
+  bottom: 100%;
+}
+
+.actions-menu .menu-item {
+  background: none;
+  border: none;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  transition: background-color 0.2s ease;
+}
+
+.actions-menu .menu-item:hover {
+  background-color: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+}
+
+.actions-menu .menu-item.danger {
+  color: var(--error-color);
+}
+
+.actions-menu .menu-item.danger:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Assurer que le menu s'affiche au-dessus des cartes sans affecter l'apparence */
+.image-card-modern.menu-open {
+  z-index: 1000;
+}
+
+.image-card-modern.menu-open .image-actions-menu {
+  overflow: visible !important;
+  z-index: 10000;
+}
