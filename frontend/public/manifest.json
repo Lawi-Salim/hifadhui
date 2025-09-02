@@ -3,14 +3,14 @@
   "name": "hifadhwi - Coffre-fort Numérique",
   "icons": [
     {
-      "src": "favicon.png",
+      "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/png"
+      "type": "image/ico"
     },
     {
-      "src": "favicon-black.png",
+      "src": "favicon-black.ico",
       "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/png"
+      "type": "image/ico"
     }
   ],
   "start_url": ".",
