@@ -29,7 +29,9 @@
   ],
   "functions": {
     "backend/server.js": {
-      "postbuild": "cd backend && yarn postbuild"
+      "includeFiles": "backend/**"
     }
-  }
+  },
+  "installCommand": "yarn install && cd backend && yarn install",
+  "buildCommand": "cd frontend && yarn build && cd ../backend && yarn postbuild"
 }
