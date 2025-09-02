@@ -3,40 +3,20 @@
   "builds": [
     {
       "src": "backend/server.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
+      "use": "@vercel/node",
       "config": {
-        "distDir": "build"
+        "maxDuration": 30,
+        "maxLambdaSize": 10240
       }
+    },
+    { "src": "frontend/package.json", 
+      "use": "@vercel/static-build", 
+      "config": { "distDir": "build", "maxDuration": 30, "maxLambdaSize": 10240 } 
     }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "backend/server.js"
-    },
-    {
-      "src": "/favicon.ico",
-      "dest": "/frontend/build/favicon.png"
-    },
-    {
-      "src": "/static/(.*)",
-      "dest": "/frontend/build/static/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/build/$1"
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/build/index.html"
-    }
+    { "src": "/api/(.*)", "dest": "/backend/server.js" },
+    { "src": "/(.*)", "dest": "/frontend/$1" }
   ],
   "env": {
     "NODE_ENV": "production"
