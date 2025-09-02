@@ -68,10 +68,6 @@ Le projet est construit sur une architecture full-stack moderne et découplée :
 - **Base de Données** : **PostgreSQL** pour sa fiabilité et ses fonctionnalités avancées, utilisée pour stocker les métadonnées des fichiers, les informations des utilisateurs et les certificats.
 - **Stockage d'objets** : **Cloudinary** pour le stockage et la manipulation à la volée des fichiers médias (images, PDFs).
 
-<p align="center">
-  <img src="https://i.imgur.com/gA2G3gT.png" alt="Architecture Diagram" width="700"/>
-</p>
-
 ## 🚀 Démarrage Rapide
 
 Suivez ces étapes pour lancer le projet en local.
