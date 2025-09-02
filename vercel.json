@@ -10,11 +10,7 @@
     },
     {
       "src": "backend/server.js",
-      "use": "@vercel/node",
-      "config": {
-        "maxDuration": 30,
-        "maxLambdaSize": 10240
-      }
+      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -26,10 +22,5 @@
       "src": "/(.*)",
       "dest": "/frontend/build/index.html"
     }
-  ],
-  "functions": {
-    "backend/server.js": {
-      "includeFiles": "backend/**"
-    }
-  }
+  ]
 }
