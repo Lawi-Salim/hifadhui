@@ -67,7 +67,7 @@ const Utilisateur = sequelize.define('Utilisateur', {
     defaultValue: 'user'
   }
 }, {
-  tableName: 'Utilisateur',
+  tableName: 'utilisateur',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
@@ -92,31 +92,8 @@ async function createAdmin() {
       await sequelize.authenticate();
       console.log('✅ Connexion à la base de données réussie');
       
-      // Vérifier si les tables existent
-      console.log('🔍 [DEBUG] Vérification de l\'existence des tables...');
-      try {
-        const [results] = await sequelize.query(`
-          SELECT table_name 
-          FROM information_schema.tables 
-          WHERE table_schema = 'public' 
-          AND table_name IN ('Utilisateur', 'Dossier', 'File', 'Certificate')
-          ORDER BY table_name;
-        `);
-        
-        console.log('📋 [DEBUG] Tables trouvées:', results.map(r => r.table_name));
-        
-        if (results.length === 0) {
-          console.log('⚠️  [WARNING] Aucune table trouvée! Le schéma n\'a pas été exécuté.');
-          console.log('📝 [INFO] Vous devez exécuter le fichier schema-psql.sql dans Supabase SQL Editor');
-          return;
-        }
-        
-        // Créer l'admin par défaut seulement si les tables existent
-        await createAdminDefault();
-        
-      } catch (tableError) {
-        console.error('❌ Erreur lors de la vérification des tables:', tableError.message);
-      }
+      // Créer l'admin par défaut
+      await createAdminDefault();
       
     } catch (error) {
       console.error('❌ Erreur de connexion à la base de données:', error);
