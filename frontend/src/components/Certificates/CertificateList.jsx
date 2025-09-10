@@ -91,15 +91,6 @@ const CertificateList = () => {
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      year: 'numeric',
-      month: 'short',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const filteredCertificates = certificates.filter(cert => 
     cert.certificateFile && 
@@ -113,7 +104,6 @@ const CertificateList = () => {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentCertificates = filteredCertificates.slice(indexOfFirstItem, indexOfLastItem);
 
-  const paginate = pageNumber => setCurrentPage(pageNumber);
   
   // Calculer les informations de pagination
   const totalPages = Math.ceil(filteredCertificates.length / itemsPerPage);
@@ -142,10 +132,6 @@ const CertificateList = () => {
     isCertificate: true
   }));
 
-  const handleCertificateDownload = (cert) => {
-    const originalCert = certificates.find(c => c.id === cert.id);
-    handleDownload(originalCert.id, originalCert.certificateFile.filename);
-  };
 
   const handleCertificateView = (cert) => {
     const originalCert = certificates.find(c => c.id === cert.id);

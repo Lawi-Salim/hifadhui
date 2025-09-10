@@ -178,8 +178,10 @@ export const downloadSelectedItemsAsZip = async (selectedItems, onProgress = nul
   }
 };
 
-export default {
+const downloadService = {
   downloadSelectedItemsAsZip,
   generateZipFileName,
   getFileType
 };
+
+export default downloadService;

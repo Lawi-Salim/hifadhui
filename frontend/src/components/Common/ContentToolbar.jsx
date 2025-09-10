@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import ViewModeSwitcher from './ViewModeSwitcher';
-import Pagination from '../Pagination';
+import React from 'react';
+import { FiGrid, FiList } from 'react-icons/fi';
 import './ContentToolbar.css';
 import { FaTrash, FaCheck, FaDownload } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';

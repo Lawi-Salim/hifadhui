@@ -10,7 +10,6 @@ import {
 } from 'react-icons/fa';
 import { createSlug, fixEncoding } from '../../utils/textUtils';
 import { FiFilePlus } from 'react-icons/fi';
-import ShareModal from '../Files/ShareModal';
 import PdfPreview from './PdfPreview';
 import ActionMenu from './ActionMenu';
 import FormattedText from './FormattedText';
@@ -43,7 +42,6 @@ const ItemList = ({
   hasMore,
   loading
 }) => {
-  const [selectedFile, setSelectedFile] = useState(null);
   const localMenuButtonRefs = useRef({});
   const refs = menuButtonRefs || localMenuButtonRefs;
 
@@ -77,18 +75,6 @@ const ItemList = ({
   };
 
 
-  const handleOpenShareModal = (file) => {
-    // Utiliser les handlers passés en props si disponibles
-    if (customPreviewHandler) {
-      customPreviewHandler(file);
-    } else {
-      setSelectedFile(file);
-    }
-  };
-
-  const handleCloseDetailModal = () => {
-    setSelectedFile(null);
-  };
 
 
   useEffect(() => {

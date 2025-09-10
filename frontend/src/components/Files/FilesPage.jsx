@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { FaPlus, FaUpload, FaTrash, FaEdit, FaDownload, FaShare, FaFilter, FaSearch } from 'react-icons/fa';
+import React, { useState } from 'react';
+import { FaPlus, FaFolderOpen } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';
 import fileService from '../../services/fileService';
 import api from '../../services/api';
@@ -37,8 +37,8 @@ const FilesPage = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
-  const [batchDeleteLoading, setBatchDeleteLoading] = useState(false);
-  const [deleteProgress, setDeleteProgress] = useState(0);
+  const [, setBatchDeleteLoading] = useState(false);
+  const [, setDeleteProgress] = useState(0);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [fileToPreview, setFileToPreview] = useState(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);

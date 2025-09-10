@@ -1,14 +1,7 @@
-const app = require('../backend/server.js');
+// Point d'entrée Vercel avec logs détaillés
+console.log(' [VERCEL] Chargement du point d\'entrée API Vercel');
+console.log(' [VERCEL] Chemin actuel:', __dirname);
+console.log(' [VERCEL] Redirection vers backend/server.js');
 
-// Exécuter le script de création d'admin au démarrage en production
-(async () => {
-  try {
-    console.log('Initialisation de l\'admin par défaut...');
-    const createAdmin = require('../backend/scripts/create-admin.js');
-    await createAdmin();
-  } catch (error) {
-    console.error('Erreur lors de l\'initialisation admin:', error);
-  }
-})();
+module.exports = require('../backend/server');
 
-module.exports = app;

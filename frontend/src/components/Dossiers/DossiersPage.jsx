@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaFolder, FaFolderOpen, FaFile, FaImage, FaFilePdf, FaFileAlt, FaPlus, FaTrash, FaEdit, FaDownload, FaShare } from 'react-icons/fa';
+import { FaFolder, FaPlus } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';
 import FolderTreeView from './FolderTreeView';
 import FolderContentView from './FolderContentView';
@@ -24,7 +24,7 @@ const DossiersPage = () => {
   const [dossiers, setDossiers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [pagination, setPagination] = useState({
+  const [, setPagination] = useState({
     page: 1,
     totalPages: 1,
     total: 0
@@ -60,8 +60,8 @@ const DossiersPage = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedDossiers, setSelectedDossiers] = useState([]);
   const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
-  const [batchDeleteLoading, setBatchDeleteLoading] = useState(false);
-  const [deleteProgress, setDeleteProgress] = useState(0);
+  const [, setBatchDeleteLoading] = useState(false);
+  const [, setDeleteProgress] = useState(0);
   const [showTreePanel, setShowTreePanel] = useState(false);
   const { viewMode, setViewMode } = useViewMode();
   
@@ -146,9 +146,6 @@ const DossiersPage = () => {
     );
   };
 
-  const handleFileAction = (file) => {
-    console.log('Action sur fichier:', file);
-  };
 
   const handleFileDownload = async (file) => {
     try {
@@ -227,11 +224,6 @@ const DossiersPage = () => {
     setIsFileUploadModalOpen(true);
   };
 
-    const toggleMenu = (e, dossierId, position = 'bottom') => {
-    e.preventDefault();
-    e.stopPropagation();
-    setActiveMenu(activeMenu?.id === dossierId ? null : { id: dossierId, position });
-  };
 
     const handleOpenRenameModal = (e, dossier) => {
     if (e) {
@@ -366,66 +358,11 @@ const DossiersPage = () => {
     setFileToDelete(null);
   };
 
-  const handleBatchDelete = () => {
-    if (selectedDossiers.length === 0) return;
-    setIsBatchDeleteModalOpen(true);
-  };
-
-  const handleConfirmBatchDelete = async () => {
-    setBatchDeleteLoading(true);
-    setDeleteProgress(0);
-    
-    try {
-      const totalDossiers = selectedDossiers.length;
-      
-      // Supprimer tous les dossiers sélectionnés avec progression
-      for (let i = 0; i < selectedDossiers.length; i++) {
-        const dossierId = selectedDossiers[i];
-        await dossierService.deleteDossier(dossierId);
-        
-        // Mettre à jour la progression
-        const progress = Math.round(((i + 1) / totalDossiers) * 100);
-        setDeleteProgress(progress);
-        
-        // Petite pause pour voir la progression
-        if (i < selectedDossiers.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-      }
-      
-      // Attendre un peu pour montrer 100%
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Mettre à jour la liste des dossiers
-      setDossiers(dossiers.filter(d => !selectedDossiers.includes(d.id)));
-      setSelectedDossiers([]);
-      setIsSelectionMode(false);
-    } catch (error) {
-      console.error('Erreur lors de la suppression en lot:', error);
-    } finally {
-      setBatchDeleteLoading(false);
-      setDeleteProgress(0);
-      setIsBatchDeleteModalOpen(false);
-    }
-  };
-
   const handleUploadFinished = () => {
     setIsUploadModalOpen(false);
     fetchDossiers(); // Rafraîchit la liste pour mettre à jour le compteur de fichiers
   };
 
-  const toggleSelectionMode = () => {
-    setIsSelectionMode(!isSelectionMode);
-    setSelectedDossiers([]); // Réinitialiser la sélection en changeant de mode
-  };
-
-  const handleSelectDossier = (dossierId) => {
-    setSelectedDossiers(prevSelected =>
-      prevSelected.includes(dossierId)
-        ? prevSelected.filter(id => id !== dossierId)
-        : [...prevSelected, dossierId]
-    );
-  };
 
   const handleSelectAll = () => {
     if (selectedDossiers.length === dossiers.length) {

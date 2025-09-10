@@ -78,4 +78,11 @@ class BulkActionsService {
   }
 }
 
-export default new BulkActionsService();
+const bulkActionsService = {
+  batchDelete: BulkActionsService.prototype.deleteItems,
+  batchDownload: null,
+  batchMove: BulkActionsService.prototype.moveItems,
+  batchCopy: BulkActionsService.prototype.copyItems
+};
+
+export default bulkActionsService;

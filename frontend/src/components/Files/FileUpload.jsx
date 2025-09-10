@@ -10,7 +10,6 @@ const FileUpload = () => {
   const [dragActive, setDragActive] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const fileInputRef = useRef(null);
-  const navigate = useNavigate();
 
   // Hook centralisé pour la progression globale (upload + extraction)
   const globalProgressBar = useProgressBar({ 
@@ -130,12 +129,15 @@ const FileUpload = () => {
       const uploadRoute = isZip ? '/files/upload-zip' : '/files/upload';
       
       const response = await api.post(uploadRoute, formData, {
-        // L'intercepteur d'api.js s'occupe du header d'authentification
-        // et le Content-Type est géré automatiquement par le navigateur pour FormData.
-        timeout: 300000, // 5 minutes pour les gros fichiers
-        onUploadProgress: (progressEvent) => {
-          // On ignore pour garder la progression évolutive
+        headers: {
+          'Content-Type': 'multipart/form-data'
         },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
+        }
       });
 
       // Compléter la progression
@@ -169,13 +171,6 @@ const FileUpload = () => {
     fileInputRef.current?.click();
   };
 
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
 
   return (
     <div className="upload-page">

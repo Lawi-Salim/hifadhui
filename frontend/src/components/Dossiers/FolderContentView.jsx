@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { FaFolder } from 'react-icons/fa';
 import { FiUpload } from 'react-icons/fi';
 import ItemList from '../Common/ItemList';
-import ContentToolbar from '../Common/ContentToolbar';
 import BulkActionsManager from '../Common/BulkActionsManager';
 import FileDetailModal from '../Common/FileDetailModal';
 import { useDownloadZip, DownloadProgressIndicator } from '../Common/DownloadZip';

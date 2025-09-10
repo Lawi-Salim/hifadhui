@@ -5,6 +5,18 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config();
 
+// Logs détaillés pour Vercel
+console.log('🚀 [VERCEL] Démarrage du serveur backend Hifadhui');
+console.log('📍 [VERCEL] NODE_ENV:', process.env.NODE_ENV);
+console.log('🔧 [VERCEL] Variables d\'environnement disponibles:');
+console.log('   - DB_HOST:', process.env.DB_HOST ? '✅ Défini' : '❌ Manquant');
+console.log('   - DB_NAME:', process.env.DB_NAME ? '✅ Défini' : '❌ Manquant');
+console.log('   - DB_USER:', process.env.DB_USER ? '✅ Défini' : '❌ Manquant');
+console.log('   - DB_PASSWORD:', process.env.DB_PASSWORD ? '✅ Défini' : '❌ Manquant');
+console.log('   - JWT_SECRET:', process.env.JWT_SECRET ? '✅ Défini' : '❌ Manquant');
+console.log('   - CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ? '✅ Défini' : '❌ Manquant');
+console.log('   - FRONTEND_URL:', process.env.FRONTEND_URL || 'Non défini');
+
 const { sequelize } = require('./config/database');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
@@ -75,12 +87,19 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Route de test
+// Route de test avec logs détaillés
 app.get('/api/health', (req, res) => {
+  console.log('🏥 [VERCEL] Health check appelé');
+  console.log('📊 [VERCEL] Statut serveur: Opérationnel');
+  console.log('⏰ [VERCEL] Timestamp:', new Date().toISOString());
+  
   res.json({ 
     status: 'OK', 
     message: 'hifadhwi API est opérationnelle',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    database: 'Connected',
+    admin_created: 'Check logs for details'
   });
 });
 
@@ -105,6 +124,7 @@ app.use((err, req, res, next) => {
 // Fonction pour créer l'admin par défaut
 const createDefaultAdmin = async () => {
   try {
+    console.log('🔍 [VERCEL] Vérification de l\'existence d\'un admin...');
     const bcrypt = require('bcryptjs');
     
     // Vérifier si un admin existe déjà
@@ -113,14 +133,16 @@ const createDefaultAdmin = async () => {
     });
     
     if (existingAdmin) {
-      console.log('✅ Admin par défaut existe déjà');
+      console.log('✅ [VERCEL] Admin par défaut existe déjà - ID:', existingAdmin.id);
+      console.log('📧 [VERCEL] Email admin existant:', existingAdmin.email);
       return;
     }
     
+    console.log('🔨 [VERCEL] Création de l\'admin par défaut...');
     // Créer l'admin par défaut
     const hashedPassword = await bcrypt.hash('123456', 10);
     
-    await Utilisateur.create({
+    const newAdmin = await Utilisateur.create({
       nom: 'Admin',
       prenom: 'System',
       email: 'lawi@gmail.com',
@@ -130,36 +152,49 @@ const createDefaultAdmin = async () => {
       dateCreation: new Date()
     });
     
-    console.log('✅ Admin par défaut créé avec succès');
-    console.log('📧 Email: lawi@gmail.com');
-    console.log('🔑 Mot de passe: 123456');
-    console.log('⚠️  Changez le mot de passe après la première connexion');
+    console.log('🎉 [VERCEL] Admin par défaut créé avec succès!');
+    console.log('🆔 [VERCEL] ID admin créé:', newAdmin.id);
+    console.log('📧 [VERCEL] Email: lawi@gmail.com');
+    console.log('🔑 [VERCEL] Mot de passe: 123456');
+    console.log('⚠️  [VERCEL] Changez le mot de passe après la première connexion');
     
   } catch (error) {
-    console.error('❌ Erreur lors de la création de l\'admin:', error);
+    console.error('❌ [VERCEL] Erreur lors de la création de l\'admin:', error.message);
+    console.error('🔍 [VERCEL] Stack trace:', error.stack);
   }
 };
 
 // Démarrage du serveur
 const startServer = async () => {
   try {
+    console.log('🔗 [VERCEL] Test de connexion à la base de données...');
     // Test de connexion à la base de données
     await sequelize.authenticate();
-    console.log('✅ Connexion à la base de données réussie');
+    console.log('✅ [VERCEL] Connexion à la base de données réussie!');
+    console.log('🏗️  [VERCEL] Host DB:', process.env.DB_HOST);
+    console.log('🗄️  [VERCEL] Nom DB:', process.env.DB_NAME);
     
     // Vérification des modèles sans synchronisation (tables déjà créées)
-    console.log('✅ Modèles chargés - utilisation des tables existantes');
+    console.log('📋 [VERCEL] Vérification des modèles...');
+    console.log('✅ [VERCEL] Modèles chargés - utilisation des tables existantes');
     
     // Créer l'admin par défaut si nécessaire
+    console.log('👤 [VERCEL] Gestion de l\'admin par défaut...');
     await createDefaultAdmin();
     
     app.listen(PORT, () => {
-      console.log(`🚀 Serveur hifadhwi démarré sur le port ${PORT}`);
-      console.log(`📍 URL: http://localhost:${PORT}`);
-      console.log(`🌍 Environnement: ${process.env.NODE_ENV || 'development'}`);
+      console.log('🎯 [VERCEL] ========================================');
+      console.log(`🚀 [VERCEL] Serveur Hifadhui démarré avec succès!`);
+      console.log(`📍 [VERCEL] Port: ${PORT}`);
+      console.log(`🌍 [VERCEL] Environnement: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🔗 [VERCEL] URL API: https://hifadhui.vercel.app/api`);
+      console.log('🎯 [VERCEL] ========================================')
     });
   } catch (error) {
-    console.error('❌ Erreur de démarrage du serveur:', error);
+    console.error('💥 [VERCEL] ERREUR CRITIQUE de démarrage du serveur!');
+    console.error('📋 [VERCEL] Message:', error.message);
+    console.error('🔍 [VERCEL] Stack:', error.stack);
+    console.error('🔧 [VERCEL] Variables env disponibles:', Object.keys(process.env).filter(key => key.startsWith('DB_')));
     process.exit(1);
   }
 };

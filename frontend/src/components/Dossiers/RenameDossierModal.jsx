@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import dossierService from '../../services/dossierService';
-import { createSlug } from '../../utils/textUtils';
 
 const RenameDossierModal = ({ isOpen, onClose, dossier, onDossierRenamed }) => {
   const [newName, setNewName] = useState('');

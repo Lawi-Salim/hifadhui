@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { FaPlus, FaUpload, FaTrash, FaEdit, FaDownload, FaShare, FaFilter, FaSearch } from 'react-icons/fa';
+import React, { useState } from 'react';
+import { FaPlus, FaFolderOpen } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';
 import api from '../../services/api';
 import ItemList from '../Common/ItemList';
@@ -62,14 +62,9 @@ const ImageList = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [imageToDelete, setImageToDelete] = useState(null);
   const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
-  const [batchDeleteLoading, setBatchDeleteLoading] = useState(false);
-  const [deleteProgress, setDeleteProgress] = useState(0);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [imageToRename, setImageToRename] = useState(null);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [imageToShare, setImageToShare] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const menuButtonRefs = useRef({});
 
   const handleDownload = async (image) => {
     try {

@@ -173,12 +173,12 @@ export const useProgressBar = (options = {}) => {
    * Arrête la progression (avec délai optionnel)
    */
   const stopProgress = useCallback((delay = 0) => {
+    setIsActive(false);
     const cleanup = () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-      setIsActive(false);
     };
 
     if (delay > 0) {

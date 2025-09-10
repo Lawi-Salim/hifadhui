@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FaFolder } from 'react-icons/fa';
 import { FiChevronsRight, FiChevronsDown, FiChevronRight, FiChevronDown } from 'react-icons/fi';
-import { createSlug, fixEncoding } from '../../utils/textUtils';
 import ActionMenu from '../Common/ActionMenu';
 import './FolderTreeView.css';
 

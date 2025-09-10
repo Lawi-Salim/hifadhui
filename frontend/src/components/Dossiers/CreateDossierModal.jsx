@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Modal from '../Modal';
 import dossierService from '../../services/dossierService';
-import { createSlug } from '../../utils/textUtils';
 
 const CreateDossierModal = ({ isOpen, onClose, onDossierCreated, parentId = null }) => {
   const [name, setName] = useState('');

@@ -6,7 +6,7 @@ import { FiFolder, FiFileText, FiLock, FiUpload, FiFile, FiBarChart2, FiMenu } f
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const { user, forceLogout } = useAuth();
+  const { } = useAuth();
   const [stats, setStats] = useState({
     totalFiles: 0,
     totalCertificates: 0,

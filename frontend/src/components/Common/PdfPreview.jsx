@@ -4,7 +4,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
 const PdfPreview = ({ fileUrl, fileId, className }) => {
-  const [numPages, setNumPages] = useState(null);
+  const [, setNumPages] = useState(null);
 
   // Tous les hooks doivent être appelés avant les returns conditionnels
   const fullFileUrl = useMemo(() => {
