@@ -1,6 +1,16 @@
 const { Sequelize } = require('sequelize');
 const bcrypt = require('bcryptjs');
 
+// [DEBUG] Affichage des variables d'environnement pour diagnostic
+console.log('[DEBUG] Variables d\'environnement utilisées:');
+console.log('DB_HOST:', process.env.DB_HOST);
+console.log('DB_PORT:', process.env.DB_PORT);
+console.log('DB_NAME:', process.env.DB_NAME);
+console.log('DB_USER:', process.env.DB_USER);
+console.log('DB_PASSWORD:', process.env.DB_PASSWORD ? '[DÉFINI]' : '[NON DÉFINI]');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('VERCEL:', process.env.VERCEL);
+
 // Configuration de base de données directe pour Vercel
 const sequelize = new Sequelize(
   process.env.DB_NAME || 'postgres',
