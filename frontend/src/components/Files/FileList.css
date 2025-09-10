@@ -350,6 +350,8 @@
   margin-top: 1rem;
 }
 
+/* Structure my-space-title centralisée dans index.css */
+
 /* Responsive design for files */
 @media (max-width: 768px) {
   .file-item {
@@ -364,6 +366,131 @@
   
   .upload-zone {
     padding: 2rem 1rem;
+  }
+}
+
+/* Responsive Mobile */
+@media (max-width: 600px) {
+  .container {
+    padding: 8px;
+  }
+  
+  .my-space-title h1 {
+    font-size: 1.5rem;
+  }
+  
+  .my-space-title p {
+    font-size: 0.8rem;
+  }
+  
+  .file-list-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 0;
+  }
+  
+  .header-right {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  /* Boutons d'action plus compacts */
+  .btn {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+  
+  .btn-primary {
+    padding: 10px 16px;
+  }
+  
+  /* Grid adaptatif pour mobile */
+  .dossiers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+  
+  /* Cartes plus compactes */
+  .image-card-modern {
+    border-radius: 12px;
+  }
+  
+  .image-card-modern .image-preview-modern {
+    height: 120px;
+  }
+  
+  .image-info {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .image-details .image-name {
+    font-size: 0.8rem;
+    max-width: 120px;
+  }
+  
+  .image-details .image-date {
+    font-size: 0.7rem;
+  }
+  
+  /* Liste plus compacte */
+  .content-item.list {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  
+  .item-name {
+    font-size: 13px;
+  }
+  
+  .item-details {
+    font-size: 11px;
+  }
+  
+  /* Toolbar mobile */
+  .inline-toolbar {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  .inline-toolbar .btn {
+    padding: 6px 8px;
+    font-size: 0.75rem;
+  }
+  
+  /* Indicateurs de chargement mobile */
+  .text-center.py-4 {
+    padding: 1rem 0;
+  }
+  
+  .text-center.py-4 div {
+    font-size: 0.8rem;
+    padding: 8px 12px;
+  }
+  
+  /* Messages d'état mobile */
+  .files-loading,
+  .files-error {
+    padding: 2rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Responsive Tablet */
+@media (max-width: 768px) and (min-width: 601px) {
+  .file-list-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .dossiers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
   }
 }
 

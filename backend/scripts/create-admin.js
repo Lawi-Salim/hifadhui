@@ -1,6 +1,73 @@
-const { sequelize } = require('../config/database');
-const Utilisateur = require('../models/Utilisateur');
+const { Sequelize } = require('sequelize');
 const bcrypt = require('bcryptjs');
+
+// Configuration de base de données directe pour Vercel
+const sequelize = new Sequelize(
+  process.env.DB_NAME || 'postgres',
+  process.env.DB_USER || 'postgres', 
+  process.env.DB_PASSWORD,
+  {
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT || 5432,
+    dialect: 'postgres',
+    logging: false,
+    dialectOptions: {
+      ssl: process.env.NODE_ENV === 'production' ? {
+        require: true,
+        rejectUnauthorized: false
+      } : false
+    },
+    pool: {
+      max: process.env.VERCEL ? 2 : 5,
+      min: 0,
+      acquire: 10000,
+      idle: 5000,
+    }
+  }
+);
+
+// Définition du modèle Utilisateur directement
+const Utilisateur = sequelize.define('Utilisateur', {
+  id: {
+    type: Sequelize.UUID,
+    defaultValue: Sequelize.UUIDV4,
+    primaryKey: true
+  },
+  username: {
+    type: Sequelize.STRING(100),
+    allowNull: false
+  },
+  email: {
+    type: Sequelize.STRING(255),
+    allowNull: false,
+    unique: true
+  },
+  password: {
+    type: Sequelize.STRING(255),
+    allowNull: false
+  },
+  role: {
+    type: Sequelize.STRING(20),
+    defaultValue: 'user'
+  }
+}, {
+  tableName: 'Utilisateur',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  hooks: {
+    beforeCreate: async (user) => {
+      if (user.password) {
+        user.password = await bcrypt.hash(user.password, 12);
+      }
+    },
+    beforeUpdate: async (user) => {
+      if (user.changed('password')) {
+        user.password = await bcrypt.hash(user.password, 12);
+      }
+    }
+  }
+});
 
 async function createAdmin() {
   try {

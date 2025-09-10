@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
-import { FiFolder, FiFileText, FiLock, FiUpload, FiFile, FiBarChart2 } from 'react-icons/fi';
+import { FiFolder, FiFileText, FiLock, FiUpload, FiFile, FiBarChart2, FiMenu } from 'react-icons/fi';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -61,15 +61,23 @@ const Dashboard = () => {
   return (
     <div className="dashboard">
       <div className="container">
-        
-        {/* <div className="dashboard-header">
-          <h1 className="dashboard-title">
-            Bonjour, {user?.username}
-          </h1>
-          <p className="dashboard-subtitle">
-            Voici un aperçu de votre coffre-fort numérique
-          </p>
-        </div> */}
+        <div className="flex justify-between items-center mb-6">
+          <div className='my-space-title'>
+            <button 
+              className="mobile-hamburger-menu"
+              onClick={() => {
+                const event = new CustomEvent('toggleSidebar');
+                window.dispatchEvent(event);
+              }}
+              aria-label="Toggle menu"
+            >
+              <FiMenu />
+            </button>
+            <div className="title-content">
+              <h1 className="text-2xl font-bold">Dashboard</h1>
+            </div>
+          </div>
+        </div>
 
         <div className="stats-grid">
           <div className="stat-card">
@@ -140,7 +148,11 @@ const Dashboard = () => {
                           {getFileIcon(file.filename)}
                         </div>
                         <div className="recent-file-details">
-                          <div className="recent-file-name">{file.filename}</div>
+                          <div className="recent-file-name" title={file.filename}>
+                            {file.filename && file.filename.length > 30 
+                              ? file.filename.substring(0, 27) + '...' 
+                              : file.filename}
+                          </div>
                           <div className="recent-file-meta">
                             Uploadé le {formatDate(file.date_upload)} • 
                             Version {file.version}

@@ -1,26 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { FaPlus, FaUpload, FaTrash, FaEdit, FaDownload, FaShare, FaFilter, FaSearch } from 'react-icons/fa';
+import { FiMenu } from 'react-icons/fi';
 import api from '../../services/api';
-import { FiImage, FiUpload, FiTrash2 } from 'react-icons/fi';
-import Pagination from '../Pagination';
-import ViewModeSwitcher from '../Common/ViewModeSwitcher';
 import ItemList from '../Common/ItemList';
-import FileDetailModal from '../Common/FileDetailModal';
 import DeleteFileModal from '../Common/DeleteFileModal';
-import DeleteBatchModal from './DeleteBatchModal';
 import RenameFileModal from '../Common/RenameFileModal';
-import ShareModal from '../Files/ShareModal';
+import FileDetailModal from '../Common/FileDetailModal';
+import ContentToolbar from '../Common/ContentToolbar';
+import DeleteBatchModal from '../Common/DeleteBatchModal';
+import BulkActionsManager from '../Common/BulkActionsManager';
+import { useDownloadZip, DownloadProgressIndicator } from '../Common/DownloadZip';
+import useInfiniteScroll from '../../hooks/useInfiniteScroll';
+import { Link } from 'react-router-dom';
 import './Images.css';
 
 const ImageList = () => {
-  const { user } = useAuth();
-  const [images, setImages] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState({});
-  const [currentPage, setCurrentPage] = useState(1);
-  const [message, setMessage] = useState({ type: '', text: '' });
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('grid');
   const [selectedImage, setSelectedImage] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
 
@@ -35,68 +30,46 @@ const ImageList = () => {
     
     return spaceBelow < menuHeight ? 'top' : 'bottom';
   };
+
+  // Fonction pour récupérer les images avec le bon format pour useInfiniteScroll
+  const fetchImagesForInfiniteScroll = async (params) => {
+    const response = await api.get('/files', { 
+      params: { ...params, type: 'image' }
+    });
+    return response;
+  };
+
+  // Hook pour le scroll infini
+  const {
+    items: images,
+    loading,
+    hasMore,
+    error,
+    totalCount,
+    lastItemRef,
+    refresh
+  } = useInfiniteScroll(fetchImagesForInfiniteScroll, { limit: 20 });
+
+  // Hook pour le téléchargement ZIP
+  const {
+    progressBar,
+    handleDownloadZip,
+    clearError
+  } = useDownloadZip();
+
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [imageToDelete, setImageToDelete] = useState(null);
   const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
+  const [batchDeleteLoading, setBatchDeleteLoading] = useState(false);
+  const [deleteProgress, setDeleteProgress] = useState(0);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [imageToRename, setImageToRename] = useState(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [imageToShare, setImageToShare] = useState(null);
-  const [viewMode, setViewMode] = useState('grid');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const menuButtonRefs = useRef({});
-
-  useEffect(() => {
-    fetchImages(1);
-
-    const handleClickOutside = (event) => {
-      if (!event.target.closest('.actions-menu') && 
-          !event.target.closest('.btn-menu') &&
-          !event.target.closest('.modal-overlay') &&
-          !event.target.closest('.modal-content')) {
-        setOpenMenuId(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // Fonction pour construire l'URL complète des images
-  const getImageUrl = (fileUrl) => {
-    if (!fileUrl) return ''; // Gérer le cas où fileUrl est null ou undefined
-    if (fileUrl.startsWith('http')) {
-      return fileUrl; // URL complète déjà fournie
-    } else if (fileUrl.startsWith('hifadhwi/') || /^v\d+\/hifadhwi\//.test(fileUrl) ||
-               fileUrl.startsWith('hifadhui/') || /^v\d+\/hifadhui\//.test(fileUrl)) {
-      // Chemin relatif Cloudinary (avec ou sans version)
-      // Support des anciens chemins hifadhui/ et nouveaux hifadhwi/
-      return `https://res.cloudinary.com/ddxypgvuh/image/upload/${fileUrl}`;
-    } else {
-      // Chemin local
-      return `${process.env.REACT_APP_API_BASE_URL}${fileUrl}`;
-    }
-  };
-
-  const fetchImages = async (page = 1) => {
-    try {
-      setLoading(true);
-      const response = await api.get(`/files?page=${page}`, { 
-        params: { limit: 10, type: 'image' } 
-      });
-      setImages(response.data.files);
-      setPagination(response.data.pagination);
-      setCurrentPage(page);
-    } catch (error) {
-      console.error('Erreur lors du chargement des images:', error);
-      setMessage({ type: 'error', text: 'Erreur lors du chargement des images' });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleDownload = async (image) => {
     try {
@@ -120,7 +93,6 @@ const ImageList = () => {
       setOpenMenuId(null); // Fermer le menu après téléchargement
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
-      setMessage({ type: 'error', text: 'Erreur lors du téléchargement' });
     }
   };
 
@@ -137,6 +109,7 @@ const ImageList = () => {
     setIsShareModalOpen(true);
     setOpenMenuId(null); // Fermer le menu après ouverture du partage
   };
+
   const handleRename = (imageOrId) => {
     // Si c'est un ID (venant d'ItemList), on trouve l'image correspondante
     const image = typeof imageOrId === 'object' ? imageOrId : images.find(img => img.id === imageOrId);
@@ -145,16 +118,55 @@ const ImageList = () => {
     setOpenMenuId(null); // Fermer le menu après ouverture du renommage
   };
 
-  const onImageRenamed = (renamedImage) => {
-    setMessage({ type: 'success', text: 'Image renommée avec succès' });
-    fetchImages(currentPage);
-    setIsRenameModalOpen(false);
+  const handleImageRenamed = () => {
+    refresh();
   };
 
-  const onImageDeleted = (deletedImageId) => {
-    setMessage({ type: 'success', text: 'Image supprimée avec succès' });
-    fetchImages(currentPage);
-    setIsDeleteModalOpen(false); // Fermer la modale après suppression
+  const handleImageDeleted = () => {
+    refresh();
+    setIsDeleteModalOpen(false);
+    setSelectedImage(null);
+  };
+
+  const handleBatchDelete = async () => {
+    setIsBatchDeleteModalOpen(true);
+  };
+
+  const handleConfirmBatchDelete = async () => {
+    setBatchDeleteLoading(true);
+    setDeleteProgress(0);
+    
+    try {
+      const imageIds = selectedImages.map(image => image.id);
+      const totalImages = imageIds.length;
+      
+      // Simuler la progression pendant la suppression
+      const progressInterval = setInterval(() => {
+        setDeleteProgress(prev => {
+          if (prev >= 90) return prev; // S'arrêter à 90% jusqu'à la fin réelle
+          return Math.round(prev + Math.random() * 15);
+        });
+      }, 200);
+      
+      await api.delete('/files/batch-delete', { data: { fileIds: imageIds } });
+      
+      // Compléter la progression
+      clearInterval(progressInterval);
+      setDeleteProgress(100);
+      
+      // Attendre un peu pour montrer 100%
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      refresh(); // Recharger les images
+      setIsSelectionMode(false); // Quitter le mode sélection
+      setSelectedImages([]); // Vider la sélection
+    } catch (error) {
+      console.error('Erreur lors de la suppression par lot:', error);
+    } finally {
+      setBatchDeleteLoading(false);
+      setDeleteProgress(0);
+      setIsBatchDeleteModalOpen(false);
+    }
   };
 
   const handlePreview = (image) => {
@@ -163,194 +175,219 @@ const ImageList = () => {
     setOpenMenuId(null); // Fermer le menu après ouverture de l'aperçu
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      year: 'numeric',
-      month: 'short',
-      day: '2-digit'
+  const handleSelectImage = (image) => {
+    setSelectedImages(prev => {
+      const isSelected = prev.some(img => img.id === image.id);
+      if (isSelected) {
+        return prev.filter(img => img.id !== image.id);
+      } else {
+        return [...prev, image];
+      }
     });
   };
 
-  const handleBatchDelete = async () => {
-    setIsBatchDeleteModalOpen(true);
-  };
-
-  const handleConfirmBatchDelete = async () => {
-    try {
-      await api.delete('/files/batch-delete', { data: { fileIds: selectedImages } });
-      setMessage({ type: 'success', text: `${selectedImages.length} image(s) supprimée(s) avec succès.` });
-      fetchImages(currentPage); // Recharger les images
-      setIsSelectionMode(false); // Quitter le mode sélection
-      setSelectedImages([]); // Vider la sélection
-    } catch (error) {
-      console.error('Erreur lors de la suppression par lot:', error);
-      setMessage({ type: 'error', text: 'Erreur lors de la suppression des images.' });
-    } finally {
-      setIsBatchDeleteModalOpen(false);
+  const handleSelectAll = () => {
+    if (selectedImages.length === images.length) {
+      // Si tous sont sélectionnés, désélectionner tout
+      setSelectedImages([]);
+    } else {
+      // Sinon, sélectionner tous les éléments visibles
+      setSelectedImages([...images]);
     }
   };
 
-  const handleFileDeleted = () => {
-    fetchImages(currentPage); // Recharger les images après suppression
-    setIsDeleteModalOpen(false);
-    setImageToDelete(null);
+  const handleBatchDownload = async () => {
+    if (selectedImages.length === 0) return;
+
+    try {
+      await handleDownloadZip(selectedImages, 
+        (result) => {
+          // Optionnel: quitter le mode sélection après téléchargement
+          setIsSelectionMode(false);
+          setSelectedImages([]);
+        },
+        (error) => {
+        }
+      );
+    } catch (error) {
+      console.error('Erreur téléchargement ZIP:', error);
+    }
   };
 
-  const toggleSelectionMode = () => {
+  const handleToggleSelectionMode = () => {
     setIsSelectionMode(!isSelectionMode);
     setSelectedImages([]); // Réinitialiser la sélection en changeant de mode
   };
 
-  const handleSelectImage = (imageId) => {
-    setSelectedImages(prevSelected =>
-      prevSelected.includes(imageId)
-        ? prevSelected.filter(id => id !== imageId)
-        : [...prevSelected, imageId]
-    );
-  };
-
-  if (loading) {
+  if (loading && images.length === 0) {
     return <div className="loading-container"><div className="loading"></div></div>;
   }
 
   return (
-    <>
+    <BulkActionsManager
+      isSelectionMode={isSelectionMode}
+      selectedItems={selectedImages}
+      itemType="image"
+      onSelectionModeChange={setIsSelectionMode}
+      onItemsUpdated={refresh}
+      onSelectAll={handleSelectAll}
+      totalItems={images.length}
+    >
       <div className="container">
-        {message.text && (
-          <div className={`alert alert-${message.type}`}>{message.text}</div>
-        )}
-
         <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Mes images</h1>
-            <p className="text-secondary">Vous avez {pagination.total || 0} image(s) dans votre coffre-fort</p>
+          <div className='my-space-title'>
+            <button 
+              className="mobile-hamburger-menu"
+              onClick={() => {
+                const event = new CustomEvent('toggleSidebar');
+                window.dispatchEvent(event);
+              }}
+              aria-label="Toggle menu"
+            >
+              <FiMenu />
+            </button>
+            <div className="title-content">
+              <h1 className="text-2xl font-bold">Mes images</h1>
+              <p className="text-secondary">Vous avez {totalCount || 0} image(s) au total.</p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={toggleSelectionMode} className="btn btn-secondary">
-              {isSelectionMode ? 'Annuler' : 'Sélectionner'}
-            </button>
             <Link to="/upload" className="btn btn-primary">
-              <FiUpload /> Uploader une image
+              <FaUpload /> Uploader une image
             </Link>
+          </div>
+        </div>
+
+        <div className="file-list-header">
+          <div className="header-left">
+            <h2 className="text-lg font-semibold">Images sécurisées</h2>
+          </div>
+          <div className="header-right">
+            <div className="text-sm text-secondary text-page">
+              {images.length} / {totalCount} images chargées
+            </div>
+            
+            <ContentToolbar
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              storageKey="imagesViewMode"
+              showPagination={false}
+              showViewSwitcher={true}
+              className="inline-toolbar"
+              onToggleSelection={handleToggleSelectionMode}
+              onBatchDelete={handleBatchDelete}
+              onBatchDownload={handleBatchDownload}
+              isSelectionMode={isSelectionMode}
+              selectedCount={selectedImages.length}
+            />
           </div>
         </div>
 
         {images.length === 0 ? (
           <div className="card-image">
             <div className="text-center p-6">
-              <FiImage size={48} className="text-secondary mx-auto mb-4" />
+              <FaUpload size={48} className="text-secondary mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Aucune image</h3>
               <p className="text-secondary mb-4">Vous n'avez pas encore uploadé d'images.</p>
               <Link to="/upload" className="btn btn-primary">
-                <FiUpload /> Uploader votre première image
+                <FaUpload /> Uploader votre première image
               </Link>
             </div>
           </div>
         ) : (
-          <>
-            <div className="file-list-header">
-              <h2 className="text-lg font-semibold">Images sécurisées</h2>
-              <div className="text-sm text-secondary">
-                Page {pagination.page} sur {pagination.totalPages}
-              </div>
-            </div>
-
-            {isSelectionMode ? (
-              <div className="selection-header card-image mb-4">
-                <span>{selectedImages.length} image(s) sélectionnée(s)</span>
-                <button onClick={handleBatchDelete} className="btn btn-danger" disabled={selectedImages.length === 0}>
-                  <FiTrash2 /> Tout supprimer
-                </button>
-              </div>
-            ) : (
-              <div className="folder-bar">
-                <ViewModeSwitcher 
-                  viewMode={viewMode} 
-                  setViewMode={setViewMode} 
-                  storageKey="imagesViewMode" 
-                />
-              </div>
-            )}
-
-            <ItemList
-              items={images}
-              viewMode={viewMode}
-              activeMenu={openMenuId}
-              toggleMenu={(e, itemId) => {
-                // Vérifier si e est un événement ou un ID direct
-                if (e && typeof e === 'object' && e.preventDefault) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const position = getMenuPosition(e.currentTarget, 5); // 5 options pour images: Aperçu, Télécharger, Partager, Renommer, Supprimer
-                  setOpenMenuId(openMenuId?.id === itemId ? null : { id: itemId, position });
-                } else {
-                  // Si e est en fait l'ID (appel direct)
-                  const actualItemId = e;
-                  setOpenMenuId(openMenuId?.id === actualItemId ? null : { id: actualItemId, position: 'bottom' });
-                }
-              }}
-              // Handlers pour les actions
-              handleOpenFile={handleDownload}
-              handleOpenFileRenameModal={handleRename}
-              handleOpenFileDeleteModal={openDeleteModal}
-              handleShare={handleShare}
-              handleOpenPreviewModal={handlePreview}
-              // Props pour la sélection multiple
-              isSelectionMode={isSelectionMode}
-              selectedItems={selectedImages}
-              handleSelectItem={handleSelectImage}
-              menuButtonRefs={menuButtonRefs}
-            />
-
-            {pagination.totalPages > 1 && (
-              <Pagination
-                itemsPerPage={10} 
-                totalItems={pagination.total}
-                paginate={fetchImages}
-                currentPage={currentPage}
-              />
-            )}
-          </>
+          <ItemList
+            items={images}
+            viewMode={viewMode}
+            activeMenu={openMenuId}
+            toggleMenu={(e, itemId) => {
+              // Vérifier si e est un événement ou un ID direct
+              if (e && typeof e === 'object' && e.preventDefault) {
+                e.preventDefault();
+                e.stopPropagation();
+                const position = getMenuPosition(e.currentTarget, 5); // 5 options pour images: Aperçu, Télécharger, Partager, Renommer, Supprimer
+                setOpenMenuId(openMenuId?.id === itemId ? null : { id: itemId, position });
+              } else {
+                // Si e est en fait l'ID (appel direct)
+                const actualItemId = e;
+                setOpenMenuId(openMenuId?.id === actualItemId ? null : { id: actualItemId, position: 'bottom' });
+              }
+            }}
+            // Handlers pour les actions
+            handleOpenFile={handleDownload}
+            handleOpenFileRenameModal={handleRename}
+            handleOpenFileDeleteModal={openDeleteModal}
+            handleShare={handleShare}
+            handleOpenPreviewModal={handlePreview}
+            // Props pour la sélection multiple
+            isSelectionMode={isSelectionMode}
+            selectedItems={selectedImages}
+            handleSelectItem={handleSelectImage}
+            // Props pour le scroll infini
+            lastItemRef={lastItemRef}
+            hasMore={hasMore}
+            loading={loading}
+          />
         )}
       </div>
 
-      {isModalOpen && selectedImage && (
-        <FileDetailModal
-          isOpen={isModalOpen}
-          file={selectedImage}
-          type="image"
-          onClose={() => setIsModalOpen(false)}
+      {isDeleteModalOpen && imageToDelete && (
+        <DeleteFileModal 
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          file={imageToDelete}
+          onFileDeleted={handleImageDeleted}
         />
       )}
-
-      <DeleteFileModal 
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        file={imageToDelete}
-        onFileDeleted={handleFileDeleted}
-      />
 
       <DeleteBatchModal
         isOpen={isBatchDeleteModalOpen}
         onClose={() => setIsBatchDeleteModalOpen(false)}
         onConfirm={handleConfirmBatchDelete}
         imageCount={selectedImages.length}
+        itemType="image"
+        selectedItems={selectedImages}
       />
 
       <RenameFileModal
         isOpen={isRenameModalOpen}
         onClose={() => setIsRenameModalOpen(false)}
         file={imageToRename}
-        onFileRenamed={onImageRenamed}
+        onFileRenamed={handleImageRenamed}
       />
 
-      <ShareModal
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-        file={imageToShare}
+      <FileDetailModal
+        isOpen={isModalOpen}
+        file={selectedImage}
+        type="image"
+        onClose={() => setIsModalOpen(false)}
       />
 
-    </>
+
+      {/* Indicateur de chargement pour le scroll infini */}
+      {loading && images.length > 0 && (
+        <div className="text-center py-4">
+          <div className="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-indigo-500 transition ease-in-out duration-150">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Chargement...
+          </div>
+        </div>
+      )}
+      
+      {!hasMore && images.length > 0 && (
+        <div className="text-center py-4 text-gray-500">
+          Toutes les images ont été chargées
+        </div>
+      )}
+
+      {/* Indicateur de progrès pour le téléchargement ZIP */}
+      <DownloadProgressIndicator
+        progressBar={progressBar}
+        onClose={clearError}
+      />
+    </BulkActionsManager>
   );
 };
 

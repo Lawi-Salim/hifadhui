@@ -11,6 +11,21 @@
   transition: margin-left 0.3s ease;
 }
 
+/* Responsive - Tablette */
+@media (max-width: 1024px) {
+  .main-content {
+    margin-left: 70px;
+  }
+}
+
+/* Responsive - Mobile (<600px) - Pas de sidebar */
+@media (max-width: 600px) {
+  .main-content {
+    margin-left: 0 !important;
+    padding: 15px;
+  }
+}
+
 /* Page d'accueil/landing */
 .landing-page {
   min-height: 100vh;

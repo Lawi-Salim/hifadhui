@@ -1,9 +1,8 @@
 import React from 'react';
-import { FaPencilAlt, FaTrash, FaUpload, FaEye, FaDownload, FaShare } from 'react-icons/fa';
+import { FaPencilAlt, FaTrash, FaUpload, FaDownload, FaShare } from 'react-icons/fa';
 import './ActionMenu.css';
 
 const ActionMenu = ({ 
-  onPreview, 
   onDownload, 
   onShare, 
   onRename, 
@@ -16,7 +15,7 @@ const ActionMenu = ({
   if (!isOpen) return null;
 
   // Calculer le nombre d'options disponibles pour ajuster la hauteur
-  const optionsCount = [onPreview, onDownload, onShare, onRename, onUpload, onDelete].filter(Boolean).length;
+  const optionsCount = [onDownload, onShare, onRename, onUpload, onDelete].filter(Boolean).length;
   const menuHeight = optionsCount * 48 + 16; // 48px par option + padding
 
   return (
@@ -24,11 +23,6 @@ const ActionMenu = ({
       className={`actions-menu position-${position}`}
       style={{ '--menu-height': `${menuHeight}px` }}
     >
-      {onPreview && (
-        <button className="menu-item" onClick={(e) => { e.stopPropagation(); onPreview(); }}>
-          <FaEye /> Aperçu
-        </button>
-      )}
       {onDownload && (
         <button className="menu-item" onClick={(e) => { e.stopPropagation(); onDownload(); }}>
           <FaDownload /> Télécharger

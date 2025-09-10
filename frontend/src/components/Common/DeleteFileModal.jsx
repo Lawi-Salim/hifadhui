@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
 import Modal from '../Modal';
 import fileService from '../../services/fileService';
+import ProgressBar from './ProgressBar';
+import { useProgressBar } from '../../hooks/useProgressBar';
 
 const DeleteFileModal = ({ isOpen, onClose, file, onFileDeleted }) => {
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [confirmationName, setConfirmationName] = useState('');
+
+  // Hook centralisé pour la progression de suppression
+  const deleteProgressBar = useProgressBar({ 
+    type: 'delete',
+    maxProgress: 95,
+    interval: 200 
+  });
 
   const handleDelete = async () => {
     // Vérifier que le nom saisi correspond au nom du fichier
@@ -14,17 +22,27 @@ const DeleteFileModal = ({ isOpen, onClose, file, onFileDeleted }) => {
       return;
     }
 
-    setLoading(true);
     setError(null);
+    
+    // Démarrer la progression avec la taille du fichier
+    deleteProgressBar.startProgress('Suppression en cours...', file.size || 1024 * 1024);
+    deleteProgressBar.updateCurrentItem(file.filename);
+    
     try {
       await fileService.deleteFile(file.id);
+      
+      deleteProgressBar.completeProgress();
+      
+      // Attendre un peu pour montrer 100%
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       onFileDeleted();
       setConfirmationName(''); // Réinitialiser le champ
+      deleteProgressBar.resetProgress();
       onClose();
     } catch (err) {
+      deleteProgressBar.setProgressError('Erreur lors de la suppression');
       setError(err.response?.data?.message || 'Une erreur est survenue lors de la suppression.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -89,16 +107,31 @@ const DeleteFileModal = ({ isOpen, onClose, file, onFileDeleted }) => {
 
       {error && <p className="error-message" style={{ marginTop: '0.5rem' }}>{error}</p>}
       
+      {deleteProgressBar.isActive && (
+        <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+          <ProgressBar
+            isVisible={true}
+            progress={deleteProgressBar.progress}
+            type={deleteProgressBar.type}
+            currentItem={deleteProgressBar.currentItem}
+            stats={deleteProgressBar.stats}
+            error={deleteProgressBar.error}
+            completed={deleteProgressBar.completed}
+            showAsModal={false}
+          />
+        </div>
+      )}
+      
       <div className="modal-actions">
-        <button onClick={onClose} className="btn btn-secondary" disabled={loading}>
+        <button onClick={onClose} className="btn btn-secondary" disabled={deleteProgressBar.isActive}>
           Annuler
         </button>
         <button 
           onClick={handleDelete} 
           className="btn btn-danger" 
-          disabled={loading || confirmationName !== file?.filename}
+          disabled={deleteProgressBar.isActive || confirmationName !== file?.filename}
         >
-          {loading ? 'Suppression...' : 'Supprimer'}
+          {deleteProgressBar.isActive ? 'Suppression...' : 'Supprimer'}
         </button>
       </div>
     </Modal>

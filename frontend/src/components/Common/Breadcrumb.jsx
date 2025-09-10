@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaChevronRight, FaEllipsisH } from 'react-icons/fa';
+import FormattedText from './FormattedText';
 import './Breadcrumb.css';
 
 const Breadcrumb = ({ items }) => {
@@ -30,10 +31,12 @@ const Breadcrumb = ({ items }) => {
             {index > 0 && <FaChevronRight className="breadcrumb-separator" />}
             {item.path ? (
               <Link to={item.path} className="breadcrumb-link">
-                {item.name}
+                <FormattedText text={item.name} />
               </Link>
             ) : (
-              <span className="breadcrumb-current">{item.name}</span>
+              <span className="breadcrumb-current">
+                <FormattedText text={item.name} />
+              </span>
             )}
           </React.Fragment>
         ))}
@@ -50,7 +53,7 @@ const Breadcrumb = ({ items }) => {
     <nav className="breadcrumb">
       {/* Premier élément (Mes Dossiers) */}
       <Link to={firstItem.path} className="breadcrumb-link">
-        {firstItem.name}
+        <FormattedText text={firstItem.name} />
       </Link>
       
       <FaChevronRight className="breadcrumb-separator" />
@@ -81,7 +84,7 @@ const Breadcrumb = ({ items }) => {
               className="breadcrumb-dropdown-item"
               onClick={() => setShowDropdown(false)}
             >
-              {item.name}
+              <FormattedText text={item.name} />
             </Link>
           ))}
         </div>
@@ -92,10 +95,12 @@ const Breadcrumb = ({ items }) => {
       {/* Dernier élément */}
       {lastItem.path ? (
         <Link to={lastItem.path} className="breadcrumb-link">
-          {lastItem.name}
+          <FormattedText text={lastItem.name} />
         </Link>
       ) : (
-        <span className="breadcrumb-current">{lastItem.name}</span>
+        <span className="breadcrumb-current">
+          <FormattedText text={lastItem.name} />
+        </span>
       )}
     </nav>
   );

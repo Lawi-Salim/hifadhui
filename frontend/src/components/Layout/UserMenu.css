@@ -52,7 +52,7 @@
 .user-menu-dropdown {
   position: absolute;
   bottom: 120%;
-  right: 0;
+  right: 15px;
   background-color: var(--surface-color);
   border-radius: 8px;
   box-shadow: var(--shadow-lg);
@@ -60,6 +60,14 @@
   z-index: 1000;
   border: 1px solid var(--border-color);
   padding: 8px 0;
+}
+
+/* Sur petits écrans, afficher le menu vers le bas */
+@media (max-width: 1024px) {
+  .user-menu-dropdown {
+    left: 15%;
+    margin-top: 8px;
+  }
 }
 
 .dropdown-header {

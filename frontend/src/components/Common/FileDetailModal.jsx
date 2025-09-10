@@ -38,6 +38,12 @@ const FileDetailModal = ({ file, onClose, type = 'file', isOpen }) => {
     });
   };
 
+  const truncateFilename = (filename, maxLength = 15) => {
+    if (!filename) return '';
+    if (filename.length <= maxLength) return filename;
+    return filename.substring(0, maxLength) + '...';
+  };
+
   // Déterminer les données à afficher selon le type
   const getDisplayData = () => {
     if (isCertificate && file.certificateFile) {
@@ -93,10 +99,12 @@ const FileDetailModal = ({ file, onClose, type = 'file', isOpen }) => {
             <div className="detail-section">
               <h4>{title}</h4>
               <dl className="details-list">
-                <dt>Nom:</dt><dd>{displayData.filename}</dd>
+                <dt>Nom:</dt><dd title={displayData.filename}>{truncateFilename(displayData.filename)}</dd>
                 <dt>Type:</dt><dd>{displayData.mimetype}</dd>
                 <dt>Version:</dt><dd>{displayData.version || 1}</dd>
                 <dt>Date d'upload:</dt><dd>{formatDate(displayData.date_upload)}</dd>
+                <dt>Taille:</dt><dd>{displayData.size ? `${(displayData.size / 1024).toFixed(2)} KB` : 'Non disponible'}</dd>
+                <dt>Emplacement:</dt><dd>{displayData.dossier?.fullPath || displayData.dossier?.name_original || displayData.dossier?.name || 'Racine'}</dd>
                 <dt>Certificat:</dt><dd>{isCertificate ? 'Disponible' : (file.fileCertificates?.length > 0 ? 'Disponible' : 'En attente')}</dd>
               </dl>
             </div>

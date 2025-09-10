@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getUserActivityDetails } from '../../services/adminService';
+import { fixEncoding } from '../../utils/textUtils';
 import './UserActivityDetails.css';
 
 const UserActivityDetails = ({ userId }) => {
@@ -35,11 +36,11 @@ const UserActivityDetails = ({ userId }) => {
     const { actionType, details } = activity;
 
     if (actionType === 'FOLDER_RENAME' && details) {
-      return <span>{details.newDossierName}</span>;
+      return <span>{fixEncoding(details.newDossierName)}</span>;
     }
 
     if (actionType === 'FILE_RENAME' && details) {
-      return <span>{details.newFileName}</span>;
+      return <span>{fixEncoding(details.newFileName)}</span>;
     }
 
     if (actionType === 'ZIP_UPLOAD' && details) {
@@ -58,14 +59,14 @@ const UserActivityDetails = ({ userId }) => {
 
       return (
         <span>
-          {fileName}
+          {fixEncoding(fileName)}
           <span className="file-count-badge" style={{ marginLeft: '8px' }}>
             {detailsString}
           </span>
         </span>
       );
     }
-    return details?.dossierName || details?.fileName || 'N/A';
+    return fixEncoding(details?.dossierName || details?.fileName) || 'N/A';
   };
 
   return (

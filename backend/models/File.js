@@ -19,6 +19,11 @@ const File = sequelize.define('File', {
     type: DataTypes.STRING(100),
     allowNull: true
   },
+  size: {
+    type: DataTypes.BIGINT,
+    allowNull: true,
+    comment: 'Taille du fichier en octets'
+  },
   file_url: {
     type: DataTypes.STRING,
     allowNull: false,

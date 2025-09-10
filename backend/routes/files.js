@@ -1,5 +1,5 @@
 const express = require('express');
-const { body, validationResult } = require('express-validator');
+const router = express.Router();
 const db = require('../models');
 const { Op } = require('sequelize');
 const { authenticateToken } = require('../middleware/auth');
@@ -8,17 +8,100 @@ const uploadLocal = require('../middleware/upload-local');
 const crypto = require('crypto');
 const { generateCertificate } = require('../utils/pdfGenerator');
 const { deleteCloudinaryFile } = require('../utils/cloudinaryStructure');
+const { body, validationResult } = require('express-validator');
+
+// Fonction pour corriger l'encodage des caractères spéciaux français mal encodés
+const fixEncoding = (text) => {
+  if (!text || typeof text !== 'string') return text;
+  
+  // Mapping des caractères mal encodés vers les caractères corrects
+  const encodingMap = {
+    'Ã©': 'é',
+    'Ã¨': 'è',
+    'Ã ': 'à',
+    'Ã§': 'ç',
+    'Ã´': 'ô',
+    'Ã¢': 'â',
+    'Ã®': 'î',
+    'Ã¯': 'ï',
+    'Ã¹': 'ù',
+    'Ã»': 'û',
+    'Ã«': 'ë',
+    'Ã¶': 'ö',
+    'Ã¼': 'ü',
+    'Ã±': 'ñ',
+    'Ã': 'À',
+    'Ã‰': 'É',
+    'Ã‡': 'Ç',
+    'Ã"': 'Ô',
+    'Ã‚': 'Â',
+    'ÃŽ': 'Î',
+    'Ã™': 'Ù',
+    'Ã›': 'Û',
+    'Ã‹': 'Ë',
+    'Ã–': 'Ö',
+    'Ãœ': 'Ü'
+  };
+  
+  let correctedText = text;
+  
+  // Remplacer tous les caractères mal encodés
+  Object.keys(encodingMap).forEach(malformed => {
+    const regex = new RegExp(malformed, 'g');
+    correctedText = correctedText.replace(regex, encodingMap[malformed]);
+  });
+  
+  return correctedText;
+};
+
+// Fonction pour créer un slug à partir d'un nom
+const createSlug = (text) => {
+  if (!text || typeof text !== 'string') return text;
+  
+  // D'abord corriger l'encodage
+  let correctedText = fixEncoding(text);
+  
+  const accentMap = {
+    'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', 'å': 'a',
+    'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
+    'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
+    'ò': 'o', 'ó': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
+    'ù': 'u', 'ú': 'u', 'û': 'u', 'ü': 'u',
+    'ý': 'y', 'ÿ': 'y',
+    'ñ': 'n', 'ç': 'c',
+    'œ': 'oe', 'æ': 'ae',
+    'Œ': 'OE', 'Æ': 'AE',
+    'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A', 'Å': 'A',
+    'È': 'E', 'É': 'E', 'Ê': 'E', 'Ë': 'E',
+    'Ì': 'I', 'Í': 'I', 'Î': 'I', 'Ï': 'I',
+    'Ò': 'O', 'Ó': 'O', 'Ô': 'O', 'Õ': 'O', 'Ö': 'O',
+    'Ù': 'U', 'Ú': 'U', 'Û': 'U', 'Ü': 'U',
+    'Ý': 'Y', 'Ÿ': 'Y',
+    'Ñ': 'N', 'Ç': 'C'
+  };
+  
+  // Garder les majuscules, supprimer seulement les accents et remplacer espaces par tirets
+  return correctedText
+    .split('').map(char => accentMap[char] || char).join('')
+    .replace(/\s+/g, '-') // Remplacer espaces par tirets
+    .replace(/[^a-zA-Z0-9\-_]+/g, '') // Supprimer caractères spéciaux sauf tirets et underscores
+    .replace(/-+/g, '-') // Éviter les tirets multiples
+    .replace(/^-+|-+$/g, ''); // Supprimer tirets en début/fin
+};
 const cloudinary = require('cloudinary').v2;
 const AdmZip = require('adm-zip');
 const fs = require('fs');
 const path = require('path');
 
-const router = express.Router();
-
 // Fonction pour traiter un fichier unique (création en BDD, certificat, etc.)
 const processSingleFile = async (fileData, user, req, dossierId = null, options = { logActivity: true }) => {
   const { originalname, path: filePath, size, mimetype } = fileData;
   
+  // Si aucun dossier spécifié, utiliser le dossier système par défaut
+  if (!dossierId) {
+    const systemRoot = await db.Dossier.getSystemRoot();
+    dossierId = systemRoot.id;
+  }
   
   // Extraire le chemin Cloudinary relatif depuis l'URL complète
   let file_url;
@@ -45,6 +128,7 @@ const processSingleFile = async (fileData, user, req, dossierId = null, options 
     filename: originalname,
     file_url,
     mimetype,
+    size: size,
     hash: fileHash,
     signature: signature,
     owner_id: user.id,
@@ -149,6 +233,58 @@ router.post('/upload', authenticateToken, upload.single('document'), async (req,
   }
 });
 
+// Route pour obtenir la liste des fichiers dans un ZIP
+router.post('/zip-preview', authenticateToken, uploadLocal.upload.single('document'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Aucun fichier fourni' });
+    }
+
+    const { mimetype, path: filePath } = req.file;
+    const isZip = mimetype === 'application/zip' || mimetype === 'application/x-zip-compressed';
+
+    if (!isZip) {
+      return res.status(400).json({ 
+        error: 'Seuls les fichiers ZIP sont acceptés'
+      });
+    }
+
+    // Lire le contenu du ZIP
+    const zipData = fs.readFileSync(filePath);
+    const zip = new AdmZip(zipData);
+    const zipEntries = zip.getEntries();
+    const fileList = [];
+
+    for (const zipEntry of zipEntries) {
+      if (zipEntry.isDirectory) continue;
+
+      const entryName = zipEntry.entryName;
+      const extension = path.extname(entryName).toLowerCase();
+      
+      // Filtrer seulement les types supportés
+      if (['.pdf', '.jpg', '.jpeg', '.png'].includes(extension)) {
+        fileList.push({
+          name: path.basename(entryName),
+          path: entryName,
+          size: zipEntry.header.size,
+          type: extension
+        });
+      }
+    }
+
+    // Supprimer le fichier temporaire
+    fs.unlinkSync(filePath);
+
+    res.json({ files: fileList });
+
+  } catch (error) {
+    console.error('Erreur preview ZIP:', error);
+    res.status(500).json({
+      error: "Erreur lors de l'analyse du fichier ZIP"
+    });
+  }
+});
+
 // Route spécifique pour uploader des fichiers ZIP
 router.post('/upload-zip', authenticateToken, uploadLocal.upload.single('document'), async (req, res) => {
   try {
@@ -166,22 +302,25 @@ router.post('/upload-zip', authenticateToken, uploadLocal.upload.single('documen
       });
     }
 
-    // Traitement ZIP existant...
-      // Créer un dossier basé sur le nom du ZIP
-      const dossierName = path.basename(req.file.originalname, path.extname(req.file.originalname));
-      const [newDossier, created] = await db.Dossier.findOrCreate({
-        where: { name: dossierName, owner_id: req.user.id },
-        defaults: { name: dossierName, owner_id: req.user.id },
-      });
+    // Créer un dossier basé sur le nom du ZIP dans le dossier système
+    const systemRoot = await db.Dossier.getSystemRoot();
+    const originalDossierName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+    const dossierName = createSlug(originalDossierName);
+    const [newDossier, created] = await db.Dossier.findOrCreate({
+      where: { name: dossierName, owner_id: req.user.id, parent_id: systemRoot.id },
+      defaults: { name: dossierName, name_original: fixEncoding(originalDossierName), owner_id: req.user.id, parent_id: systemRoot.id },
+    });
 
-      // Lire le fichier ZIP dans un buffer pour éviter les problèmes de verrouillage de fichier sur Windows
-      const zipData = fs.readFileSync(filePath);
-      const zip = new AdmZip(zipData);
-      const zipEntries = zip.getEntries();
-      const processedFiles = [];
-      const uploadsDir = path.dirname(filePath);
-      let extractedImageCount = 0;
-      let extractedPdfCount = 0;
+    // Lire le fichier ZIP dans un buffer pour éviter les problèmes de verrouillage de fichier sur Windows
+    const zipData = fs.readFileSync(filePath);
+    const zip = new AdmZip(zipData);
+    const zipEntries = zip.getEntries();
+    const processedFiles = [];
+    const uploadsDir = path.dirname(filePath);
+    let extractedImageCount = 0;
+    let extractedPdfCount = 0;
+
+    // Traitement ZIP normal sans streaming
 
       for (const zipEntry of zipEntries) {
         if (zipEntry.isDirectory) continue;
@@ -243,7 +382,7 @@ router.post('/upload-zip', authenticateToken, uploadLocal.upload.single('documen
         });
 
         const fileDataObject = {
-          originalname: entryName,
+          originalname: path.basename(entryName),
           path: cloudinaryResult.secure_url,
           size: fileData.length,
           mimetype: fileMimeType
@@ -254,28 +393,28 @@ router.post('/upload-zip', authenticateToken, uploadLocal.upload.single('documen
         processedFiles.push(processedFile);
       }
 
-      // Supprimer le fichier ZIP original
-      fs.unlinkSync(filePath);
+    // Supprimer le fichier ZIP original
+    fs.unlinkSync(filePath);
 
-      // Enregistrer une seule activité pour l'ensemble du ZIP
-      await db.ActivityLog.create({
-        userId: req.user.id,
-        actionType: 'ZIP_UPLOAD',
-        details: {
-          fileName: req.file.originalname,
-          dossierId: newDossier.id,
-          dossierName: newDossier.name,
-          extractedFileCount: processedFiles.length,
-          extractedImageCount,
-          extractedPdfCount
-        }
-      });
+    // Enregistrer une seule activité pour l'ensemble du ZIP
+    await db.ActivityLog.create({
+      userId: req.user.id,
+      actionType: 'ZIP_UPLOAD',
+      details: {
+        fileName: req.file.originalname,
+        dossierId: newDossier.id,
+        dossierName: newDossier.name,
+        extractedFileCount: processedFiles.length,
+        extractedImageCount,
+        extractedPdfCount
+      }
+    });
 
-      res.status(201).json({
-        message: `Dossier '${dossierName}' ${created ? 'créé' : 'mis à jour'} et ${processedFiles.length} fichiers uploadés avec succès.`,
-        dossier: newDossier,
-        files: processedFiles
-      });
+    res.status(201).json({
+      message: `Dossier '${dossierName}' ${created ? 'créé' : 'mis à jour'} et ${processedFiles.length} fichiers uploadés avec succès.`,
+      dossier: newDossier,
+      files: processedFiles
+    });
 
   } catch (error) {
     console.error('Erreur upload ZIP:', error);
@@ -292,7 +431,7 @@ router.use(handleUploadError);
 // Route pour lister les fichiers de l'utilisateur
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { page = 1, limit = 10, type } = req.query;
+    const { page = 1, limit = 10, type, dossier_id } = req.query;
     const offset = (page - 1) * limit;
 
     const whereClause = { owner_id: req.user.id, is_latest: true };
@@ -304,14 +443,37 @@ router.get('/', authenticateToken, async (req, res) => {
       whereClause.mimetype = { [Op.notLike]: 'image/%' };
     }
 
+    // Filtrer par dossier si spécifié
+    if (dossier_id !== undefined) {
+      if (dossier_id === 'null') {
+        whereClause.dossier_id = null;
+      } else if (dossier_id === 'system_root') {
+        // Récupérer les fichiers du dossier système racine
+        const systemRoot = await db.Dossier.getSystemRoot();
+        const formData = new FormData();
+        formData.append('document', file);
+        if (dossierId) {
+          formData.append('dossier_id', dossierId);
+        }
+        whereClause.dossier_id = systemRoot.id;
+      } else {
+        whereClause.dossier_id = dossier_id;
+      }
+    }
+
     const { count, rows: files } = await db.File.findAndCountAll({
       where: whereClause,
+      include: [{
+        model: db.Dossier,
+        as: 'fileDossier',
+        required: false
+      }],
       order: [['date_upload', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
 
-    // Pour chaque fichier, récupérer son certificat basé sur root_file_id
+    // Pour chaque fichier, récupérer son certificat et le chemin complet du dossier
     const filesWithCertificates = await Promise.all(
       files.map(async (file) => {
         const rootFileId = file.parent_file_id || file.id;
@@ -320,8 +482,19 @@ router.get('/', authenticateToken, async (req, res) => {
           attributes: ['id', 'pdf_url', 'date_generated']
         });
         
+        // Calculer le chemin complet du dossier
+        let fullPath = 'Racine';
+        if (file.fileDossier) {
+          fullPath = await file.fileDossier.getFullPath();
+        }
+        
+        const fileData = file.toJSON();
         return {
-          ...file.toJSON(),
+          ...fileData,
+          dossier: fileData.fileDossier ? {
+            ...fileData.fileDossier,
+            fullPath: fullPath
+          } : null,
           fileCertificates: certificate ? [certificate] : []
         };
       })
@@ -352,7 +525,12 @@ router.get('/:id', authenticateToken, async (req, res) => {
       where: { 
         id: req.params.id,
         owner_id: req.user.id
-      }
+      },
+      include: [{
+        model: db.Dossier,
+        as: 'fileDossier',
+        attributes: ['id', 'name', 'name_original']
+      }]
     });
 
     if (!file) {
@@ -368,9 +546,20 @@ router.get('/:id', authenticateToken, async (req, res) => {
       attributes: ['id', 'pdf_url', 'date_generated']
     });
 
+    // Calculer le chemin complet du dossier
+    let fullPath = 'Racine';
+    if (file.fileDossier) {
+      fullPath = await file.fileDossier.getFullPath();
+    }
+
+    const fileData = file.toJSON();
     res.json({ 
       file: {
-        ...file.toJSON(),
+        ...fileData,
+        dossier: fileData.fileDossier ? {
+          ...fileData.fileDossier,
+          fullPath: fullPath
+        } : null,
         fileCertificates: certificate ? [certificate] : []
       }
     });
@@ -510,44 +699,20 @@ router.put('/:id',
 
       const oldFilename = file.filename;
       
-      // Marquer l'ancienne version comme non-courante
-      await file.update({ is_latest: false });
-
-      // Créer une nouvelle version avec le nouveau nom
-      const timestamp = Date.now();
-      const newSignature = crypto.createHash('sha256').update(`${filename}-${req.user.id}-${timestamp}`).digest('hex');
-      
-      // Générer un nouveau hash unique pour cette version (basé sur le nom + timestamp)
-      const newHash = crypto.createHash('sha256').update(`${file.hash}-${filename}-${timestamp}`).digest('hex');
-      
-      const rootFileId = file.parent_file_id || file.id;
-
-      const newVersion = await db.File.create({
-        filename: filename,
-        file_url: file.file_url, // Même URL de fichier
-        mimetype: file.mimetype,
-        hash: newHash, // Nouveau hash unique pour cette version
-        signature: newSignature,
-        owner_id: req.user.id,
-        dossier_id: file.dossier_id,
-        version: file.version + 1,
-        parent_file_id: rootFileId, // Toujours pointer vers le fichier racine
-        is_latest: true
-      });
+      // Renommage simple : mettre à jour directement le nom du fichier existant
+      await file.update({ filename: filename });
 
       await db.ActivityLog.create({
         userId: req.user.id,
         actionType: 'FILE_RENAME',
         details: {
-          fileId: newVersion.id,
+          fileId: file.id,
           oldFileName: oldFilename,
-          newFileName: newVersion.filename,
-          oldVersion: file.version,
-          newVersion: newVersion.version
+          newFileName: filename
         },
       });
 
-      res.json(newVersion);
+      res.json(file);
 
     } catch (error) {
       console.error('Erreur lors du renommage du fichier:', error);
@@ -829,6 +994,5 @@ router.get('/:id/history', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Erreur lors de la récupération de l\'historique' });
   }
 });
-
 
 module.exports = router;

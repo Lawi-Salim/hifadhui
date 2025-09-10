@@ -12,7 +12,13 @@ import UploadZipModal from './UploadZipModal';
 import RenameFileModal from '../Common/RenameFileModal';
 import DeleteFileModal from '../Common/DeleteFileModal';
 import FileUploadModal from '../Files/FileUploadModal';
+import FormattedText from '../Common/FormattedText';
+import ContentToolbar from '../Common/ContentToolbar';
+import BulkActionsManager from '../Common/BulkActionsManager';
+import ActionMenu from '../Common/ActionMenu';
 import { useViewMode } from '../../contexts/ViewModeContext';
+import { createSlug, fixEncoding } from '../../utils/textUtils';
+import { useDownloadZip, DownloadProgressIndicator } from '../Common/DownloadZip';
 import './DossiersPage.css';
 import '../Files/FileList.css';
 
@@ -33,6 +39,16 @@ const DossierDetailsPage = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [dossierToRename, setDossierToRename] = useState(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [pagination] = useState({ page: 1, totalPages: 1 });
+  
+  // Hook pour le téléchargement ZIP
+  const {
+    progressBar,
+    handleDownloadZip,
+    clearError
+  } = useDownloadZip();
 
   const fetchDossierDetails = useCallback(async () => {
     try {
@@ -63,6 +79,13 @@ const DossierDetailsPage = () => {
     fetchDossierDetails();
   }, [fetchDossierDetails]);
 
+  // Réinitialiser la sélection lors du changement de dossier
+  useEffect(() => {
+    setIsSelectionMode(false);
+    setSelectedItems([]);
+    setActiveMenu(null);
+  }, [id]);
+
   const handleDossierUpdated = () => {
     fetchDossierDetails();
   };
@@ -78,10 +101,10 @@ const DossierDetailsPage = () => {
     if (e && typeof e === 'object' && e.preventDefault) {
       e.preventDefault();
       e.stopPropagation();
-      setActiveMenu(activeMenu === id ? null : id);
+      setActiveMenu(activeMenu?.id === id ? null : { id, position: 'bottom' });
     } else {
       // e est en fait l'id dans ce cas
-      setActiveMenu(activeMenu === e ? null : e);
+      setActiveMenu(activeMenu?.id === e ? null : { id: e, position: 'bottom' });
     }
   };
 
@@ -145,9 +168,11 @@ const DossierDetailsPage = () => {
   };
 
   const handleOpenUploadModal = (e, dossier) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDossierToUpload(dossier);
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setIsUploadModalOpen(true);
     setActiveMenu(null);
   };
 
@@ -155,9 +180,71 @@ const DossierDetailsPage = () => {
     fetchDossierDetails();
   };
 
-  // Construire le chemin hiérarchique pour l'URL et le breadcrumb
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    setSelectedItems([]);
+  };
+
+  const handleBatchDelete = () => {
+    // Logique de suppression en lot si nécessaire
+    console.log('Suppression en lot:', selectedItems);
+  };
+
+  const handleSelectItem = (item) => {
+    if (isSelectionMode) {
+      const isSelected = selectedItems.some(selected => selected.id === item.id);
+      if (isSelected) {
+        setSelectedItems(selectedItems.filter(selected => selected.id !== item.id));
+      } else {
+        setSelectedItems([...selectedItems, item]);
+      }
+    }
+  };
+
+  // Fonction pour gérer le téléchargement ZIP
+  const handleBatchDownload = async () => {
+    console.log('🎯 handleBatchDownload appelé - DossierDetailsPage');
+    console.log('📋 selectedItems:', selectedItems);
+    console.log('📊 selectedItems.length:', selectedItems.length);
+    
+    if (selectedItems.length === 0) {
+      console.warn('⚠️ Aucun élément sélectionné, arrêt');
+      return;
+    }
+
+    // Filtrer seulement les fichiers (pas les dossiers) pour le téléchargement
+    const selectedFiles = selectedItems.filter(item => item.mimetype);
+    console.log('📂 Fichiers filtrés (avec mimetype):', selectedFiles);
+    console.log('📂 Nombre de fichiers filtrés:', selectedFiles.length);
+
+    if (selectedFiles.length === 0) {
+      console.warn('⚠️ Aucun fichier sélectionné pour le téléchargement (pas de mimetype)');
+      return;
+    }
+
+    console.log('🚀 Appel de handleDownloadZip avec', selectedFiles.length, 'fichiers');
+    try {
+      await handleDownloadZip(selectedFiles, 
+        (result) => {
+          console.log('✅ Succès callback:', result);
+          console.log(`${result.fileCount} fichier(s) téléchargé(s) dans ${result.fileName}`);
+          // Optionnel: quitter le mode sélection après téléchargement
+          setIsSelectionMode(false);
+          setSelectedItems([]);
+        },
+        (error) => {
+          console.error('❌ Erreur callback:', error);
+          console.error(`Erreur lors du téléchargement: ${error}`);
+        }
+      );
+    } catch (error) {
+      console.error('❌ Erreur téléchargement ZIP (catch):', error);
+    }
+  };
+
+  // Construire le chemin hiérarchique pour l'URL et le breadcrumb avec slugs
   const buildHierarchicalPath = (ancestors, currentName) => {
-    const pathParts = [...(ancestors || []).map(a => a.name), currentName].filter(Boolean);
+    const pathParts = [...(ancestors || []).map(a => createSlug(fixEncoding(a.name))), currentName ? createSlug(fixEncoding(currentName)) : ''].filter(Boolean);
     return pathParts.join('/');
   };
 
@@ -179,7 +266,9 @@ const DossierDetailsPage = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <Breadcrumb items={breadcrumbItems} />
-          <h1 className="text-2xl font-bold">{dossier.name}</h1>
+          <h1 className="text-2xl font-bold">
+            <FormattedText text={dossier.name_original || dossier.name} type="encoding" />
+          </h1>
           <p className="text-secondary">{(dossier.subDossiers || []).length} sous-dossier(s) et {(dossier.dossierFiles || []).length} fichier(s)</p>
         </div>
         <div className="flex items-center gap-4">
@@ -192,14 +281,37 @@ const DossierDetailsPage = () => {
         </div>
       </div>
 
-      <div className="folder-bar">
-        <div className="view-mode-switcher">
-          <button onClick={() => setViewMode('grid')} className={`view-mode-btn ${viewMode === 'grid' ? 'active' : ''}`}>
-            <FaTh />
-          </button>
-          <button onClick={() => setViewMode('list')} className={`view-mode-btn ${viewMode === 'list' ? 'active' : ''}`}>
-            <FaList />
-          </button>
+      <div className="file-list-header">
+        <div className="header-left">
+          <h2 className="text-lg font-semibold">Contenu du dossier</h2>
+        </div>
+        <div className="header-right">
+          <div className="text-sm text-secondary">
+            Page {pagination.page} sur {pagination.totalPages}
+          </div>
+          
+          <ContentToolbar
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            storageKey="dossierDetailsViewMode"
+            showPagination={false}
+            showViewSwitcher={true}
+            className="inline-toolbar"
+            onToggleSelection={toggleSelectionMode}
+            onBatchDelete={handleBatchDelete}
+            onBatchDownload={() => {
+              console.log('🔄 onBatchDownload wrapper appelé');
+              console.log('🔗 handleBatchDownload exists:', !!handleBatchDownload);
+              if (handleBatchDownload) {
+                handleBatchDownload();
+              } else {
+                console.error('❌ handleBatchDownload non défini!');
+              }
+            }}
+            isSelectionMode={isSelectionMode}
+            selectedCount={selectedItems.length}
+            showSelectionTools={true}
+          />
         </div>
       </div>
 
@@ -214,11 +326,14 @@ const DossierDetailsPage = () => {
         handleOpenFile={handleOpenFile}
         handleOpenFileRenameModal={handleOpenFileRenameModal}
         handleOpenFileDeleteModal={handleOpenFileDeleteModal}
+        handleOpenPreviewModal={setSelectedFile}
+        handleShare={(file) => console.log('Partager:', file)}
+        isSelectionMode={isSelectionMode}
+        selectedItems={selectedItems}
+        setSelectedItems={setSelectedItems}
+        onItemsUpdated={fetchDossierDetails}
+        handleSelectItem={handleSelectItem}
       />
-
-      {/* {(dossier.subDossiers || []).length === 0 && (dossier.dossierFiles || []).length === 0 && (
-        <p className="mt-4">Ce dossier est vide.</p>
-      )} */}
 
       {dossierToRename && (
         <RenameDossierModal
@@ -268,6 +383,34 @@ const DossierDetailsPage = () => {
         onUploadComplete={handleDossierUpdated}
         dossierId={id}
       />
+
+      {/* Bulk Actions Manager */}
+      <BulkActionsManager
+        isSelectionMode={isSelectionMode}
+        selectedItems={selectedItems}
+        itemType="file"
+        onSelectionModeChange={(mode) => {
+          setIsSelectionMode(mode);
+          if (!mode) setSelectedItems([]);
+        }}
+        onItemsUpdated={fetchDossierDetails}
+        onSelectAll={() => {
+          const allItems = [...(dossier.subDossiers || []), ...(dossier.dossierFiles || [])];
+          if (selectedItems.length === allItems.length) {
+            setSelectedItems([]);
+          } else {
+            setSelectedItems(allItems);
+          }
+        }}
+        totalItems={((dossier?.subDossiers || []).length + (dossier?.dossierFiles || []).length)}
+      />
+
+      {/* Indicateur de progrès pour le téléchargement ZIP */}
+      <DownloadProgressIndicator
+        progressBar={progressBar}
+        onClose={clearError}
+      />
+
     </div>
   );
 };

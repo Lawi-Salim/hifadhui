@@ -1,29 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { FaPlus, FaUpload, FaTrash, FaEdit, FaDownload, FaShare, FaFilter, FaSearch } from 'react-icons/fa';
+import { FiMenu } from 'react-icons/fi';
 import fileService from '../../services/fileService';
 import api from '../../services/api';
 import ItemList from '../Common/ItemList';
 import DeleteFileModal from '../Common/DeleteFileModal';
 import RenameFileModal from '../Common/RenameFileModal';
-import FilePreviewModal from '../Common/FilePreviewModal';
+import FileDetailModal from '../Common/FileDetailModal';
 import ShareModal from './ShareModal';
-import { FaUpload, FaTrash } from 'react-icons/fa';
-import ViewModeSwitcher from '../Common/ViewModeSwitcher';
+import ContentToolbar from '../Common/ContentToolbar';
 import { Link } from 'react-router-dom';
-import DeleteBatchModal from '../Images/DeleteBatchModal'; // Réutilisation de la modale existante
-import Pagination from '../Pagination';
+import DeleteBatchModal from '../Common/DeleteBatchModal';
+import BulkActionsManager from '../Common/BulkActionsManager';
+import { useDownloadZip, DownloadProgressIndicator } from '../Common/DownloadZip';
+import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import './FileList.css';
 
 const FilesPage = () => {
-  const [files, setFiles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
-  const [pagination, setPagination] = useState({
-    page: 1,
-    totalPages: 1,
-    total: 0
-  });
-  const [currentPage, setCurrentPage] = useState(1);
   const [activeMenu, setActiveMenu] = useState(null);
 
   // Fonction pour calculer la position du menu avec hauteur dynamique
@@ -43,43 +37,30 @@ const FilesPage = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
+  const [batchDeleteLoading, setBatchDeleteLoading] = useState(false);
+  const [deleteProgress, setDeleteProgress] = useState(0);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [fileToPreview, setFileToPreview] = useState(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [fileToShare, setFileToShare] = useState(null);
+  
+  // Hook pour le scroll infini
+  const {
+    items: files,
+    loading,
+    hasMore,
+    error,
+    totalCount,
+    lastItemRef,
+    refresh
+  } = useInfiniteScroll(fileService.getFiles, { limit: 20 });
 
-  const fetchFiles = useCallback(async (page = 1) => {
-    try {
-      setLoading(true);
-      const response = await fileService.getFiles({ page, limit: 10 });
-      setFiles(response.data.files || response.data);
-      
-      if (response.data.pagination) {
-        setPagination({
-          page: response.data.pagination.page || page,
-          totalPages: response.data.pagination.totalPages || 1,
-          total: response.data.pagination.total || 0
-        });
-      } else {
-        // Si pas de pagination dans la réponse, on suppose une seule page
-        setPagination({
-          page: 1,
-          totalPages: 1,
-          total: response.data.files?.length || response.data.length || 0
-        });
-      }
-      setCurrentPage(page);
-    } catch (err) {
-      setError('Erreur lors de la récupération des fichiers.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchFiles(1);
-  }, [fetchFiles]);
+  // Hook pour le téléchargement ZIP
+  const {
+    progressBar,
+    handleDownloadZip,
+    clearError
+  } = useDownloadZip();
 
   const toggleMenu = (e, itemId) => {
     // Vérifier si e est un événement ou un ID direct
@@ -137,11 +118,11 @@ const FilesPage = () => {
   };
 
   const handleFileRenamed = () => {
-    fetchFiles(currentPage);
+    refresh();
   };
 
   const handleFileDeleted = () => {
-    fetchFiles(currentPage); // Recharger les fichiers après suppression
+    refresh();
     setIsDeleteModalOpen(false);
     setSelectedFile(null);
   };
@@ -169,67 +150,140 @@ const FilesPage = () => {
     );
   };
 
+  // Fonction pour gérer le téléchargement ZIP
+  const handleBatchDownload = async () => {
+    if (selectedFiles.length === 0) return;
+
+    // Récupérer les objets fichiers complets à partir des IDs sélectionnés
+    const selectedFileObjects = files.filter(file => selectedFiles.includes(file.id));
+
+    try {
+      await handleDownloadZip(selectedFileObjects, 
+        (result) => {
+          console.log(`${result.fileCount} fichier(s) téléchargé(s) dans ${result.fileName}`);
+          // Optionnel: quitter le mode sélection après téléchargement
+          setIsSelectionMode(false);
+          setSelectedFiles([]);
+        },
+        (error) => {
+          console.error(`Erreur lors du téléchargement: ${error}`);
+        }
+      );
+    } catch (error) {
+      console.error('Erreur téléchargement ZIP:', error);
+    }
+  };
+
   const handleBatchDelete = async () => {
     setIsBatchDeleteModalOpen(true);
   };
 
   const handleConfirmBatchDelete = async () => {
+    setBatchDeleteLoading(true);
+    setDeleteProgress(0);
+    
     try {
+      // Simuler la progression pendant la suppression
+      const progressInterval = setInterval(() => {
+        setDeleteProgress(prev => {
+          if (prev >= 90) return prev; // S'arrêter à 90% jusqu'à la fin réelle
+          return Math.round(prev + Math.random() * 15);
+        });
+      }, 200);
+      
       await api.delete('/files/batch-delete', { data: { fileIds: selectedFiles } });
-      fetchFiles(currentPage); // Recharger les fichiers
+      
+      // Compléter la progression
+      clearInterval(progressInterval);
+      setDeleteProgress(100);
+      
+      // Attendre un peu pour montrer 100%
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      refresh(); // Recharger les fichiers
       setIsSelectionMode(false); // Quitter le mode sélection
       setSelectedFiles([]); // Vider la sélection
     } catch (error) {
       console.error('Erreur lors de la suppression par lot:', error);
-      setError('Erreur lors de la suppression des fichiers.');
     } finally {
+      setBatchDeleteLoading(false);
+      setDeleteProgress(0);
       setIsBatchDeleteModalOpen(false);
     }
   };
 
-  if (loading) return <div className="files-loading">Chargement...</div>;
+  const handleSelectAll = () => {
+    if (selectedFiles.length === files.length) {
+      // Si tous sont sélectionnés, désélectionner tout
+      setSelectedFiles([]);
+    } else {
+      // Sinon, sélectionner tous les fichiers visibles
+      setSelectedFiles(files.map(file => file.id));
+    }
+  };
+
+  if (loading && files.length === 0) return <div className="files-loading">Chargement...</div>;
   if (error) return <div className="files-error">{error}</div>;
 
   return (
-    <div className="container">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Mes Fichiers</h1>
-          <p className="text-secondary">Vous avez {pagination.total || 0} fichier(s) au total.</p>
+    <BulkActionsManager
+      isSelectionMode={isSelectionMode}
+      selectedItems={selectedFiles}
+      itemType="file"
+      onSelectionModeChange={setIsSelectionMode}
+      onItemsUpdated={refresh}
+      onSelectAll={handleSelectAll}
+      totalItems={files.length}
+    >
+      <div className="container">
+        <div className="flex justify-between items-center mb-6">
+          <div className='my-space-title'>
+            <button 
+              className="mobile-hamburger-menu"
+              onClick={() => {
+                const event = new CustomEvent('toggleSidebar');
+                window.dispatchEvent(event);
+              }}
+              aria-label="Toggle menu"
+            >
+              <FiMenu />
+            </button>
+            <div className="title-content">
+              <h1 className="text-2xl font-bold">Mes Fichiers</h1>
+              <p className="text-secondary">Vous avez {totalCount || 0} fichier(s) au total.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link to="/upload" className="btn btn-primary flex items-center gap-2">
+              <FaUpload /> Uploader un fichier
+            </Link>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
-          <button onClick={toggleSelectionMode} className="btn btn-secondary">
-            {isSelectionMode ? 'Annuler' : 'Sélectionner'}
-          </button>
-          <Link to="/upload" className="btn btn-primary flex items-center gap-2">
-            <FaUpload /> Uploader un fichier
-          </Link>
-        </div>
-      </div>
 
       <div className="file-list-header">
-        <h2 className="text-lg font-semibold">Images sécurisées</h2>
-        <div className="text-sm text-secondary">
-          Page {pagination.page} sur {pagination.totalPages}
+        <div className="header-left">
+          <h2 className="text-lg font-semibold">Fichiers sécurisés</h2>
         </div>
-      </div>
-
-      {isSelectionMode ? (
-        <div className="selection-header card-image mb-4">
-          <span>{selectedFiles.length} fichier(s) sélectionné(s)</span>
-          <button onClick={handleBatchDelete} className="btn btn-danger" disabled={selectedFiles.length === 0}>
-            <FaTrash /> Tout supprimer
-          </button>
-        </div>
-      ) : (
-        <div className="folder-bar">
-          <ViewModeSwitcher 
-            viewMode={viewMode} 
-            setViewMode={setViewMode} 
-            storageKey="filesViewMode" 
+        <div className="header-right">
+          <div className="text-sm text-secondary">
+            {files.length} / {totalCount} fichiers chargés
+          </div>
+          
+          <ContentToolbar
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            storageKey="filesViewMode"
+            showPagination={false}
+            showViewSwitcher={true}
+            className="inline-toolbar"
+            onToggleSelection={toggleSelectionMode}
+            onBatchDelete={handleBatchDelete}
+            onBatchDownload={handleBatchDownload}
+            isSelectionMode={isSelectionMode}
+            selectedCount={selectedFiles.length}
           />
         </div>
-      )}
+      </div>
 
       <ItemList
         items={files}
@@ -246,16 +300,12 @@ const FilesPage = () => {
         isSelectionMode={isSelectionMode}
         selectedItems={selectedFiles}
         handleSelectItem={handleSelectFile}
+        // Props pour le scroll infini
+        lastItemRef={lastItemRef}
+        hasMore={hasMore}
+        loading={loading}
       />
 
-      {pagination.totalPages > 1 && (
-        <Pagination
-          itemsPerPage={10}
-          totalItems={pagination.total}
-          paginate={fetchFiles}
-          currentPage={currentPage}
-        />
-      )}
 
       <RenameFileModal 
         isOpen={isRenameModalOpen}
@@ -272,9 +322,10 @@ const FilesPage = () => {
       />
 
       {fileToPreview && (
-        <FilePreviewModal
+        <FileDetailModal
           isOpen={isPreviewModalOpen}
           file={fileToPreview}
+          type="file"
           onClose={() => {
             setIsPreviewModalOpen(false);
             setFileToPreview(null);
@@ -292,9 +343,37 @@ const FilesPage = () => {
         isOpen={isBatchDeleteModalOpen}
         onClose={() => setIsBatchDeleteModalOpen(false)}
         onConfirm={handleConfirmBatchDelete}
-        imageCount={selectedFiles.length} // Le prop s'appelle imageCount mais fonctionne pour les fichiers
+        imageCount={selectedFiles.length}
+        itemType="file"
+        selectedItems={selectedFiles}
       />
-    </div>
+
+      {/* Indicateur de chargement pour le scroll infini */}
+      {loading && files.length > 0 && (
+        <div className="text-center py-4">
+          <div className="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-indigo-500 transition ease-in-out duration-150">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Chargement...
+          </div>
+        </div>
+      )}
+      
+      {!hasMore && files.length > 0 && (
+        <div className="text-center py-4 text-gray-500 has-more">
+          Tous les fichiers ont été chargés
+        </div>
+      )}
+
+      {/* Indicateur de progrès pour le téléchargement ZIP */}
+      <DownloadProgressIndicator
+        progressBar={progressBar}
+        onClose={clearError}
+      />
+      </div>
+    </BulkActionsManager>
   );
 };
 

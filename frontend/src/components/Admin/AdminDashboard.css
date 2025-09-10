@@ -12,7 +12,7 @@
 }
 
 .dashboard-section {
-  background-color: var(--secondary-background-color);
+  background-color: var(--surface-color);
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);

@@ -2,13 +2,20 @@ import React, { useState, useRef } from 'react';
 import Modal from '../Modal';
 import api from '../../services/api';
 import { FiUpload, FiClock } from 'react-icons/fi';
+import ProgressBar from '../Common/ProgressBar';
+import { useProgressBar } from '../../hooks/useProgressBar';
 
 const FileUploadModal = ({ isOpen, onClose, onUploadComplete, dossierId }) => {
   const [dragActive, setDragActive] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [message, setMessage] = useState({ type: '', text: '' });
   const fileInputRef = useRef(null);
+
+  // Hook centralisé pour la progression
+  const uploadProgressBar = useProgressBar({ 
+    type: 'upload',
+    maxProgress: 90,
+    interval: 300 
+  });
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -49,8 +56,7 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete, dossierId }) => {
       return;
     }
 
-    setUploading(true);
-    setUploadProgress(0);
+    uploadProgressBar.startProgress('Upload en cours...', file.size);
     setMessage({ type: '', text: '' });
 
     const formData = new FormData();
@@ -62,21 +68,22 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete, dossierId }) => {
     try {
       await api.post('/files/upload', formData, {
         onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted);
+          // Ignorer la progression Axios, utiliser la progression simulée adaptée à la taille
+          // La progression est déjà gérée par useProgressBar avec la taille du fichier
         },
       });
 
+      uploadProgressBar.completeProgress();
       setMessage({ type: 'success', text: 'Fichier uploadé avec succès!' });
       setTimeout(() => {
         onUploadComplete();
         onClose();
+        uploadProgressBar.resetProgress();
       }, 1500);
 
     } catch (error) {
+      uploadProgressBar.setProgressError(error.response?.data?.error || 'Erreur lors de l\'upload.');
       setMessage({ type: 'error', text: error.response?.data?.error || 'Erreur lors de l\'upload.' });
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -102,18 +109,27 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete, dossierId }) => {
           style={{ display: 'none' }}
           onChange={handleChange}
           accept=".jpg,.jpeg,.png,.pdf"
-          disabled={uploading}
+          disabled={uploadProgressBar.isActive}
         />
         <div className="upload-icon">
-          {uploading ? <FiClock size={48} /> : <FiUpload size={48} />}
+          {uploadProgressBar.isActive ? <FiClock size={48} /> : <FiUpload size={48} />}
         </div>
         <div className="upload-text">
-          {uploading ? `Upload en cours... ${uploadProgress}%` : 'Cliquez ou glissez-déposez'}
+          {uploadProgressBar.isActive ? `Upload en cours... ${uploadProgressBar.progress}%` : 'Cliquez ou glissez-déposez'}
         </div>
-        <div className="upload-subtext">JPG, PNG, PDF (max. 5MB) <br />Les fichiers ou dossiers zip ne sont pas acceptés ici. </div>
-        {uploading && (
-          <div className="upload-progress">
-            <div className="upload-progress-bar" style={{ width: `${uploadProgress}%` }}></div>
+        <div className="upload-subtext">Formats acceptés: JPG, PNG, PDF, ZIP (max. 5MB) <br />Les dossiers zip ne sont pas acceptés ici. </div>
+        {uploadProgressBar.isActive && (
+          <div style={{ marginTop: '1rem' }}>
+            <ProgressBar
+              isVisible={true}
+              progress={uploadProgressBar.progress}
+              type={uploadProgressBar.type}
+              currentItem={uploadProgressBar.currentItem}
+              stats={uploadProgressBar.stats}
+              error={uploadProgressBar.error}
+              completed={uploadProgressBar.completed}
+              showAsModal={false}
+            />
           </div>
         )}
       </div>

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { sequelize } = require('../config/database');
-const { Dossier, File, ActivityLog } = require('../models'); // Assurez-vous que les modèles sont correctement importés
+const { Dossier, File, Certificate, ActivityLog } = require('../models'); // Assurez-vous que les modèles sont correctement importés
 const { authenticateToken } = require('../middleware/auth');
 const upload = require('../middleware/upload').upload; // Pour l'upload Cloudinary
 const AdmZip = require('adm-zip');
@@ -17,12 +17,22 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 
   try {
-    // Vérifier l'unicité du nom dans le même dossier parent
+    // Si aucun parent spécifié, utiliser le dossier système comme parent
+    let actualParentId = parent_id;
+    if (!actualParentId) {
+      const systemRoot = await Dossier.getSystemRoot();
+      actualParentId = systemRoot.id;
+    }
+
+    // Transformer le nom en slug pour éviter les problèmes d'encodage
+    const slugifiedName = createSlug(name);
+    
+    // Vérifier l'unicité du nom slugifié dans le même dossier parent
     const existingDossier = await Dossier.findOne({ 
       where: { 
-        name, 
+        name: slugifiedName, 
         owner_id: req.user.id,
-        parent_id: parent_id
+        parent_id: actualParentId
       } 
     });
     if (existingDossier) {
@@ -30,9 +40,10 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     const newDossier = await Dossier.create({
-      name,
+      name: slugifiedName,
+      name_original: fixEncoding(name),
       owner_id: req.user.id,
-      parent_id,
+      parent_id: actualParentId,
     });
 
         await ActivityLog.create({
@@ -55,15 +66,18 @@ router.post('/', authenticateToken, async (req, res) => {
 // GET /api/dossiers - Lister les dossiers racine de l'utilisateur
 router.get('/', authenticateToken, async (req, res) => {
   try {
+    // Récupérer le dossier système et lister ses enfants (masquer hifadhwi)
+    const systemRoot = await Dossier.getSystemRoot();
     const dossiers = await Dossier.findAll({
       where: { 
         owner_id: req.user.id,
-        parent_id: null // On ne récupère que les dossiers à la racine
+        parent_id: systemRoot.id // Enfants du dossier système
       },
       attributes: {
         include: [
           ['id', 'id'],
           ['name', 'name'],
+          ['name_original', 'name_original'],
           ['owner_id', 'owner_id'],
           ['parent_id', 'parent_id'],
           ['created_at', 'created_at'],
@@ -110,30 +124,121 @@ const getAncestors = async (dossierId, userId) => {
   return ancestors;
 };
 
+// Fonction pour corriger l'encodage des caractères spéciaux français mal encodés
+const fixEncoding = (text) => {
+  if (!text || typeof text !== 'string') return text;
+  
+  // Mapping des caractères mal encodés vers les caractères corrects
+  const encodingMap = {
+    'Ã©': 'é',
+    'Ã¨': 'è',
+    'Ã ': 'à',
+    'Ã§': 'ç',
+    'Ã´': 'ô',
+    'Ã¢': 'â',
+    'Ã®': 'î',
+    'Ã¯': 'ï',
+    'Ã¹': 'ù',
+    'Ã»': 'û',
+    'Ã«': 'ë',
+    'Ã¶': 'ö',
+    'Ã¼': 'ü',
+    'Ã±': 'ñ',
+    'Ã': 'À',
+    'Ã‰': 'É',
+    'Ã‡': 'Ç',
+    'Ã"': 'Ô',
+    'Ã‚': 'Â',
+    'ÃŽ': 'Î',
+    'Ã™': 'Ù',
+    'Ã›': 'Û',
+    'Ã‹': 'Ë',
+    'Ã–': 'Ö',
+    'Ãœ': 'Ü'
+  };
+  
+  let correctedText = text;
+  
+  // Remplacer tous les caractères mal encodés
+  Object.keys(encodingMap).forEach(malformed => {
+    const regex = new RegExp(malformed, 'g');
+    correctedText = correctedText.replace(regex, encodingMap[malformed]);
+  });
+  
+  return correctedText;
+};
+
+// Fonction pour créer un slug à partir d'un nom
+const createSlug = (text) => {
+  if (!text || typeof text !== 'string') return text;
+  
+  // D'abord corriger l'encodage
+  let correctedText = fixEncoding(text);
+  
+  const accentMap = {
+    'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', 'å': 'a',
+    'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
+    'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
+    'ò': 'o', 'ó': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
+    'ù': 'u', 'ú': 'u', 'û': 'u', 'ü': 'u',
+    'ý': 'y', 'ÿ': 'y',
+    'ñ': 'n', 'ç': 'c',
+    // Caractères spéciaux français supplémentaires
+    'œ': 'oe', 'æ': 'ae',
+    'Œ': 'OE', 'Æ': 'AE',
+    'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A', 'Å': 'A',
+    'È': 'E', 'É': 'E', 'Ê': 'E', 'Ë': 'E',
+    'Ì': 'I', 'Í': 'I', 'Î': 'I', 'Ï': 'I',
+    'Ò': 'O', 'Ó': 'O', 'Ô': 'O', 'Õ': 'O', 'Ö': 'O',
+    'Ù': 'U', 'Ú': 'U', 'Û': 'U', 'Ü': 'U',
+    'Ý': 'Y', 'Ÿ': 'Y',
+    'Ñ': 'N', 'Ç': 'C'
+  };
+  
+  // Garder les majuscules, supprimer seulement les accents et remplacer espaces par tirets
+  return correctedText
+    .split('').map(char => accentMap[char] || char).join('')
+    .replace(/\s+/g, '-') // Remplacer espaces par tirets
+    .replace(/[^a-zA-Z0-9\-_]+/g, '') // Supprimer caractères spéciaux sauf tirets et underscores
+    .replace(/-+/g, '-') // Éviter les tirets multiples
+    .replace(/^-+|-+$/g, ''); // Supprimer tirets en début/fin
+};
+
 // GET /api/dossiers/by-path/:path - Récupérer un dossier par son chemin hiérarchique
 router.get('/by-path/:path', authenticateToken, async (req, res) => {
   try {
-    const pathParts = decodeURIComponent(req.params.path).split('/').filter(Boolean);
-    let currentDossier = null;
-    let parentId = null;
-
-    // Parcourir le chemin pour trouver le dossier final
-    for (const folderName of pathParts) {
-      currentDossier = await Dossier.findOne({
-        where: { 
-          name: folderName,
-          owner_id: req.user.id,
-          parent_id: parentId
-        }
-      });
-
-      if (!currentDossier) {
-        return res.status(404).json({ error: 'Dossier non trouvé dans le chemin spécifié.' });
+    const slugPath = decodeURIComponent(req.params.path);
+    // Diviser le chemin en segments
+    const pathSegments = slugPath.split('/').filter(segment => segment.length > 0);
+    
+    // Récupérer le dossier système et tous les dossiers de l'utilisateur
+    const systemRoot = await Dossier.getSystemRoot();
+    const allDossiers = await Dossier.findAll({
+      where: { 
+        owner_id: req.user.id
       }
+    });
 
-      parentId = currentDossier.id;
+    // Naviguer dans la hiérarchie segment par segment
+    // Commencer par le dossier système comme racine
+    let currentDossier = null;
+    let currentParentId = systemRoot.id;
+
+    for (const segment of pathSegments) {
+      // Chercher le dossier correspondant au segment actuel dans le parent actuel
+      const matchingDossier = allDossiers.find(d => {
+        const dossierSlug = createSlug(fixEncoding(d.name));
+        return dossierSlug === segment && d.parent_id === currentParentId;
+      });
+      
+      if (!matchingDossier) {
+        return res.status(404).json({ error: `Dossier non trouvé: ${segment}` });
+      }
+      
+      currentDossier = matchingDossier;
+      currentParentId = currentDossier.id;
     }
-
+    
     if (!currentDossier) {
       return res.status(404).json({ error: 'Chemin de dossier invalide.' });
     }
@@ -141,8 +246,40 @@ router.get('/by-path/:path', authenticateToken, async (req, res) => {
     // Récupérer les fichiers et sous-dossiers
     const files = await File.findAll({
       where: { dossier_id: currentDossier.id, owner_id: req.user.id },
+      include: [{
+        model: Dossier,
+        as: 'fileDossier',
+        required: false
+      }],
       order: [['filename', 'ASC']]
     });
+
+    // Pour chaque fichier, récupérer son certificat et le chemin complet du dossier
+    const filesWithDetails = await Promise.all(
+      files.map(async (file) => {
+        const rootFileId = file.parent_file_id || file.id;
+        const certificate = await Certificate.findOne({
+          where: { root_file_id: rootFileId },
+          attributes: ['id', 'pdf_url', 'date_generated']
+        });
+        
+        // Calculer le chemin complet du dossier
+        let fullPath = 'Racine';
+        if (file.fileDossier) {
+          fullPath = await file.fileDossier.getFullPath();
+        }
+        
+        const fileData = file.toJSON();
+        return {
+          ...fileData,
+          dossier: fileData.fileDossier ? {
+            ...fileData.fileDossier,
+            fullPath: fullPath
+          } : null,
+          fileCertificates: certificate ? [certificate] : []
+        };
+      })
+    );
 
     const subDossiers = await Dossier.findAll({
       where: { parent_id: currentDossier.id, owner_id: req.user.id },
@@ -150,6 +287,7 @@ router.get('/by-path/:path', authenticateToken, async (req, res) => {
         include: [
           ['id', 'id'],
           ['name', 'name'],
+          ['name_original', 'name_original'],
           ['owner_id', 'owner_id'],
           ['parent_id', 'parent_id'],
           ['created_at', 'created_at'],
@@ -164,12 +302,12 @@ router.get('/by-path/:path', authenticateToken, async (req, res) => {
     // Ajouter le chemin hiérarchique aux sous-dossiers
     const subDossiersWithPath = subDossiers.map(subDossier => ({
       ...subDossier.dataValues,
-      hierarchicalPath: `${req.params.path}/${subDossier.name}`
+      hierarchicalPath: `${req.params.path}/${createSlug(fixEncoding(subDossier.name))}`
     }));
 
     const ancestors = await getAncestors(currentDossier.parent_id, req.user.id);
 
-    currentDossier.dataValues.dossierFiles = files;
+    currentDossier.dataValues.dossierFiles = filesWithDetails;
     currentDossier.dataValues.subDossiers = subDossiersWithPath;
     currentDossier.dataValues.ancestors = ancestors;
 
@@ -193,8 +331,40 @@ router.get('/:id', authenticateToken, async (req, res) => {
     if (dossier) {
       const files = await File.findAll({
         where: { dossier_id: dossier.id, owner_id: req.user.id },
+        include: [{
+          model: Dossier,
+          as: 'fileDossier',
+          required: false
+        }],
         order: [['filename', 'ASC']]
       });
+
+      // Pour chaque fichier, récupérer son certificat et le chemin complet du dossier
+      const filesWithDetails = await Promise.all(
+        files.map(async (file) => {
+          const rootFileId = file.parent_file_id || file.id;
+          const certificate = await Certificate.findOne({
+            where: { root_file_id: rootFileId },
+            attributes: ['id', 'pdf_url', 'date_generated']
+          });
+          
+          // Calculer le chemin complet du dossier
+          let fullPath = 'Racine';
+          if (file.fileDossier) {
+            fullPath = await file.fileDossier.getFullPath();
+          }
+          
+          const fileData = file.toJSON();
+          return {
+            ...fileData,
+            dossier: fileData.fileDossier ? {
+              ...fileData.fileDossier,
+              fullPath: fullPath
+            } : null,
+            fileCertificates: certificate ? [certificate] : []
+          };
+        })
+      );
 
       const subDossiers = await Dossier.findAll({
         where: { parent_id: dossier.id, owner_id: req.user.id },
@@ -218,18 +388,18 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
       // Ajouter le chemin hiérarchique aux sous-dossiers pour la route par ID
       const buildPath = (ancestorsList, currentName) => {
-        return [...ancestorsList.map(a => a.name), currentName].join('/');
+        return [...ancestorsList.map(a => createSlug(fixEncoding(a.name))), createSlug(fixEncoding(currentName))].join('/');
       };
       
       const currentPath = buildPath(ancestors, dossier.name);
       
       const subDossiersWithPath = subDossiers.map(subDossier => ({
         ...subDossier.dataValues,
-        hierarchicalPath: `${currentPath}/${subDossier.name}`
+        hierarchicalPath: `${currentPath}/${createSlug(fixEncoding(subDossier.name))}`
       }));
 
       // Attacher les résultats à l'objet dossier pour la réponse JSON
-      dossier.dataValues.dossierFiles = files;
+      dossier.dataValues.dossierFiles = filesWithDetails;
       dossier.dataValues.subDossiers = subDossiersWithPath;
       dossier.dataValues.ancestors = ancestors;
 
@@ -340,10 +510,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Dossier non trouvé.' });
     }
 
+    // Transformer le nom en slug pour éviter les problèmes d'encodage
+    const slugifiedName = createSlug(name);
+
     // Vérifier si un autre dossier du même nom existe déjà dans le même dossier parent
     const existingDossier = await Dossier.findOne({ 
       where: { 
-        name,
+        name: slugifiedName,
         owner_id: req.user.id,
         parent_id: dossier.parent_id
       }
@@ -354,7 +527,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
 
     const oldDossierName = dossier.name;
-    dossier.name = name;
+    dossier.name = slugifiedName;
+    dossier.name_original = fixEncoding(name);
     await dossier.save();
 
     await ActivityLog.create({
@@ -388,8 +562,37 @@ const getFilesToDelete = async (dossierId, ownerId, files = []) => {
 
 const deleteDossierRecursive = async (dossierId, ownerId) => {
   const subDossiers = await Dossier.findAll({ where: { parent_id: dossierId, owner_id: ownerId } });
-  for (const subDossier of subDossiers) {
-    await deleteDossierRecursive(subDossier.id, ownerId);
+  
+  // Supprimer récursivement tous les sous-dossiers en parallèle
+  await Promise.all(subDossiers.map(subDossier => 
+    deleteDossierRecursive(subDossier.id, ownerId)
+  ));
+
+  // Supprimer les fichiers de Cloudinary en parallèle avant de les supprimer de la base de données
+  const filesToDelete = await File.findAll({ where: { dossier_id: dossierId, owner_id: ownerId } });
+  
+  if (filesToDelete.length > 0) {
+    console.log(`Suppression de ${filesToDelete.length} fichiers de Cloudinary pour le dossier ${dossierId}...`);
+    
+    // Supprimer tous les fichiers Cloudinary en parallèle avec un maximum de 10 suppressions simultanées
+    const { deleteCloudinaryFile } = require('../utils/cloudinaryStructure');
+    const batchSize = 10;
+    
+    for (let i = 0; i < filesToDelete.length; i += batchSize) {
+      const batch = filesToDelete.slice(i, i + batchSize);
+      
+      await Promise.all(batch.map(async (file) => {
+        if (file.file_url) {
+          try {
+            await deleteCloudinaryFile(file.file_url, file.mimetype);
+            console.log(`Fichier supprimé de Cloudinary: ${file.file_url}`);
+          } catch (cloudinaryError) {
+            console.error(`Erreur suppression Cloudinary pour ${file.file_url}:`, cloudinaryError);
+            // Ne pas faire échouer la suppression si Cloudinary échoue
+          }
+        }
+      }));
+    }
   }
 
   await File.destroy({ where: { dossier_id: dossierId, owner_id: ownerId } });

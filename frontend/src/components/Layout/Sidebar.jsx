@@ -12,17 +12,33 @@ const Sidebar = () => {
   const [isMobile, setIsMobile] = useState(false);
   const sidebarRef = useRef(null);
 
-  // Détecter si on est sur mobile/tablette
+  // Détecter si on est sur mobile/tablette et très petit écran
   useEffect(() => {
-    const checkMobile = () => {
+    const checkScreenSize = () => {
       setIsMobile(window.innerWidth <= 1024);
+      setIsVerySmallScreen(window.innerWidth <= 600);
     };
     
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
     
-    return () => window.removeEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
+
+  // État pour détecter si on est sur très petit écran (mobile) - dynamique
+  const [isVerySmallScreen, setIsVerySmallScreen] = useState(window.innerWidth <= 600);
+
+  // Écouter l'événement personnalisé pour ouvrir le sidebar depuis les pages
+  useEffect(() => {
+    const handleToggleSidebar = () => {
+      if (isVerySmallScreen) {
+        setIsExpanded(!isExpanded);
+      }
+    };
+
+    window.addEventListener('toggleSidebar', handleToggleSidebar);
+    return () => window.removeEventListener('toggleSidebar', handleToggleSidebar);
+  }, [isVerySmallScreen, isExpanded]);
 
   // Fermer la sidebar étendue quand on clique en dehors (seulement sur mobile)
   useEffect(() => {
@@ -42,13 +58,13 @@ const Sidebar = () => {
   const menuItems = [
     { path: '/dashboard', label: 'Tableau de bord', icon: FiBarChart2 },
     { path: '/upload', label: 'Uploader', icon: FiUpload },
-    { path: '/files', label: 'Mes Fichiers', icon: FiFileText },
+    { path: '/files', label: 'PDFs', icon: FiFileText },
     { path: '/dossiers', label: 'Mes Dossiers', icon: FiFolder },
     { path: '/images', label: 'Images', icon: FiImage },
     { path: '/certificates', label: 'Certificats', icon: FiFileText }
   ];
 
-    if (user && user.role === 'admin') {
+  if (user && user.role === 'admin') {
     // Ajoute le lien vers la page des utilisateurs pour les admins
     const adminMenuItem = { path: '/admin/users', label: 'Utilisateurs', icon: FiUser };
     // Insère l'élément à la deuxième position dans le menu
@@ -71,7 +87,13 @@ const Sidebar = () => {
   };
 
   return (
-    <nav ref={sidebarRef} className={`sidebar ${isMobile && isExpanded ? 'expanded' : ''}`}>
+    <>
+      {/* Overlay pour fermer le menu sur mobile */}
+      {isVerySmallScreen && isExpanded && (
+        <div className="sidebar-overlay" onClick={() => setIsExpanded(false)}></div>
+      )}
+      
+      <nav ref={sidebarRef} className={`sidebar ${isMobile && isExpanded ? 'expanded' : ''} ${isVerySmallScreen ? 'mobile-hidden' : ''}`}>
       <div className="sidebar-brand">
         <Link to="/dashboard" className="brand-link">
           <span className="brand-icon"><FiLock /></span>
@@ -101,7 +123,8 @@ const Sidebar = () => {
           <UserMenu isExpanded={!isMobile || isExpanded} />
         </div>
       </div>
-    </nav>
+      </nav>
+    </>
   );
 };
 

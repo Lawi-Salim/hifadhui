@@ -1,0 +1,201 @@
+.content-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Style pour toolbar inline dans le header */
+.content-toolbar.inline-toolbar {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+  border-bottom: none;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: 4px;
+}
+
+.toolbar-left-menu {
+  display: none;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .toolbar-left,
+  .toolbar-right {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .toolbar-right {
+    order: -1; /* Pagination en premier sur mobile */
+  }
+}
+
+@media (max-width: 600px) {
+  /* .toolbar-left {
+    display: none;
+  } */
+
+  .toolbar-left-menu {
+    display: flex;
+  }
+
+  .menu {
+    display: none;
+  }
+
+  .content-toolbar {
+    border-right:0 !important;
+  }
+}
+
+/* Variante compacte */
+.content-toolbar.compact {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Variante sans bordure */
+.content-toolbar.borderless {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  padding: 0.5rem 0;
+}
+
+/* Styles pour le header avec toolbar inline */
+.file-list-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  width: 100%;
+  border: 1px solid var(--border-color);
+  background: var(--surface-color);
+  border-radius: var(--border-radius);
+  padding: 2px !important;
+  position: sticky;
+  top: .5rem;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.header-left {
+  display: flex;
+  flex: 1;
+  padding-left: 1rem;
+}
+
+.header-left h2 {
+  margin: 0 !important;
+}
+
+.header-right {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1rem;
+  gap: .5rem;
+}
+
+.header-right .content-toolbar {
+  border-radius: 0;
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  padding: 0 .25rem
+}
+
+@media (max-width: 600px) {
+  .header-right .content-toolbar {
+    border: 0 !important;
+  }
+  
+  .header-right {
+    padding-right: 0 ;
+  }
+}
+
+/* @media (max-width: 768px) {
+  .content-toolbar {
+    border-right: 0 !important;
+  }
+} */
+
+.trash, .check, .menu, .download {
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: var(--border-radius);
+  min-width: 40px;
+  height: 36px;
+  transition: all 0.2s ease;
+}
+
+.trash:hover, .check:hover, .menu:hover, .download:hover {
+  background-color: var(--bg-primary);
+  color: var(--primary-color);
+}
+
+.trash.enabled, .download.enabled {
+  cursor: pointer;
+}
+
+.trash.disabled, .download.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* États actifs pour les icônes */
+.check.active {
+  background-color: var(--bg-primary);
+  color: var(--primary-color);
+}
+
+.trash.enabled {
+  color: var(--error-color);
+  cursor: pointer;
+}
+
+.trash.enabled:hover {
+  background-color: var(--error-color);
+  color: white;
+}
+
+.trash.disabled {
+  color: var(--text-secondary);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .header-right {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-left: 0;
+    margin-top: 10px;
+  }
+}

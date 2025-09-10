@@ -8,10 +8,12 @@ import {
   FaFileAlt, 
   FaUpload
 } from 'react-icons/fa';
+import { createSlug, fixEncoding } from '../../utils/textUtils';
 import { FiFilePlus } from 'react-icons/fi';
 import ShareModal from '../Files/ShareModal';
 import PdfPreview from './PdfPreview';
 import ActionMenu from './ActionMenu';
+import FormattedText from './FormattedText';
 
 const ItemList = ({ 
   items = [], 
@@ -35,7 +37,11 @@ const ItemList = ({
   // Handler pour l'aperçu personnalisé des images
   customPreviewHandler,
   customActionsMenu,
-  menuButtonRefs
+  menuButtonRefs,
+  // Props pour le scroll infini
+  lastItemRef,
+  hasMore,
+  loading
 }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const localMenuButtonRefs = useRef({});
@@ -107,16 +113,19 @@ const ItemList = ({
   if (!items || items.length === 0) {
     const path = window.location.pathname;
     const isFilesPage = path.includes('/files') || path.includes('/fichiers');
+    const isDossierPage = path.includes('/dossiers');
     
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
         <FiFilePlus size={48} className="text-secondary mb-4" />
         <h3 className="text-lg font-semibold mb-2">
-          {isFilesPage ? 'Aucun fichier' : 'Aucun élément'}
+          {isFilesPage ? 'Aucun fichier' : isDossierPage ? 'Ce dossier est vide' : 'Aucun élément'}
         </h3>
         <p className="text-secondary mb-4">
           {isFilesPage 
             ? "Vous n'avez pas encore ajouté de fichiers."
+            : isDossierPage
+            ? "Ce dossier ne contient aucun fichier ou sous-dossier."
             : "Aucun élément à afficher pour le moment."
           }
         </p>
@@ -124,6 +133,14 @@ const ItemList = ({
           <Link to="/upload" className="btn btn-primary">
             <FaUpload className="mr-2" /> Téléverser votre premier fichier
           </Link>
+        )}
+        {isDossierPage && handleOpenUploadModal && (
+          <button 
+            onClick={handleOpenUploadModal} 
+            className="btn btn-primary"
+          >
+            <FaUpload className="mr-2" /> Uploader un fichier
+          </button>
         )}
       </div>
     );
@@ -165,13 +182,16 @@ const ItemList = ({
   };
 
   const renderItem = (item) => {
-    const isSelected = isSelectionMode && selectedItems && selectedItems.includes(item.id);
+    const isSelected = isSelectionMode && selectedItems && (
+      selectedItems.includes(item.id) || 
+      selectedItems.some(selectedItem => selectedItem.id === item.id)
+    );
     const isDossier = !item.filename;
 
     if (viewMode === 'grid') {
       if (isDossier) {
         return (
-          <Link to={`/dossiers/${item.hierarchicalPath || item.name || item.id}`} key={item.id} className="dossier-card">
+          <Link to={`/dossiers/${item.hierarchicalPath || createSlug(fixEncoding(item.name))}`} key={item.id} className="dossier-card">
             <FaFolder className="dossier-icon" />
             <div className="dossier-actions-container">
               <button className="btn-menu" onClick={(e) => toggleMenu(e, item.id)}>
@@ -202,14 +222,14 @@ const ItemList = ({
           <div 
             key={item.id} 
             className={`image-card-modern file-card ${activeMenu?.id === item.id ? 'menu-open' : ''} ${isSelected ? 'selected' : ''}`}
-            onClick={() => isSelectionMode && handleSelectItem(item.id)}
+            onClick={() => isSelectionMode && handleSelectItem(item)}
           >
             {isSelectionMode && (
               <div className="selection-checkbox">
                 <input 
                   type="checkbox" 
                   checked={isSelected}
-                  onChange={() => handleSelectItem(item.id)}
+                  onChange={() => handleSelectItem(item)}
                   onClick={(e) => e.stopPropagation()} // Empêche le clic de se propager à la div parente
                 />
               </div>
@@ -217,7 +237,7 @@ const ItemList = ({
             <div className="image-preview-modern" onClick={(e) => {
               if (isSelectionMode) {
                 e.stopPropagation();
-                handleSelectItem(item.id);
+                handleSelectItem(item);
               } else {
                 customPreviewHandler ? customPreviewHandler(item) : (handleOpenPreviewModal && handleOpenPreviewModal(item));
               }
@@ -243,31 +263,38 @@ const ItemList = ({
             </div>
             <div className="image-info">
               <div className="image-details">
-                <p className="image-name" title={item.filename}>{item.filename}</p>
+                <FormattedText 
+                  text={item.filename} 
+                  type="filename" 
+                  className="image-name"
+                  maxLength={15}
+                  hideExtension={true}
+                />
                 <p className="image-date">{formatDate(item.date_upload)}</p>
               </div>
-              <div className="image-actions-menu">
-                <button 
-                  className="btn-menu" 
-                  ref={el => refs.current[item.id] = el}
-                  onClick={(e) => { e.stopPropagation(); toggleMenu(e, item.id); }}
-                >
-                  <FaEllipsisV />
-                </button>
-                {activeMenu?.id === item.id && customActionsMenu && customActionsMenu(item)}
-                {activeMenu?.id === item.id && !customActionsMenu && (
-                  <ActionMenu
-                    isOpen={true}
-                    position={activeMenu?.position || 'bottom'}
-                    onPreview={handleOpenPreviewModal ? () => { handleOpenPreviewModal(item); toggleMenu(null); } : null}
-                    onDownload={handleOpenFile ? () => { handleOpenFile(item); toggleMenu(null); } : null}
-                    onShare={handleShare ? () => { handleShare(item); toggleMenu(null); } : null}
-                    onRename={handleOpenFileRenameModal ? () => { handleOpenFileRenameModal(item); toggleMenu(null); } : null}
-                    onDelete={handleOpenFileDeleteModal ? () => { handleOpenFileDeleteModal(item); toggleMenu(null); } : null}
-                    onClose={() => toggleMenu(null)}
-                  />
-                )}
-              </div>
+              {!isSelectionMode && (
+                <div className="image-actions-menu">
+                  <button 
+                    className="btn-menu" 
+                    ref={el => refs.current[item.id] = el}
+                    onClick={(e) => { e.stopPropagation(); toggleMenu(e, item.id); }}
+                  >
+                    <FaEllipsisV />
+                  </button>
+                </div>
+              )}
+              {!isSelectionMode && activeMenu?.id === item.id && customActionsMenu && customActionsMenu(item)}
+              {!isSelectionMode && activeMenu?.id === item.id && !customActionsMenu && (
+                <ActionMenu
+                  isOpen={true}
+                  position={activeMenu?.position || 'bottom'}
+                  onDownload={handleOpenFile ? () => { handleOpenFile(item); toggleMenu(null); } : null}
+                  onShare={handleShare ? () => { handleShare(item); toggleMenu(null); } : null}
+                  onRename={handleOpenFileRenameModal ? () => { handleOpenFileRenameModal(item); toggleMenu(null); } : null}
+                  onDelete={handleOpenFileDeleteModal ? () => { handleOpenFileDeleteModal(item); toggleMenu(null); } : null}
+                  onClose={() => toggleMenu(null)}
+                />
+              )}
             </div>
           </div>
         );
@@ -276,7 +303,7 @@ const ItemList = ({
       if (isDossier) {
         return (
           <div key={item.id} className="dossier-list-item">
-              <Link to={`/dossiers/${item.hierarchicalPath || item.name || item.id}`} className="dossier-list-item-link">
+              <Link to={`/dossiers/${item.hierarchicalPath || createSlug(fixEncoding(item.name))}`} className="dossier-list-item-link">
               <FaFolder className="dossier-icon" />
               <div className="dossier-info">
                 <p className="dossier-name">{item.name}</p>
@@ -285,20 +312,22 @@ const ItemList = ({
                 </p>
               </div>
             </Link>
-            <div className="dossier-actions-container">
-              <button className="btn-menu" onClick={(e) => toggleMenu(e, item.id)}>
-                <FaEllipsisV />
-              </button>
-              {activeMenu?.id === item.id && (
-                <ActionMenu
-                  isOpen={true}
-                  position={activeMenu?.position || 'bottom'}
-                  onRename={handleOpenRenameModal ? () => { handleOpenRenameModal(null, item); toggleMenu(null); } : null}
-                  onUpload={handleOpenUploadModal ? () => { handleOpenUploadModal(null, item); toggleMenu(null); } : null}
-                  onDelete={handleOpenDeleteModal ? () => { handleOpenDeleteModal(null, item); toggleMenu(null); } : null}
-                />
-              )}
-            </div>
+            {!isSelectionMode && (
+              <div className="dossier-actions-container">
+                <button className="btn-menu" onClick={(e) => toggleMenu(e, item.id)}>
+                  <FaEllipsisV />
+                </button>
+                {activeMenu?.id === item.id && (
+                  <ActionMenu
+                    isOpen={true}
+                    position={activeMenu?.position || 'bottom'}
+                    onRename={handleOpenRenameModal ? () => { handleOpenRenameModal(null, item); toggleMenu(null); } : null}
+                    onUpload={handleOpenUploadModal ? () => { handleOpenUploadModal(null, item); toggleMenu(null); } : null}
+                    onDelete={handleOpenDeleteModal ? () => { handleOpenDeleteModal(null, item); toggleMenu(null); } : null}
+                  />
+                )}
+              </div>
+            )}
           </div>
         );
       } else { // File in list view
@@ -306,14 +335,14 @@ const ItemList = ({
           <div 
             key={item.id} 
             className={`dossier-list-item file-item-list-view ${isSelected ? 'selected' : ''}`}
-            onClick={() => isSelectionMode ? handleSelectItem(item.id) : (customPreviewHandler ? customPreviewHandler(item) : (handleOpenPreviewModal && handleOpenPreviewModal(item)))}
+            onClick={() => isSelectionMode ? handleSelectItem(item) : (customPreviewHandler ? customPreviewHandler(item) : (handleOpenPreviewModal && handleOpenPreviewModal(item)))}
           >
             {isSelectionMode && (
               <div className="selection-checkbox-list">
                   <input 
                       type="checkbox" 
                       checked={isSelected}
-                      onChange={() => handleSelectItem(item.id)}
+                      onChange={() => handleSelectItem(item)}
                       onClick={(e) => e.stopPropagation()}
                   />
               </div>
@@ -321,32 +350,38 @@ const ItemList = ({
             <div className="dossier-list-item-link" style={{ pointerEvents: isSelectionMode ? 'none' : 'auto' }}>
                 {getFileIcon(item.filename)}
                 <div className="dossier-info">
-                    <p className="dossier-name">{item.filename}</p>
+                    <FormattedText 
+                      text={item.filename} 
+                      type="filename" 
+                      className="dossier-name"
+                      maxLength={15}
+                    />
                     <p className="dossier-file-count">{formatDate(item.date_upload)}</p>
                 </div>
             </div>
-            <div className="dossier-actions-container">
-                <button 
-                    className="btn-menu" 
-                    ref={el => refs.current[item.id] = el}
-                    onClick={(e) => { e.stopPropagation(); toggleMenu(e, item.id); }}
-                >
-                    <FaEllipsisV />
-                </button>
-                {activeMenu?.id === item.id && customActionsMenu && customActionsMenu(item)}
-                {activeMenu?.id === item.id && !customActionsMenu && (
-                  <ActionMenu
-                    isOpen={true}
-                    position={activeMenu?.position || 'bottom'}
-                    onPreview={handleOpenPreviewModal ? () => { handleOpenPreviewModal(item); toggleMenu(null); } : null}
-                    onDownload={handleOpenFile ? () => { handleOpenFile(item); toggleMenu(null); } : null}
-                    onShare={handleShare ? () => { handleShare(item); toggleMenu(null); } : null}
-                    onRename={handleOpenFileRenameModal ? () => { handleOpenFileRenameModal(item); toggleMenu(null); } : null}
-                    onDelete={handleOpenFileDeleteModal ? () => { handleOpenFileDeleteModal(item); toggleMenu(null); } : null}
-                    onClose={() => toggleMenu(null)}
-                  />
-                )}
-            </div>
+            {!isSelectionMode && (
+              <div className="dossier-actions-container">
+                  <button 
+                      className="btn-menu" 
+                      ref={el => refs.current[item.id] = el}
+                      onClick={(e) => { e.stopPropagation(); toggleMenu(e, item.id); }}
+                  >
+                      <FaEllipsisV />
+                  </button>
+                  {activeMenu?.id === item.id && customActionsMenu && customActionsMenu(item)}
+                  {activeMenu?.id === item.id && !customActionsMenu && (
+                    <ActionMenu
+                      isOpen={true}
+                      position={activeMenu?.position || 'bottom'}
+                      onDownload={handleOpenFile ? () => { handleOpenFile(item); toggleMenu(null); } : null}
+                      onShare={handleShare ? () => { handleShare(item); toggleMenu(null); } : null}
+                      onRename={handleOpenFileRenameModal ? () => { handleOpenFileRenameModal(item); toggleMenu(null); } : null}
+                      onDelete={handleOpenFileDeleteModal ? () => { handleOpenFileDeleteModal(item); toggleMenu(null); } : null}
+                      onClose={() => toggleMenu(null)}
+                    />
+                  )}
+              </div>
+            )}
           </div>
         );
       }
@@ -355,8 +390,21 @@ const ItemList = ({
 
   return (
     <div className={viewMode === 'grid' ? 'dossiers-grid' : 'dossiers-list'}>
-
-      {items.map(item => renderItem(item))}
+      {items.map((item, index) => {
+        // Attacher la ref au dernier élément pour le scroll infini
+        const isLastItem = index === items.length - 1;
+        const itemElement = renderItem(item);
+        
+        if (isLastItem && lastItemRef) {
+          return (
+            <div key={item.id} ref={lastItemRef}>
+              {itemElement}
+            </div>
+          );
+        }
+        
+        return <div key={item.id}>{itemElement}</div>;
+      })}
     </div>
   );
 };

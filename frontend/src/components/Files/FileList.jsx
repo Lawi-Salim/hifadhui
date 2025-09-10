@@ -2,6 +2,7 @@ import React from 'react';
 import { FaFileAlt, FaEllipsisV, FaDownload, FaEdit, FaTrash, FaUpload } from 'react-icons/fa';
 import { FiFilePlus } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
+import FormattedText from '../Common/FormattedText';
 import './FileList.css';
 
 const FileList = ({ 
@@ -44,7 +45,12 @@ const FileList = ({
             <div className="file-item-content" onClick={() => handleOpenFile(file)}>
               <FaFileAlt className="file-icon" />
               <div className="file-info">
-                <span className="file-name">{file.filename}</span>
+                <FormattedText 
+                  text={file.filename} 
+                  type="filename" 
+                  className="file-name"
+                  maxLength={45}
+                />
                 {viewMode === 'list' && (
                   <span className="file-date">{formatDate(file.date_upload)}</span>
                 )}

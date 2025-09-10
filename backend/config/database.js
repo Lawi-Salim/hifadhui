@@ -6,6 +6,10 @@ const dbConfig = {
   port: process.env.DB_PORT || 5432,
   dialect: 'postgres',
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
+  dialectOptions: {
+    charset: 'utf8',
+    collate: 'utf8_unicode_ci',
+  },
   pool: {
     max: 5,
     min: 0,
@@ -23,6 +27,7 @@ const dbConfig = {
 // Pour la production (Vercel + Supabase), nous devons activer SSL
 if (process.env.NODE_ENV === 'production') {
   dbConfig.dialectOptions = {
+    ...dbConfig.dialectOptions,
     ssl: {
       require: true,
       rejectUnauthorized: false, // Nécessaire pour les connexions à Supabase

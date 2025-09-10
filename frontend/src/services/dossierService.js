@@ -28,8 +28,19 @@ const renameDossier = (id, newName) => {
   return api.put(`/dossiers/${id}`, { name: newName });
 };
 
-const deleteDossier = (id) => {
-  return api.delete(`/dossiers/${id}`);
+const deleteDossier = async (id) => {
+  try {
+    const response = await api.delete(`/dossiers/${id}`, {
+      timeout: 120000 // 2 minutes pour les dossiers volumineux
+    });
+    return response;
+  } catch (error) {
+    // Si le serveur retourne 204 (No Content), c'est un succès
+    if (error.response?.status === 204) {
+      return { status: 204, data: null };
+    }
+    throw error;
+  }
 };
 
 const dossierService = {

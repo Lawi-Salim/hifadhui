@@ -31,3 +31,11 @@
   border-color: #dbeafe; /* Une bordure légèrement plus foncée */
   color: var(--primary-hover);
 }
+
+.page-item.disabled .page-link {
+  background-color: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: default;
+  padding: 0.5rem 0.85rem;
+}

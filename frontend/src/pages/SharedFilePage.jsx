@@ -192,7 +192,11 @@ const SharedFilePage = () => {
             <div className="file-details-grid">
               <div className="detail-item">
                 <label>Nom du fichier :</label>
-                <span>{file.filename}</span>
+                <span title={file.filename}>
+                  {file.filename && file.filename.length > 40 
+                    ? file.filename.substring(0, 37) + '...' 
+                    : file.filename}
+                </span>
               </div>
               
               <div className="detail-item">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import dossierService from '../../services/dossierService';
+import { createSlug } from '../../utils/textUtils';
 
 const RenameDossierModal = ({ isOpen, onClose, dossier, onDossierRenamed }) => {
   const [newName, setNewName] = useState('');
@@ -8,22 +9,19 @@ const RenameDossierModal = ({ isOpen, onClose, dossier, onDossierRenamed }) => {
 
   // Fonction pour valider et nettoyer le nom du dossier
   const sanitizeName = (name) => {
-    // Remplacer les espaces par des tirets
-    let sanitized = name.replace(/\s+/g, '-');
-    // Ne garder que les lettres, chiffres, tirets et underscores
-    sanitized = sanitized.replace(/[^a-zA-Z0-9_-]/g, '');
-    return sanitized;
+    // Permettre la saisie avec accents, la transformation se fera côté serveur
+    return name.trim();
   };
 
   // Fonction pour valider le nom
   const validateName = (name) => {
-    const validPattern = /^[a-zA-Z0-9_-]+$/;
-    return validPattern.test(name) && name.trim().length > 0;
+    // Permettre tous les caractères, la validation se fera côté serveur
+    return name.trim().length > 0;
   };
 
   useEffect(() => {
     if (dossier) {
-      setNewName(dossier.name);
+      setNewName(dossier.name_original || dossier.name);
     }
   }, [dossier]);
 
@@ -38,7 +36,7 @@ const RenameDossierModal = ({ isOpen, onClose, dossier, onDossierRenamed }) => {
     }
     
     if (!validateName(trimmedName)) {
-      setError('Le nom ne peut contenir que des lettres, chiffres, tirets (-) et underscores (_).');
+      setError('Le nom ne peut pas être vide.');
       return;
     }
     setIsSubmitting(true);

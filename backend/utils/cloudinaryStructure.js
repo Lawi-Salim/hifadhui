@@ -66,6 +66,14 @@ async function deleteCloudinaryFile(fileUrl, mimetype = '') {
       });
     }
     
+    // Si toujours non trouvé, c'est peut-être un problème de public_id
+    if (result.result === 'not found') {
+      console.log(`Fichier non trouvé sur Cloudinary: ${publicId}`);
+      console.log(`URL originale: ${fileUrl}`);
+      // Ne pas retourner 'ok' car le fichier existe peut-être encore
+      throw new Error(`Fichier non trouvé sur Cloudinary avec public_id: ${publicId}`);
+    }
+    
     console.log('Résultat suppression Cloudinary:', result);
     return result;
   } catch (error) {

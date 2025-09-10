@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaFolder, FaEllipsisV } from 'react-icons/fa';
 import ActionMenu from '../Common/ActionMenu';
+import FormattedText from '../Common/FormattedText';
+import { createSlug, fixEncoding } from '../../utils/textUtils';
 import { FiFolderPlus } from 'react-icons/fi';
 
 // Fonction pour calculer la position du menu avec hauteur dynamique
@@ -16,7 +18,25 @@ const getMenuPosition = (buttonElement, optionsCount = 3) => {
   return spaceBelow < menuHeight ? 'top' : 'bottom';
 };
 
-const DossierList = ({ dossiers, viewMode, activeMenu, toggleMenu, handleOpenRenameModal, handleOpenUploadModal, handleOpenDeleteModal }) => {
+const DossierList = ({ 
+  dossiers, 
+  viewMode, 
+  activeMenu, 
+  toggleMenu, 
+  handleOpenRenameModal, 
+  handleOpenUploadModal, 
+  handleOpenDeleteModal,
+  isSelectionMode,
+  selectedItems,
+  handleSelectItem
+}) => {
+  // Log de débogage pour voir les dossiers reçus
+  console.log('🔍 DEBUG Frontend - Dossiers reçus:', dossiers.map(d => ({
+    id: d.id,
+    name: d.name,
+    name_original: d.name_original,
+    display: d.name_original || d.name
+  })));
   // Fonction pour gérer l'ouverture du menu avec calcul de position
   const handleToggleMenu = (e, dossierId) => {
     const position = getMenuPosition(e.currentTarget, 3); // 3 options pour dossiers: Renommer, Uploader, Supprimer
@@ -43,58 +63,116 @@ const DossierList = ({ dossiers, viewMode, activeMenu, toggleMenu, handleOpenRen
       {dossiers.map(dossier => {
         if (viewMode === 'grid') {
           return (
-            <Link to={`/dossiers/${dossier.hierarchicalPath || dossier.id}`} key={dossier.id} className={`dossier-card dossier-card-link-${dossier.id}`}>
-              <FaFolder className="dossier-icon" />
-              <div className="dossier-actions-container">
-                <button className="btn-menu" onClick={(e) => handleToggleMenu(e, dossier.id)}>
-                  <FaEllipsisV />
-                </button>
-                {activeMenu?.id === dossier.id && (
-                  <ActionMenu
-                    isOpen={true}
-                    position={activeMenu?.position || 'bottom'}
-                    onRename={(e) => handleOpenRenameModal(e, dossier)}
-                    onUpload={(e) => handleOpenUploadModal(e, dossier)}
-                    onDelete={(e) => handleOpenDeleteModal(e, dossier)}
+            <div key={dossier.id} className={`dossier-card dossier-card-link-${dossier.id} ${selectedItems?.includes(dossier.id) ? 'selected' : ''}`}>
+              {isSelectionMode ? (
+                <div className="dossier-selection" onClick={() => handleSelectItem(dossier.id)}>
+                  <input 
+                    type="checkbox" 
+                    checked={selectedItems?.includes(dossier.id) || false}
+                    onChange={() => handleSelectItem(dossier.id)}
                   />
-                )}
-              </div>
-              <div className="dossier-info">
-                <p className="dossier-name">{dossier.name}</p>
-                <p className="dossier-file-count">
-                  {dossier.fileCount} {dossier.fileCount > 1 ? 'fichiers' : 'fichier'} | {
-                  dossier.subDossierCount} {dossier.subDossierCount > 1 ? 'dossiers' : 'dossier'}
-                </p>
-              </div>
-            </Link>
+                  <FaFolder className="dossier-icon" />
+                  <div className="dossier-info">
+                    <FormattedText 
+                      text={dossier.name_original || dossier.name} 
+                      type="encoding" 
+                      className="dossier-name"
+                    />
+                    <p className="dossier-file-count">
+                      {dossier.fileCount} {dossier.fileCount > 1 ? 'fichiers' : 'fichier'} | {
+                      dossier.subDossierCount} {dossier.subDossierCount > 1 ? 'dossiers' : 'dossier'}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <Link to={`/dossiers/${createSlug(fixEncoding(dossier.name))}`} className="dossier-link">
+                  <FaFolder className="dossier-icon" />
+                  <div className="dossier-info">
+                    <FormattedText 
+                      text={dossier.name_original || dossier.name} 
+                      type="encoding" 
+                      className="dossier-name"
+                    />
+                    <p className="dossier-file-count">
+                      {dossier.fileCount} {dossier.fileCount > 1 ? 'fichiers' : 'fichier'} | {
+                      dossier.subDossierCount} {dossier.subDossierCount > 1 ? 'dossiers' : 'dossier'}
+                    </p>
+                  </div>
+                </Link>
+              )}
+              {!isSelectionMode && (
+                <div className="dossier-actions-container">
+                  <button className="btn-menu" onClick={(e) => handleToggleMenu(e, dossier.id)}>
+                    <FaEllipsisV />
+                  </button>
+                  {activeMenu?.id === dossier.id && (
+                    <ActionMenu
+                      isOpen={true}
+                      position={activeMenu?.position || 'bottom'}
+                      onRename={(e) => handleOpenRenameModal(e, dossier)}
+                      onUpload={(e) => handleOpenUploadModal(e, dossier)}
+                      onDelete={(e) => handleOpenDeleteModal(e, dossier)}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
           );
         } else {
           return (
-            <div key={dossier.id} className={`dossier-list-item dossier-card-link-${dossier.id}`}>
-              <Link to={`/dossiers/${dossier.hierarchicalPath || dossier.id}`} className="dossier-list-item-link">
-                <FaFolder className="dossier-icon" />
-                <div className="dossier-info">
-                  <p className="dossier-name">{dossier.name}</p>
-                  <p className="dossier-file-count">
-                    {dossier.fileCount} {dossier.fileCount > 1 ? 'fichiers' : 'fichier'} | {
-                    dossier.subDossierCount} {dossier.subDossierCount > 1 ? 'dossiers' : 'dossier'}
-                  </p>
-                </div>
-              </Link>
-              <div className="dossier-actions-container">
-                <button className="btn-menu" onClick={(e) => handleToggleMenu(e, dossier.id)}>
-                  <FaEllipsisV />
-                </button>
-                {activeMenu?.id === dossier.id && (
-                  <ActionMenu
-                    isOpen={true}
-                    position={activeMenu?.position || 'bottom'}
-                    onRename={(e) => handleOpenRenameModal(e, dossier)}
-                    onUpload={(e) => handleOpenUploadModal(e, dossier)}
-                    onDelete={(e) => handleOpenDeleteModal(e, dossier)}
+            <div key={dossier.id} className={`dossier-list-item dossier-card-link-${dossier.id} ${selectedItems?.includes(dossier.id) ? 'selected' : ''}`}>
+              {isSelectionMode ? (
+                <div className="dossier-list-selection" onClick={() => handleSelectItem(dossier.id)}>
+                  <input 
+                    type="checkbox" 
+                    checked={selectedItems?.includes(dossier.id) || false}
+                    onChange={() => handleSelectItem(dossier.id)}
                   />
-                )}
-              </div>
+                  <FaFolder className="dossier-icon" />
+                  <div className="dossier-info">
+                    <FormattedText 
+                      text={dossier.name_original || dossier.name} 
+                      type="encoding" 
+                      className="dossier-name"
+                    />
+                    <p className="dossier-file-count">
+                      {dossier.fileCount} {dossier.fileCount > 1 ? 'fichiers' : 'fichier'} | {
+                      dossier.subDossierCount} {dossier.subDossierCount > 1 ? 'dossiers' : 'dossier'}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <Link to={`/dossiers/${createSlug(fixEncoding(dossier.name))}`} className="dossier-list-item-link">
+                  <FaFolder className="dossier-icon" />
+                  <div className="dossier-info">
+                    <FormattedText 
+                      text={dossier.name_original || dossier.name} 
+                      type="encoding" 
+                      className="dossier-name"
+                    />
+                    <p className="dossier-file-count">
+                      {dossier.fileCount} {dossier.fileCount > 1 ? 'fichiers' : 'fichier'} | {
+                      dossier.subDossierCount} {dossier.subDossierCount > 1 ? 'dossiers' : 'dossier'}
+                    </p>
+                  </div>
+                </Link>
+              )}
+              {!isSelectionMode && (
+                <div className="dossier-actions-container">
+                  <button className="btn-menu" onClick={(e) => handleToggleMenu(e, dossier.id)}>
+                    <FaEllipsisV />
+                  </button>
+                  {activeMenu?.id === dossier.id && (
+                    <ActionMenu
+                      isOpen={true}
+                      position={activeMenu?.position || 'bottom'}
+                      onRename={(e) => handleOpenRenameModal(e, dossier)}
+                      onUpload={(e) => handleOpenUploadModal(e, dossier)}
+                      onDelete={(e) => handleOpenDeleteModal(e, dossier)}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           );
         }

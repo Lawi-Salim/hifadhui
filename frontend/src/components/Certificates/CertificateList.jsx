@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import './CertificateList.css';
-import { FiFileText, FiUpload, FiFolder, FiDownload, FiLock, FiShield, FiEye, FiEdit, FiSearch, FiMoreVertical } from 'react-icons/fi';
-import ViewModeSwitcher from '../Common/ViewModeSwitcher';
+import { FiFileText, FiUpload, FiFolder, FiDownload, FiLock, FiShield, FiEye, FiEdit, FiSearch, FiMoreVertical, FiMenu } from 'react-icons/fi';
+import ContentToolbar from '../Common/ContentToolbar';
 import ItemList from '../Common/ItemList';
-import Pagination from '../Pagination';
 import FileDetailModal from '../Common/FileDetailModal';
+import Pagination from '../Pagination';
 
 const CertificateList = () => {
   const [certificates, setCertificates] = useState([]);
@@ -14,7 +14,7 @@ const CertificateList = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(12);
   const [viewMode, setViewMode] = useState('grid');
   const [activeMenu, setActiveMenu] = useState(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
@@ -114,11 +114,23 @@ const CertificateList = () => {
   const currentCertificates = filteredCertificates.slice(indexOfFirstItem, indexOfLastItem);
 
   const paginate = pageNumber => setCurrentPage(pageNumber);
+  
+  // Calculer les informations de pagination
+  const totalPages = Math.ceil(filteredCertificates.length / itemsPerPage);
+  const pagination = {
+    totalPages,
+    totalItems: filteredCertificates.length,
+    itemsPerPage
+  };
+  
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
 
   // Transformer les certificats pour qu'ils fonctionnent avec ItemList
   const transformedCertificates = currentCertificates.map(certificate => ({
     id: certificate.id,
-    filename: `Certificat - ${certificate.certificateFile.filename}`,
+    filename: certificate.certificateFile.filename,
     // Utiliser le mimetype et l'URL du fichier original pour l'aperçu
     mimetype: certificate.certificateFile.mimetype,
     file_url: certificate.certificateFile.file_url || '',
@@ -169,11 +181,23 @@ const CertificateList = () => {
   return (
     <div className="container">
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Mes certificats</h1>
-          <p className="text-secondary">
-            {filteredCertificates.length} certificat(s) de propriété généré(s) sur {certificates.length} total
-          </p>
+        <div className='my-space-title'>
+          <button 
+            className="mobile-hamburger-menu"
+            onClick={() => {
+              const event = new CustomEvent('toggleSidebar');
+              window.dispatchEvent(event);
+            }}
+            aria-label="Toggle menu"
+          >
+            <FiMenu />
+          </button>
+          <div className="title-content">
+            <h1 className="text-2xl font-bold">Mes certificats</h1>
+            <p className="text-secondary">
+              {filteredCertificates.length} certificat(s) de propriété généré(s) sur {certificates.length} total
+            </p>
+          </div>
         </div>
         <div className="search-input-container">
           <FiSearch className="search-icon" />
@@ -219,18 +243,24 @@ const CertificateList = () => {
       ) : (
         <>
           <div className="file-list-header">
-            <h2 className="text-lg font-semibold">Certificats de propriété</h2>
-            <div className="text-sm text-secondary">
-              Page {currentPage} sur {Math.ceil(filteredCertificates.length / itemsPerPage)}
+            <div className="header-left">
+              <h2 className="text-lg font-semibold">Certificats de propriété</h2>
             </div>
-          </div>
+            <div className="header-right">
+              <div className="text-sm text-secondary text-page">
+                Page {currentPage} sur {Math.ceil(filteredCertificates.length / itemsPerPage)}
+              </div>
 
-          <div className="folder-bar">
-            <ViewModeSwitcher 
-              viewMode={viewMode} 
-              setViewMode={setViewMode} 
-              storageKey="certificatesViewMode" 
-            />
+              <ContentToolbar
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+                storageKey="certificatesViewMode"
+                showPagination={false}
+                showViewSwitcher={true}
+                className="inline-toolbar"
+                showSelectionTools={false}
+              />
+            </div>
           </div>
 
           <ItemList
@@ -266,12 +296,6 @@ const CertificateList = () => {
         </>
       )}
 
-      <Pagination
-        itemsPerPage={itemsPerPage}
-        totalItems={filteredCertificates.length}
-        paginate={paginate}
-        currentPage={currentPage}
-      />
 
       {certificateToPreview && (
         <FileDetailModal
@@ -282,6 +306,16 @@ const CertificateList = () => {
             setIsPreviewModalOpen(false);
             setCertificateToPreview(null);
           }}
+        />
+      )}
+
+      {/* Pagination en bas */}
+      {pagination && pagination.totalPages > 1 && (
+        <Pagination
+          itemsPerPage={12}
+          totalItems={pagination.totalItems || 0}
+          paginate={handlePageChange}
+          currentPage={currentPage}
         />
       )}
 

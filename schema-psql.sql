@@ -27,9 +27,11 @@ CREATE TABLE Utilisateur (
 -- ========================================
 CREATE TABLE Dossier (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    owner_id UUID NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL, -- Nom slug pour stockage (ex: 'Mon-Dossier')
+    name_original VARCHAR(255) NOT NULL, -- Nom original pour affichage (ex: 'Mon Dossier')
+    owner_id UUID REFERENCES Utilisateur(id) ON DELETE CASCADE, -- NULL pour dossier système
     parent_id UUID REFERENCES Dossier(id) ON DELETE CASCADE, -- Colonne pour la hiérarchie
+    is_system_root BOOLEAN NOT NULL DEFAULT FALSE, -- Dossier racine système
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -42,6 +44,7 @@ CREATE TABLE File (
     filename VARCHAR(255) NOT NULL,
     file_url TEXT NOT NULL, -- ex: Cloudinary
     mimetype VARCHAR(100),
+    size BIGINT, -- Taille du fichier en octets
     hash CHAR(64) UNIQUE NOT NULL, -- SHA-256
     owner_id UUID NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE,
     dossier_id UUID REFERENCES Dossier(id) ON DELETE SET NULL,
@@ -104,11 +107,14 @@ CREATE INDEX idx_fileshares_token ON FileShares(token);
 CREATE INDEX idx_fileshares_expires_at ON FileShares(expires_at);
 CREATE INDEX idx_fileshares_created_by ON FileShares(created_by);
 
--- Unicité des noms de dossiers à la racine pour un utilisateur
-CREATE UNIQUE INDEX idx_dossier_racine_unique_nom ON Dossier(owner_id, name) WHERE parent_id IS NULL;
+-- Unicité des noms de dossiers à la racine pour un utilisateur (exclut le dossier système)
+CREATE UNIQUE INDEX idx_dossier_racine_unique_nom ON Dossier(owner_id, name) WHERE parent_id IS NULL AND is_system_root = FALSE;
 
 -- Unicité des noms de sous-dossiers dans un dossier parent
 CREATE UNIQUE INDEX idx_dossier_sous_dossier_unique_nom ON Dossier(owner_id, parent_id, name) WHERE parent_id IS NOT NULL;
+
+-- Index pour le dossier système racine
+CREATE INDEX idx_dossier_system_root ON Dossier(is_system_root) WHERE is_system_root = TRUE;
 
 -- ========================================
 -- TRIGGERS
@@ -166,3 +172,11 @@ CREATE TRIGGER trg_fileshares_updated
 BEFORE UPDATE ON FileShares
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
+
+-- ========================================
+-- DONNÉES INITIALES
+-- ========================================
+
+-- Créer le dossier racine système unique
+INSERT INTO Dossier (name, name_original, owner_id, parent_id, is_system_root)
+VALUES ('Hifadhwi', 'Hifadhwi', NULL, NULL, TRUE);

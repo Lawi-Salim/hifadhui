@@ -12,6 +12,7 @@ const fileRoutes = require('./routes/files');
 const certificateRoutes = require('./routes/certificates');
 const dossierRoutes = require('./routes/dossiers');
 const shareRoutes = require('./routes/shares');
+const bulkActionsRoutes = require('./routes/bulkActions');
 
 // Importation des modèles et associations depuis l'index des modèles
 const { Utilisateur, ActivityLog, File, Dossier, Certificate } = require('./models');
@@ -26,7 +27,11 @@ app.set('trust proxy', 1);
 // Middlewares de sécurité
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    'http://localhost:3000',
+    'https://hifadhui.vercel.app',
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
   credentials: true
 }));
 
@@ -57,6 +62,7 @@ app.use('/api/v1/files', fileRoutes);
 app.use('/api/v1/files', shareRoutes); // Routes de partage sous /files
 app.use('/api/v1/certificates', certificateRoutes);
 app.use('/api/v1/dossiers', dossierRoutes);
+app.use('/api/v1/bulk-actions', bulkActionsRoutes);
 app.use('/api/v1/share', shareRoutes); // Route publique pour accéder aux fichiers partagés
 
 // Servir les fichiers statiques du frontend React (en production)
@@ -76,6 +82,52 @@ app.get('/api/health', (req, res) => {
     message: 'hifadhwi API est opérationnelle',
     timestamp: new Date().toISOString()
   });
+});
+
+// Route pour créer l'admin (production uniquement)
+app.post('/api/create-admin', async (req, res) => {
+  // Sécurité : limiter l'accès en production
+  if (process.env.NODE_ENV === 'production') {
+    // Vérifier si un admin existe déjà pour éviter les créations multiples
+    try {
+      const { sequelize } = require('./config/database');
+      const Utilisateur = require('./models/Utilisateur');
+      
+      const existingAdmin = await Utilisateur.findOne({
+        where: { role: 'admin' }
+      });
+      
+      if (existingAdmin) {
+        return res.status(400).json({
+          success: false,
+          error: 'Un administrateur existe déjà. Utilisez l\'interface d\'administration pour gérer les comptes.'
+        });
+      }
+    } catch (checkError) {
+      // Continue si erreur de vérification
+    }
+  }
+
+  try {
+    const createAdmin = require('./scripts/create-admin');
+    const result = await createAdmin();
+    res.json({ 
+      success: true, 
+      message: 'Admin créé avec succès',
+      credentials: {
+        email: 'lawi@gmail.com',
+        password: '123456',
+        warning: 'CHANGEZ LE MOT DE PASSE immédiatement après la première connexion!'
+      }
+    });
+  } catch (error) {
+    console.error('Erreur création admin:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Erreur lors de la création de l\'admin',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
 });
 
 // Gestion des erreurs 404
