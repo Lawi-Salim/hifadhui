@@ -17,6 +17,7 @@ import BulkActionsManager from '../Common/BulkActionsManager';
 import { useViewMode } from '../../contexts/ViewModeContext';
 import { createSlug, fixEncoding } from '../../utils/textUtils';
 import { useDownloadZip, DownloadProgressIndicator } from '../Common/DownloadZip';
+import { FaUpload, FaPlus } from 'react-icons/fa';
 import './DossiersPage.css';
 import '../Files/FileList.css';
 

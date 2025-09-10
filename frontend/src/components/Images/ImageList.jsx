@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaPlus, FaFolderOpen } from 'react-icons/fa';
+import { FaPlus, FaFolderOpen, FaUpload } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';
 import api from '../../services/api';
 import ItemList from '../Common/ItemList';
@@ -100,9 +100,8 @@ const ImageList = () => {
   };
 
   const handleShare = (image) => {
-    setImageToShare(image);
-    setIsShareModalOpen(true);
-    setOpenMenuId(null); // Fermer le menu après ouverture du partage
+    // Fonctionnalité de partage désactivée temporairement
+    setOpenMenuId(null); // Fermer le menu
   };
 
   const handleRename = (imageOrId) => {
@@ -128,29 +127,10 @@ const ImageList = () => {
   };
 
   const handleConfirmBatchDelete = async () => {
-    setBatchDeleteLoading(true);
-    setDeleteProgress(0);
-    
     try {
       const imageIds = selectedImages.map(image => image.id);
-      const totalImages = imageIds.length;
-      
-      // Simuler la progression pendant la suppression
-      const progressInterval = setInterval(() => {
-        setDeleteProgress(prev => {
-          if (prev >= 90) return prev; // S'arrêter à 90% jusqu'à la fin réelle
-          return Math.round(prev + Math.random() * 15);
-        });
-      }, 200);
       
       await api.delete('/files/batch-delete', { data: { fileIds: imageIds } });
-      
-      // Compléter la progression
-      clearInterval(progressInterval);
-      setDeleteProgress(100);
-      
-      // Attendre un peu pour montrer 100%
-      await new Promise(resolve => setTimeout(resolve, 500));
       
       refresh(); // Recharger les images
       setIsSelectionMode(false); // Quitter le mode sélection
@@ -158,8 +138,6 @@ const ImageList = () => {
     } catch (error) {
       console.error('Erreur lors de la suppression par lot:', error);
     } finally {
-      setBatchDeleteLoading(false);
-      setDeleteProgress(0);
       setIsBatchDeleteModalOpen(false);
     }
   };
