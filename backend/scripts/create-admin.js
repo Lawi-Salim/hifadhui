@@ -11,6 +11,12 @@ console.log('DB_PASSWORD:', process.env.DB_PASSWORD ? '[DÉFINI]' : '[NON DÉFIN
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('VERCEL:', process.env.VERCEL);
 
+// Détection automatique de l'environnement
+const isProduction = process.env.NODE_ENV === 'production' || 
+                    process.env.VERCEL === '1' || 
+                    (process.env.DB_HOST && process.env.DB_HOST.includes('supabase.com'));
+console.log('🔍 [ENV] Environnement détecté:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
+
 // Configuration de base de données directe pour Vercel
 const sequelize = new Sequelize(
   process.env.DB_NAME || 'postgres',
@@ -82,9 +88,49 @@ const Utilisateur = sequelize.define('Utilisateur', {
 async function createAdmin() {
   try {
     // Connexion à la base de données
-    await sequelize.authenticate();
-    console.log('✅ Connexion à la base de données réussie');
+    try {
+      await sequelize.authenticate();
+      console.log('✅ Connexion à la base de données réussie');
+      
+      // Vérifier si les tables existent
+      console.log('🔍 [DEBUG] Vérification de l\'existence des tables...');
+      try {
+        const [results] = await sequelize.query(`
+          SELECT table_name 
+          FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name IN ('Utilisateur', 'Dossier', 'File', 'Certificate')
+          ORDER BY table_name;
+        `);
+        
+        console.log('📋 [DEBUG] Tables trouvées:', results.map(r => r.table_name));
+        
+        if (results.length === 0) {
+          console.log('⚠️  [WARNING] Aucune table trouvée! Le schéma n\'a pas été exécuté.');
+          console.log('📝 [INFO] Vous devez exécuter le fichier schema-psql.sql dans Supabase SQL Editor');
+          return;
+        }
+        
+        // Créer l'admin par défaut seulement si les tables existent
+        await createAdminDefault();
+        
+      } catch (tableError) {
+        console.error('❌ Erreur lors de la vérification des tables:', tableError.message);
+      }
+      
+    } catch (error) {
+      console.error('❌ Erreur de connexion à la base de données:', error);
+    } finally {
+      await sequelize.close();
+      console.log('🔌 Connexion fermée');
+    }
+  } catch (error) {
+    console.error('❌ Erreur lors de la création de l\'administrateur:', error);
+  }
+}
 
+async function createAdminDefault() {
+  try {
     // Vérifier si un admin existe déjà
     const existingAdmin = await Utilisateur.findOne({
       where: { role: 'admin' }

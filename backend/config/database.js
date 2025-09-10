@@ -25,7 +25,13 @@ const dbConfig = {
 };
 
 // Pour la production (Vercel + Supabase), nous devons activer SSL
-if (process.env.NODE_ENV === 'production') {
+// Forcer la production si on détecte Vercel ou si NODE_ENV n'est pas défini et qu'on a des credentials Supabase
+const isProduction = process.env.NODE_ENV === 'production' || 
+                    process.env.VERCEL === '1' || 
+                    (process.env.DB_HOST && process.env.DB_HOST.includes('supabase.com'));
+
+if (isProduction) {
+  console.log('🔒 [SSL] Activation SSL pour la production/Supabase');
   dbConfig.dialectOptions = {
     ...dbConfig.dialectOptions,
     ssl: {
