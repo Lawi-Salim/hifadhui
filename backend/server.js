@@ -84,51 +84,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Route pour créer l'admin (production uniquement)
-app.post('/api/create-admin', async (req, res) => {
-  // Sécurité : limiter l'accès en production
-  if (process.env.NODE_ENV === 'production') {
-    // Vérifier si un admin existe déjà pour éviter les créations multiples
-    try {
-      const { sequelize } = require('./config/database');
-      const Utilisateur = require('./models/Utilisateur');
-      
-      const existingAdmin = await Utilisateur.findOne({
-        where: { role: 'admin' }
-      });
-      
-      if (existingAdmin) {
-        return res.status(400).json({
-          success: false,
-          error: 'Un administrateur existe déjà. Utilisez l\'interface d\'administration pour gérer les comptes.'
-        });
-      }
-    } catch (checkError) {
-      // Continue si erreur de vérification
-    }
-  }
-
-  try {
-    const createAdmin = require('./scripts/create-admin');
-    const result = await createAdmin();
-    res.json({ 
-      success: true, 
-      message: 'Admin créé avec succès',
-      credentials: {
-        email: 'lawi@gmail.com',
-        password: '123456',
-        warning: 'CHANGEZ LE MOT DE PASSE immédiatement après la première connexion!'
-      }
-    });
-  } catch (error) {
-    console.error('Erreur création admin:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Erreur lors de la création de l\'admin',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
 
 // Gestion des erreurs 404
 app.use('*', (req, res) => {
@@ -147,6 +102,44 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Fonction pour créer l'admin par défaut
+const createDefaultAdmin = async () => {
+  try {
+    const bcrypt = require('bcryptjs');
+    
+    // Vérifier si un admin existe déjà
+    const existingAdmin = await Utilisateur.findOne({
+      where: { role: 'admin' }
+    });
+    
+    if (existingAdmin) {
+      console.log('✅ Admin par défaut existe déjà');
+      return;
+    }
+    
+    // Créer l'admin par défaut
+    const hashedPassword = await bcrypt.hash('123456', 10);
+    
+    await Utilisateur.create({
+      nom: 'Admin',
+      prenom: 'System',
+      email: 'lawi@gmail.com',
+      motDePasse: hashedPassword,
+      role: 'admin',
+      statut: 'actif',
+      dateCreation: new Date()
+    });
+    
+    console.log('✅ Admin par défaut créé avec succès');
+    console.log('📧 Email: lawi@gmail.com');
+    console.log('🔑 Mot de passe: 123456');
+    console.log('⚠️  Changez le mot de passe après la première connexion');
+    
+  } catch (error) {
+    console.error('❌ Erreur lors de la création de l\'admin:', error);
+  }
+};
+
 // Démarrage du serveur
 const startServer = async () => {
   try {
@@ -156,6 +149,9 @@ const startServer = async () => {
     
     // Vérification des modèles sans synchronisation (tables déjà créées)
     console.log('✅ Modèles chargés - utilisation des tables existantes');
+    
+    // Créer l'admin par défaut si nécessaire
+    await createDefaultAdmin();
     
     app.listen(PORT, () => {
       console.log(`🚀 Serveur hifadhwi démarré sur le port ${PORT}`);
