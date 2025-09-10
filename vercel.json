@@ -5,12 +5,18 @@
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "build"
+        "distDir": "build",
+        "maxDuration": 30,
+        "maxLambdaSize": 10240
       }
     },
     {
       "src": "backend/server.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "maxDuration": 30,
+        "maxLambdaSize": 10240
+      }
     }
   ],
   "routes": [
