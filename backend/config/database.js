@@ -31,7 +31,6 @@ const isProduction = process.env.NODE_ENV === 'production' ||
                     (process.env.DB_HOST && process.env.DB_HOST.includes('supabase.com'));
 
 if (isProduction) {
-  console.log('🔒 [SSL] Activation SSL pour la production/Supabase');
   dbConfig.dialectOptions = {
     ...dbConfig.dialectOptions,
     ssl: {

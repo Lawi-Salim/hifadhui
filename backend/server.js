@@ -1,22 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+
 require('dotenv').config();
 
-// Logs détaillés pour Vercel
-console.log('🚀 [VERCEL] Démarrage du serveur backend Hifadhui');
-console.log('📍 [VERCEL] NODE_ENV:', process.env.NODE_ENV);
-console.log('🔧 [VERCEL] Variables d\'environnement disponibles:');
-console.log('   - DB_HOST:', process.env.DB_HOST || '[NON DÉFINI]');
-console.log('   - DB_PORT:', process.env.DB_PORT || '[NON DÉFINI]');
-console.log('   - DB_NAME:', process.env.DB_NAME || '[NON DÉFINI]');
-console.log('   - DB_USER:', process.env.DB_USER || '[NON DÉFINI]');
-console.log('   - DB_PASSWORD:', process.env.DB_PASSWORD ? '[DÉFINI - ' + process.env.DB_PASSWORD.length + ' caractères]' : '[NON DÉFINI]');
-console.log('   - JWT_SECRET:', process.env.JWT_SECRET ? '✅ Défini' : '❌ Manquant');
-console.log('   - CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ? '✅ Défini' : '❌ Manquant');
-console.log('   - FRONTEND_URL:', process.env.FRONTEND_URL || '[NON DÉFINI]');
+console.log('🚀 Serveur backend Hifadhui démarré');
 
 const { sequelize } = require('./config/database');
 const authRoutes = require('./routes/auth');
@@ -165,41 +156,38 @@ const createDefaultAdmin = async () => {
   }
 };
 
-// Démarrage du serveur
-const startServer = async () => {
+// Pour Vercel, initialiser la base de données sans app.listen()
+const initializeDatabase = async () => {
   try {
-    console.log('🔗 [VERCEL] Test de connexion à la base de données...');
-    // Test de connexion à la base de données
     await sequelize.authenticate();
-    console.log('✅ [VERCEL] Connexion à la base de données réussie!');
-    console.log('🏗️  [VERCEL] Host DB:', process.env.DB_HOST);
-    console.log('🗄️  [VERCEL] Nom DB:', process.env.DB_NAME);
-    
-    // Vérification des modèles sans synchronisation (tables déjà créées)
-    console.log('📋 [VERCEL] Vérification des modèles...');
-    console.log('✅ [VERCEL] Modèles chargés - utilisation des tables existantes');
-    
-    // Créer l'admin par défaut si nécessaire
-    console.log('👤 [VERCEL] Gestion de l\'admin par défaut...');
+    console.log('✅ Connexion à la base de données réussie');
     await createDefaultAdmin();
-    
-    app.listen(PORT, () => {
-      console.log('🎯 [VERCEL] ========================================');
-      console.log(`🚀 [VERCEL] Serveur Hifadhui démarré avec succès!`);
-      console.log(`📍 [VERCEL] Port: ${PORT}`);
-      console.log(`🌍 [VERCEL] Environnement: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🔗 [VERCEL] URL API: https://hifadhui.vercel.app/api`);
-      console.log('🎯 [VERCEL] ========================================')
-    });
   } catch (error) {
-    console.error('💥 [VERCEL] ERREUR CRITIQUE de démarrage du serveur!');
-    console.error('📋 [VERCEL] Message:', error.message);
-    console.error('🔍 [VERCEL] Stack:', error.stack);
-    console.error('🔧 [VERCEL] Variables env disponibles:', Object.keys(process.env).filter(key => key.startsWith('DB_')));
-    process.exit(1);
+    console.error('❌ Erreur d\'initialisation:', error.message);
   }
 };
 
-startServer();
+// Initialiser seulement en production (Vercel)
+if (process.env.VERCEL) {
+  initializeDatabase();
+} else {
+  // En développement local, démarrer le serveur normalement
+  const startServer = async () => {
+    try {
+      await sequelize.authenticate();
+      console.log('✅ Connexion à la base de données réussie');
+      await createDefaultAdmin();
+      
+      app.listen(PORT, () => {
+        console.log(`🚀 Serveur démarré sur le port ${PORT}`);
+      });
+    } catch (error) {
+      console.error('❌ Erreur de démarrage:', error.message);
+      process.exit(1);
+    }
+  };
+  
+  startServer();
+}
 
 module.exports = app;
