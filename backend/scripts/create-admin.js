@@ -1,35 +1,40 @@
-const { Sequelize } = require('sequelize');
-const bcrypt = require('bcryptjs');
+import { Sequelize } from 'sequelize';
+import pg from 'pg';
+import bcrypt from 'bcryptjs';
 
 // Détection automatique de l'environnement
 const isProduction = process.env.NODE_ENV === 'production' || 
                     process.env.VERCEL === '1' || 
                     (process.env.DB_HOST && process.env.DB_HOST.includes('supabase.com'));
 
-// Configuration de base de données directe pour Vercel
-const sequelize = new Sequelize(
-  process.env.DB_NAME || 'postgres',
-  process.env.DB_USER || 'postgres', 
-  process.env.DB_PASSWORD,
-  {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT || 5432,
-    dialect: 'postgres',
-    logging: false,
-    dialectOptions: {
-      ssl: process.env.NODE_ENV === 'production' ? {
-        require: true,
-        rejectUnauthorized: false
-      } : false
-    },
-    pool: {
-      max: process.env.VERCEL ? 2 : 5,
-      min: 0,
-      acquire: 10000,
-      idle: 5000,
-    }
+// Configuration de base de données directe pour Vercel (priorité à DATABASE_URL)
+const commonConfig = {
+  dialect: 'postgres',
+  dialectModule: pg,
+  logging: false,
+  dialectOptions: {
+    ssl: isProduction ? { require: true, rejectUnauthorized: false } : false
+  },
+  pool: {
+    max: process.env.VERCEL ? 2 : 5,
+    min: 0,
+    acquire: 10000,
+    idle: 5000,
   }
-);
+};
+
+const sequelize = process.env.DATABASE_URL
+  ? new Sequelize(process.env.DATABASE_URL, commonConfig)
+  : new Sequelize(
+      process.env.DB_NAME || 'postgres',
+      process.env.DB_USER || 'postgres',
+      process.env.DB_PASSWORD,
+      {
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT || 5432,
+        ...commonConfig
+      }
+    );
 
 // Définition du modèle Utilisateur directement
 const Utilisateur = sequelize.define('Utilisateur', {
@@ -74,7 +79,7 @@ const Utilisateur = sequelize.define('Utilisateur', {
   }
 });
 
-async function createAdmin() {
+export async function createAdmin() {
   try {
     // Connexion à la base de données
     try {
@@ -146,15 +151,13 @@ async function createAdminDefault() {
       console.log('❌ Erreur de validation:', error.errors.map(e => e.message).join(', '));
     }
   } finally {
-    // Fermer la connexion
-    await sequelize.close();
-    console.log('🔌 Connexion fermée');
+    // Rien ici: la fermeture est gérée par le finally supérieur
   }
 }
 
-// Exécuter le script
-if (require.main === module) {
+// Exécuter le script si lancé directement
+if (import.meta.url === `file://${process.argv[1]}`) {
   createAdmin();
 }
 
-module.exports = createAdmin;
+export default createAdmin;
