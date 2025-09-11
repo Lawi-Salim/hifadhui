@@ -15,8 +15,13 @@ const baseOptions = {
   dialectOptions: {
     ssl: isProduction ? { require: true, rejectUnauthorized: false } : false
   },
-  // IMPORTANT: pas de pool pour éviter MaxClientsInSessionMode pendant build/one-shot
-  pool: false
+  // Configuration pool minimale pour Vercel
+  pool: {
+    max: 1,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
+  }
 };
 
 const sequelize = process.env.DATABASE_URL
