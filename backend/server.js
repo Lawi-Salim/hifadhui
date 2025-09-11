@@ -31,6 +31,13 @@ const PORT = process.env.PORT || 5000;
 // Configuration trust proxy pour express-rate-limit
 app.set('trust proxy', 1);
 
+// Logs de démarrage (diagnostic)
+console.log('🟢 [BOOT] Démarrage du serveur Hifadhwi');
+console.log('🟢 [BOOT] NODE_ENV =', process.env.NODE_ENV);
+console.log('🟢 [BOOT] VERCEL =', process.env.VERCEL ? '1' : '0');
+console.log('🟢 [BOOT] DATABASE_URL défini =', Boolean(process.env.DATABASE_URL));
+console.log('🟢 [BOOT] DB_HOST =', process.env.DB_HOST || '(non défini)');
+
 // Middlewares de sécurité
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors({
@@ -123,7 +130,7 @@ app.use((err, req, res, next) => {
 // Fonction pour créer l'admin par défaut
 const createDefaultAdmin = async () => {
   try {
-    console.log('🔍 [VERCEL] Vérification de l\'existence d\'un admin...');
+    console.log('🔍 [INIT] Vérification de l\'existence d\'un admin...');
     const { default: bcrypt } = await import('bcryptjs');
     
     // Vérifier si un admin existe déjà
@@ -132,12 +139,12 @@ const createDefaultAdmin = async () => {
     });
     
     if (existingAdmin) {
-      console.log('✅ [VERCEL] Admin par défaut existe déjà - ID:', existingAdmin.id);
-      console.log('📧 [VERCEL] Email admin existant:', existingAdmin.email);
+      console.log('✅ [INIT] Admin par défaut existe déjà - ID:', existingAdmin.id);
+      console.log('📧 [INIT] Email admin existant:', existingAdmin.email);
       return;
     }
     
-    console.log('🔨 [VERCEL] Création de l\'admin par défaut...');
+    console.log('🔨 [INIT] Création de l\'admin par défaut...');
     // Créer l'admin par défaut
     const hashedPassword = await bcrypt.hash('123456', 10);
     
@@ -151,31 +158,34 @@ const createDefaultAdmin = async () => {
       dateCreation: new Date()
     });
     
-    console.log('🎉 [VERCEL] Admin par défaut créé avec succès!');
-    console.log('🆔 [VERCEL] ID admin créé:', newAdmin.id);
-    console.log('📧 [VERCEL] Email: lawi@gmail.com');
-    console.log('🔑 [VERCEL] Mot de passe: 123456');
-    console.log('⚠️  [VERCEL] Changez le mot de passe après la première connexion');
+    console.log('🎉 [INIT] Admin par défaut créé avec succès!');
+    console.log('🆔 [INIT] ID admin créé:', newAdmin.id);
+    console.log('📧 [INIT] Email: lawi@gmail.com');
+    console.log('🔑 [INIT] Mot de passe: 123456');
+    console.log('⚠️  [INIT] Changez le mot de passe après la première connexion');
     
   } catch (error) {
-    console.error('❌ [VERCEL] Erreur lors de la création de l\'admin:', error.message);
-    console.error('🔍 [VERCEL] Stack trace:', error.stack);
+    console.error('❌ [INIT] Erreur lors de la création de l\'admin:', error.message);
+    console.error('🔍 [INIT] Stack trace:', error.stack);
   }
 };
 
 // Pour Vercel, initialiser la base de données sans app.listen()
 const initializeDatabase = async () => {
   try {
+    console.log('⏳ [INIT] Tentative de connexion DB...');
     await sequelize.authenticate();
-    console.log('✅ Connexion à la base de données réussie');
+    console.log('✅ [INIT] Connexion à la base de données réussie');
     await createDefaultAdmin();
+    console.log('✅ [INIT] Vérification/Création admin terminée');
   } catch (error) {
-    console.error('❌ Erreur d\'initialisation:', error.message);
+    console.error('❌ [INIT] Erreur d\'initialisation:', error.message);
   }
 };
 
 // Initialiser seulement en production (Vercel)
 if (process.env.VERCEL) {
+  console.log('🚀 [BOOT] Environnement Vercel détecté: initialisation DB sans app.listen()');
   initializeDatabase();
 } else {
   // En développement local, démarrer le serveur normalement
