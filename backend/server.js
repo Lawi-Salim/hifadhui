@@ -7,7 +7,7 @@ const path = require('path');
 
 require('dotenv').config();
 
-console.log('🚀 Serveur backend Hifadhui démarré');
+// Serveur backend Hifadhui
 
 const { sequelize } = require('./config/database');
 const authRoutes = require('./routes/auth');
