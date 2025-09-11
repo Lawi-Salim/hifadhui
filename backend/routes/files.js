@@ -1,14 +1,20 @@
-const express = require('express');
+import express from 'express';
+import { Op } from 'sequelize';
+import { File, Dossier, Certificate, ActivityLog, Utilisateur } from '../models/index.js';
+import { sequelize } from '../config/database.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { upload, handleUploadError } from '../middleware/upload.js';
+import uploadLocal from '../middleware/upload-local.js';
+import crypto from 'crypto';
+import { generateCertificate } from '../utils/pdfGenerator.js';
+import { deleteCloudinaryFile } from '../utils/cloudinaryStructure.js';
+import { body, validationResult } from 'express-validator';
+import { v2 as cloudinary } from 'cloudinary';
+import AdmZip from 'adm-zip';
+import fs from 'fs';
+import path from 'path';
+
 const router = express.Router();
-const db = require('../models');
-const { Op } = require('sequelize');
-const { authenticateToken } = require('../middleware/auth');
-const { upload, handleUploadError } = require('../middleware/upload');
-const uploadLocal = require('../middleware/upload-local');
-const crypto = require('crypto');
-const { generateCertificate } = require('../utils/pdfGenerator');
-const { deleteCloudinaryFile } = require('../utils/cloudinaryStructure');
-const { body, validationResult } = require('express-validator');
 
 // Fonction pour corriger l'encodage des caractères spéciaux français mal encodés
 const fixEncoding = (text) => {
@@ -88,10 +94,6 @@ const createSlug = (text) => {
     .replace(/-+/g, '-') // Éviter les tirets multiples
     .replace(/^-+|-+$/g, ''); // Supprimer tirets en début/fin
 };
-const cloudinary = require('cloudinary').v2;
-const AdmZip = require('adm-zip');
-const fs = require('fs');
-const path = require('path');
 
 // Fonction pour traiter un fichier unique (création en BDD, certificat, etc.)
 const processSingleFile = async (fileData, user, req, dossierId = null, options = { logActivity: true }) => {
@@ -99,7 +101,7 @@ const processSingleFile = async (fileData, user, req, dossierId = null, options 
   
   // Si aucun dossier spécifié, utiliser le dossier système par défaut
   if (!dossierId) {
-    const systemRoot = await db.Dossier.getSystemRoot();
+    const systemRoot = await Dossier.getSystemRoot();
     dossierId = systemRoot.id;
   }
   
@@ -123,7 +125,7 @@ const processSingleFile = async (fileData, user, req, dossierId = null, options 
   const signatureData = `${originalname}-${user.id}-${timestamp}`;
   const signature = crypto.createHash('sha256').update(signatureData).digest('hex');
 
-    const file = await db.File.create({
+    const file = await File.create({
     dossier_id: dossierId,
     filename: originalname,
     file_url,
@@ -139,7 +141,7 @@ const processSingleFile = async (fileData, user, req, dossierId = null, options 
     const relativePdfUrl = await generateCertificate(file, user);
     const fullPdfUrl = `${req.protocol}://${req.get('host')}${relativePdfUrl}`;
     const rootFileId = file.parent_file_id || file.id;
-    const certificate = await db.Certificate.findOne({ where: { root_file_id: rootFileId } });
+    const certificate = await Certificate.findOne({ where: { root_file_id: rootFileId } });
     if (certificate) {
       certificate.pdf_url = fullPdfUrl;
       await certificate.save();
@@ -158,7 +160,7 @@ const processSingleFile = async (fileData, user, req, dossierId = null, options 
   }
 
   if (options.logActivity) {
-    await db.ActivityLog.create({
+    await ActivityLog.create({
       userId: user.id,
       actionType: action_type,
       details: { fileId: file.id, fileName: file.filename, dossierId: file.dossier_id }
@@ -173,13 +175,13 @@ const processSingleFile = async (fileData, user, req, dossierId = null, options 
 // @access  Private
 router.get('/stats', authenticateToken, async (req, res) => {
   try {
-    const totalFiles = await db.File.count({
+    const totalFiles = await File.count({
       where: { owner_id: req.user.id, is_latest: true },
     });
 
-    const totalCertificates = await db.Certificate.count({
+    const totalCertificates = await Certificate.count({
         include: [{
-            model: db.File,
+            model: File,
             as: 'certificateFile',
             required: true,
             where: { owner_id: req.user.id }
@@ -303,10 +305,10 @@ router.post('/upload-zip', authenticateToken, uploadLocal.upload.single('documen
     }
 
     // Créer un dossier basé sur le nom du ZIP dans le dossier système
-    const systemRoot = await db.Dossier.getSystemRoot();
+    const systemRoot = await Dossier.getSystemRoot();
     const originalDossierName = path.basename(req.file.originalname, path.extname(req.file.originalname));
     const dossierName = createSlug(originalDossierName);
-    const [newDossier, created] = await db.Dossier.findOrCreate({
+    const [newDossier, created] = await Dossier.findOrCreate({
       where: { name: dossierName, owner_id: req.user.id, parent_id: systemRoot.id },
       defaults: { name: dossierName, name_original: fixEncoding(originalDossierName), owner_id: req.user.id, parent_id: systemRoot.id },
     });
@@ -397,7 +399,7 @@ router.post('/upload-zip', authenticateToken, uploadLocal.upload.single('documen
     fs.unlinkSync(filePath);
 
     // Enregistrer une seule activité pour l'ensemble du ZIP
-    await db.ActivityLog.create({
+    await ActivityLog.create({
       userId: req.user.id,
       actionType: 'ZIP_UPLOAD',
       details: {
@@ -449,7 +451,7 @@ router.get('/', authenticateToken, async (req, res) => {
         whereClause.dossier_id = null;
       } else if (dossier_id === 'system_root') {
         // Récupérer les fichiers du dossier système racine
-        const systemRoot = await db.Dossier.getSystemRoot();
+        const systemRoot = await Dossier.getSystemRoot();
         const formData = new FormData();
         formData.append('document', file);
         if (dossierId) {
@@ -461,10 +463,10 @@ router.get('/', authenticateToken, async (req, res) => {
       }
     }
 
-    const { count, rows: files } = await db.File.findAndCountAll({
+    const { count, rows: files } = await File.findAndCountAll({
       where: whereClause,
       include: [{
-        model: db.Dossier,
+        model: Dossier,
         as: 'fileDossier',
         required: false
       }],
@@ -477,7 +479,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const filesWithCertificates = await Promise.all(
       files.map(async (file) => {
         const rootFileId = file.parent_file_id || file.id;
-        const certificate = await db.Certificate.findOne({
+        const certificate = await Certificate.findOne({
           where: { root_file_id: rootFileId },
           attributes: ['id', 'pdf_url', 'date_generated']
         });
@@ -521,13 +523,13 @@ router.get('/', authenticateToken, async (req, res) => {
 // Route pour obtenir un fichier spécifique
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const file = await db.File.findOne({
+    const file = await File.findOne({
       where: { 
         id: req.params.id,
         owner_id: req.user.id
       },
       include: [{
-        model: db.Dossier,
+        model: Dossier,
         as: 'fileDossier',
         attributes: ['id', 'name', 'name_original']
       }]
@@ -541,7 +543,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
     // Récupérer le certificat basé sur root_file_id
     const rootFileId = file.parent_file_id || file.id;
-    const certificate = await db.Certificate.findOne({
+    const certificate = await Certificate.findOne({
       where: { root_file_id: rootFileId },
       attributes: ['id', 'pdf_url', 'date_generated']
     });
@@ -575,7 +577,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Route pour afficher une image ou PDF
 router.get('/:id/view', authenticateToken, async (req, res) => {
   try {
-    const file = await db.File.findOne({
+    const file = await File.findOne({
       where: { 
         id: req.params.id,
         owner_id: req.user.id
@@ -615,7 +617,7 @@ router.get('/:id/view', authenticateToken, async (req, res) => {
 // Route pour télécharger un fichier de manière sécurisée
 router.get('/:id/download', authenticateToken, async (req, res) => {
   try {
-    const file = await db.File.findOne({
+    const file = await File.findOne({
       where: { 
         id: req.params.id,
         owner_id: req.user.id
@@ -669,7 +671,7 @@ router.put('/:id',
 
     try {
       const { filename } = req.body;
-      const file = await db.File.findOne({
+      const file = await File.findOne({
         where: { 
           id: req.params.id,
           owner_id: req.user.id,
@@ -683,7 +685,7 @@ router.put('/:id',
 
       // Vérifier si un fichier avec le même nom existe déjà dans le même dossier
       if (file.dossier_id) { // Ne vérifier que si le fichier est dans un dossier
-        const existingFile = await db.File.findOne({
+        const existingFile = await File.findOne({
           where: {
             filename,
             dossier_id: file.dossier_id,
@@ -702,7 +704,7 @@ router.put('/:id',
       // Renommage simple : mettre à jour directement le nom du fichier existant
       await file.update({ filename: filename });
 
-      await db.ActivityLog.create({
+      await ActivityLog.create({
         userId: req.user.id,
         actionType: 'FILE_RENAME',
         details: {
@@ -729,10 +731,10 @@ router.delete('/batch-delete', authenticateToken, async (req, res) => {
     return res.status(400).json({ message: 'Les identifiants de fichiers sont requis.' });
   }
 
-  const t = await db.sequelize.transaction();
+  const t = await sequelize.transaction();
 
   try {
-    const filesToDelete = await db.File.findAll({
+    const filesToDelete = await File.findAll({
       where: {
         id: fileIds,
         owner_id: userId
@@ -758,7 +760,7 @@ router.delete('/batch-delete', authenticateToken, async (req, res) => {
       const rootFileId = file.parent_file_id || file.id;
 
       // Supprimer toutes les versions du fichier
-      await db.File.destroy({
+      await File.destroy({
         where: {
           [Op.or]: [{ id: rootFileId }, { parent_file_id: rootFileId }],
           owner_id: userId
@@ -767,14 +769,14 @@ router.delete('/batch-delete', authenticateToken, async (req, res) => {
       });
 
       // Supprimer le certificat associé
-      await db.Certificate.destroy({ where: { root_file_id: rootFileId }, transaction: t });
+      await Certificate.destroy({ where: { root_file_id: rootFileId }, transaction: t });
 
       // 3. Enregistrer l'activité de suppression pour le fichier racine
       let fileType = 'other';
       if (file.mimetype.startsWith('image/')) fileType = 'image';
       else if (file.mimetype === 'application/pdf') fileType = 'pdf';
 
-      await db.ActivityLog.create({
+      await ActivityLog.create({
         userId,
         actionType: 'FILE_DELETE',
         details: { 
@@ -797,10 +799,10 @@ router.delete('/batch-delete', authenticateToken, async (req, res) => {
 
 // Route pour supprimer un fichier
 router.delete('/:id', authenticateToken, async (req, res) => {
-  const transaction = await db.sequelize.transaction();
+  const transaction = await sequelize.transaction();
   
   try {
-    const file = await db.File.findOne({
+    const file = await File.findOne({
       where: { 
         id: req.params.id,
         owner_id: req.user.id
@@ -827,7 +829,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     const rootFileId = file.parent_file_id || file.id;
 
     // Supprimer toutes les versions du fichier
-    await db.File.destroy({
+    await File.destroy({
       where: {
         [Op.or]: [
           { id: rootFileId },
@@ -839,7 +841,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     });
 
     // Supprimer le certificat associé au fichier racine
-    await db.Certificate.destroy({ 
+    await Certificate.destroy({ 
       where: { root_file_id: rootFileId }, 
       transaction 
     });
@@ -850,7 +852,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     else if (file.mimetype === 'application/pdf') fileType = 'pdf';
     else if (file.mimetype === 'application/zip') fileType = 'zip';
 
-    await db.ActivityLog.create({
+    await ActivityLog.create({
       userId: req.user.id,
       actionType: 'FILE_DELETE',
       details: {
@@ -884,7 +886,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 // Route pour vérifier l'intégrité d'un fichier
 router.post('/:id/verify', authenticateToken, async (req, res) => {
   try {
-    const file = await db.File.findOne({
+    const file = await File.findOne({
       where: { 
         id: req.params.id,
         owner_id: req.user.id
@@ -924,7 +926,7 @@ router.post('/:id/version', authenticateToken, upload.single('document'), async 
       return res.status(400).json({ error: 'Aucun fichier fourni' });
     }
 
-    const originalFile = await db.File.findOne({
+    const originalFile = await File.findOne({
       where: { id: req.params.id, owner_id: req.user.id, is_latest: true },
     });
 
@@ -942,7 +944,7 @@ router.post('/:id/version', authenticateToken, upload.single('document'), async 
     const fileHash = crypto.createHash('sha256').update(file_path + timestamp).digest('hex');
     const signature = crypto.createHash('sha256').update(`${originalname}-${req.user.id}-${timestamp}`).digest('hex');
 
-    const newVersion = await db.File.create({
+    const newVersion = await File.create({
       filename: originalname,
       file_url,
       mimetype,
@@ -965,7 +967,7 @@ router.post('/:id/version', authenticateToken, upload.single('document'), async 
 // Route pour récupérer l'historique d'un fichier
 router.get('/:id/history', authenticateToken, async (req, res) => {
   try {
-    const currentFile = await db.File.findOne({ 
+    const currentFile = await File.findOne({ 
       where: { id: req.params.id, owner_id: req.user.id }
     });
 
@@ -976,7 +978,7 @@ router.get('/:id/history', authenticateToken, async (req, res) => {
     // Déterminer l'ID du fichier racine (la v1)
     const rootFileId = currentFile.parent_file_id || currentFile.id;
 
-    const history = await db.File.findAll({
+    const history = await File.findAll({
       where: {
         [Op.or]: [
           { id: rootFileId },
@@ -995,4 +997,4 @@ router.get('/:id/history', authenticateToken, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

@@ -1,7 +1,7 @@
-const express = require('express');
-const { body, validationResult } = require('express-validator');
-const { Utilisateur } = require('../models');
-const { generateToken, authenticateToken } = require('../middleware/auth');
+import express from 'express';
+import { body, validationResult } from 'express-validator';
+import { Utilisateur } from '../models/index.js';
+import { generateToken, authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -196,4 +196,4 @@ router.put('/profile', authenticateToken, [
   }
 });
 
-module.exports = router;
+export default router;

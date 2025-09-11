@@ -1,10 +1,10 @@
-const { sequelize } = require('../config/database');
-const Utilisateur = require('./Utilisateur');
-const File = require('./File');
-const Certificate = require('./Certificate');
-const Dossier = require('./Dossier');
-const ActivityLog = require('./ActivityLog');
-const FileShare = require('./FileShare');
+import { sequelize } from '../config/database.js';
+import Utilisateur from './Utilisateur.js';
+import File from './File.js';
+import Certificate from './Certificate.js';
+import Dossier from './Dossier.js';
+import ActivityLog from './ActivityLog.js';
+import FileShare from './FileShare.js';
 
 // Définition des associations
 
@@ -95,7 +95,7 @@ FileShare.belongsTo(File, {
   as: 'file'
 });
 
-module.exports = {
+export {
   sequelize,
   Utilisateur,
   File,

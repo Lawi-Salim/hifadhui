@@ -1,4 +1,4 @@
-const cloudinary = require('cloudinary').v2;
+import { v2 as cloudinary } from 'cloudinary';
 
 /**
  * Supprime un fichier de Cloudinary en fonction de son URL
@@ -214,8 +214,7 @@ function generateCloudinaryPath(filename, username, fileType) {
   return `${uniqueFileName}`;
 }
 
-module.exports = {
-  getUserFileFolder,
+export {
   getFileType,
   getUserFilePath,
   getCertificateFolder,

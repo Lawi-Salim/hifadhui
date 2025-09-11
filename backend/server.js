@@ -1,25 +1,28 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 
-const rateLimit = require('express-rate-limit');
-const path = require('path');
-
-require('dotenv').config();
+dotenv.config();
 
 // Serveur backend Hifadhui
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const { sequelize } = require('./config/database');
-const authRoutes = require('./routes/auth');
-const adminRoutes = require('./routes/admin');
-const fileRoutes = require('./routes/files');
-const certificateRoutes = require('./routes/certificates');
-const dossierRoutes = require('./routes/dossiers');
-const shareRoutes = require('./routes/shares');
-const bulkActionsRoutes = require('./routes/bulkActions');
+import { sequelize } from './config/database.js';
+import authRoutes from './routes/auth.js';
+import adminRoutes from './routes/admin.js';
+import fileRoutes from './routes/files.js';
+import certificateRoutes from './routes/certificates.js';
+import dossierRoutes from './routes/dossiers.js';
+import shareRoutes from './routes/shares.js';
+import bulkActionsRoutes from './routes/bulkActions.js';
 
 // Importation des modèles et associations depuis l'index des modèles
-const { Utilisateur, ActivityLog, File, Dossier, Certificate } = require('./models');
+import { Utilisateur, ActivityLog, File, Dossier, Certificate } from './models/index.js';
 
 
 const app = express();
@@ -117,7 +120,7 @@ app.use((err, req, res, next) => {
 const createDefaultAdmin = async () => {
   try {
     console.log('🔍 [VERCEL] Vérification de l\'existence d\'un admin...');
-    const bcrypt = require('bcryptjs');
+    const { default: bcrypt } = await import('bcryptjs');
     
     // Vérifier si un admin existe déjà
     const existingAdmin = await Utilisateur.findOne({
@@ -190,4 +193,4 @@ if (process.env.VERCEL) {
   startServer();
 }
 
-module.exports = app;
+export default app;

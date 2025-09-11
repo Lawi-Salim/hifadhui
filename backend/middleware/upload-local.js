@@ -1,6 +1,11 @@
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Créer le dossier uploads s'il n'existe pas
 const uploadsDir = path.join(__dirname, '../uploads');
@@ -82,7 +87,5 @@ const handleUploadError = (error, req, res, next) => {
   });
 };
 
-module.exports = {
-  upload,
-  handleUploadError
-};
+export { upload, handleUploadError };
+export default { upload, handleUploadError };

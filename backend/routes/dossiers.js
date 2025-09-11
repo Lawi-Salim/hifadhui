@@ -1,13 +1,14 @@
-const express = require('express');
+import express from 'express';
+import { sequelize } from '../config/database.js';
+import { Dossier, File, Certificate, ActivityLog } from '../models/index.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { upload } from '../middleware/upload.js';
+import AdmZip from 'adm-zip';
+import streamifier from 'streamifier';
+import { v2 as cloudinary } from 'cloudinary';
+import { getUserFileConfig, getFileType } from '../utils/cloudinaryStructure.js';
+
 const router = express.Router();
-const { sequelize } = require('../config/database');
-const { Dossier, File, Certificate, ActivityLog } = require('../models'); // Assurez-vous que les modèles sont correctement importés
-const { authenticateToken } = require('../middleware/auth');
-const upload = require('../middleware/upload').upload; // Pour l'upload Cloudinary
-const AdmZip = require('adm-zip');
-const streamifier = require('streamifier');
-const cloudinary = require('cloudinary').v2;
-const { getUserFileConfig, getFileType } = require('../utils/cloudinaryStructure');
 
 // POST /api/dossiers - Créer un nouveau dossier
 router.post('/', authenticateToken, async (req, res) => {
@@ -638,4 +639,4 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

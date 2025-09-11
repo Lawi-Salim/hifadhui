@@ -1,9 +1,10 @@
-const express = require('express');
-const { Op, fn, col } = require('sequelize');
+import express from 'express';
+import { Op, fn, col } from 'sequelize';
+import { Utilisateur } from '../models/index.js';
+import { ActivityLog } from '../models/index.js';
+import { authenticateToken, authorizeAdmin } from '../middleware/auth.js';
+
 const router = express.Router();
-const Utilisateur = require('../models/Utilisateur');
-const ActivityLog = require('../models/ActivityLog');
-const { authenticateToken, authorizeAdmin } = require('../middleware/auth');
 
 /**
  * @route   GET /api/admin/users
@@ -223,4 +224,4 @@ router.get('/activities/user/:userId', [authenticateToken, authorizeAdmin], asyn
   }
 });
 
-module.exports = router;
+export default router;

@@ -1,11 +1,11 @@
-const express = require('express');
-const { File, Certificate, sequelize } = require('../models');
-const { authenticateToken } = require('../middleware/auth');
-const { Op } = require('sequelize');
-const PDFDocument = require('pdfkit');
-const cloudinary = require('../config/cloudinary');
-const { getCertificateConfig } = require('../utils/cloudinaryStructure');
-const { Readable } = require('stream');
+import express from 'express';
+import { File, Certificate, sequelize } from '../models/index.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { Op } from 'sequelize';
+import PDFDocument from 'pdfkit';
+import cloudinary from '../config/cloudinary.js';
+import { getCertificateConfig } from '../utils/cloudinaryStructure.js';
+import { Readable } from 'stream';
 
 const router = express.Router();
 
@@ -327,4 +327,4 @@ async function uploadPDFToCloudinary(pdfBuffer, fileId, user) {
   });
 }
 
-module.exports = router;
+export default router;

@@ -1,8 +1,11 @@
-const express = require('express');
+import express from 'express';
+import { Op } from 'sequelize';
+import { File, Dossier, Certificate, ActivityLog, Utilisateur } from '../models/index.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { deleteCloudinaryFile } from '../utils/cloudinaryStructure.js';
+import { v2 as cloudinary } from 'cloudinary';
+
 const router = express.Router();
-const crypto = require('crypto');
-const { Dossier, File, ActivityLog } = require('../models');
-const { authenticateToken } = require('../middleware/auth');
 
 // POST /api/bulk-actions/move - Déplacer des éléments en lot
 router.post('/move', authenticateToken, async (req, res) => {
@@ -349,7 +352,6 @@ router.post('/check-conflicts', authenticateToken, async (req, res) => {
 });
 
 // Fonction helper pour suppression récursive (importée de dossiers.js)
-const cloudinary = require('cloudinary').v2;
 
 const deleteDossierRecursive = async (dossierId, ownerId) => {
   const subDossiers = await Dossier.findAll({ where: { parent_id: dossierId, owner_id: ownerId } });
@@ -412,4 +414,4 @@ router.get('/folders-tree', authenticateToken, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

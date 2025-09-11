@@ -1,6 +1,6 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
-const crypto = require('crypto');
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/database.js';
+import crypto from 'crypto';
 
 const File = sequelize.define('File', {
   id: {
@@ -135,4 +135,4 @@ File.prototype.verifyIntegrity = function(fileBuffer) {
   return this.hash === calculatedHash;
 };
 
-module.exports = File;
+export default File;

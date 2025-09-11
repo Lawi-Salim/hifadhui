@@ -1,9 +1,9 @@
-const express = require('express');
-const crypto = require('crypto');
-const { body, validationResult } = require('express-validator');
-const { Op } = require('sequelize');
-const db = require('../models');
-const { authenticateToken } = require('../middleware/auth');
+import express from 'express';
+import crypto from 'crypto';
+import { body, validationResult } from 'express-validator';
+import { Op } from 'sequelize';
+import { File, FileShare, Utilisateur, Certificate, ActivityLog } from '../models/index.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -15,7 +15,7 @@ router.post('/:id/share', authenticateToken, async (req, res) => {
     const fileId = req.params.id;
     
     // Vérifier que le fichier existe et appartient à l'utilisateur
-    const file = await db.File.findOne({
+    const file = await File.findOne({
       where: { 
         id: fileId,
         owner_id: req.user.id,
@@ -30,7 +30,7 @@ router.post('/:id/share', authenticateToken, async (req, res) => {
     }
 
     // Désactiver les anciens partages pour ce fichier
-    await db.FileShare.update(
+    await FileShare.update(
       { is_active: false },
       { 
         where: { 
@@ -49,7 +49,7 @@ router.post('/:id/share', authenticateToken, async (req, res) => {
     expiresAt.setHours(expiresAt.getHours() + 24);
 
     // Créer le partage
-    const fileShare = await db.FileShare.create({
+    const fileShare = await FileShare.create({
       file_id: fileId,
       token: token,
       expires_at: expiresAt,
@@ -58,7 +58,7 @@ router.post('/:id/share', authenticateToken, async (req, res) => {
     });
 
     // Log de l'activité
-    await db.ActivityLog.create({
+    await ActivityLog.create({
       userId: req.user.id,
       actionType: 'FILE_SHARE_CREATE',
       details: {
@@ -96,7 +96,7 @@ router.get('/:token', async (req, res) => {
     const token = req.params.token;
 
     // Trouver le partage actif et non expiré
-    const fileShare = await db.FileShare.findOne({
+    const fileShare = await FileShare.findOne({
       where: {
         token: token,
         is_active: true,
@@ -106,23 +106,23 @@ router.get('/:token', async (req, res) => {
       },
       include: [
         {
-          model: db.File,
+          model: File,
           as: 'file',
           include: [
             {
-              model: db.Utilisateur,
+              model: Utilisateur,
               as: 'fileUser',
               attributes: ['username']
             },
             {
-              model: db.Certificate,
+              model: Certificate,
               as: 'fileCertificates',
               attributes: ['id', 'pdf_url', 'date_generated']
             }
           ]
         },
         {
-          model: db.Utilisateur,
+          model: Utilisateur,
           as: 'creator',
           attributes: ['username']
         }
@@ -176,7 +176,7 @@ router.delete('/:id/share', authenticateToken, async (req, res) => {
     const fileId = req.params.id;
 
     // Désactiver tous les partages actifs pour ce fichier
-    const [updatedCount] = await db.FileShare.update(
+    const [updatedCount] = await FileShare.update(
       { is_active: false },
       { 
         where: { 
@@ -194,7 +194,7 @@ router.delete('/:id/share', authenticateToken, async (req, res) => {
     }
 
     // Log de l'activité
-    await db.ActivityLog.create({
+    await ActivityLog.create({
       userId: req.user.id,
       actionType: 'FILE_SHARE_REVOKE',
       details: {
@@ -268,4 +268,4 @@ router.get('/:id/shares', authenticateToken, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

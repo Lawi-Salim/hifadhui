@@ -1,5 +1,5 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/database.js';
 
 const Certificate = sequelize.define('Certificate', {
   id: {
@@ -37,4 +37,4 @@ const Certificate = sequelize.define('Certificate', {
   updatedAt: 'updated_at'
 });
 
-module.exports = Certificate;
+export default Certificate;

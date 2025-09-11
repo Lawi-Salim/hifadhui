@@ -1,5 +1,5 @@
-const { DataTypes, Model } = require('sequelize');
-const { sequelize } = require('../config/database');
+import { DataTypes, Model } from 'sequelize';
+import { sequelize } from '../config/database.js';
 
 class Dossier extends Model {}
 
@@ -88,4 +88,4 @@ Dossier.prototype.getFullPath = async function() {
   return path.join('/');
 };
 
-module.exports = Dossier;
+export default Dossier;

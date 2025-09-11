@@ -1,7 +1,7 @@
-const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary = require('../config/cloudinary');
-const { getUserFileConfig } = require('../utils/cloudinaryStructure');
+import multer from 'multer';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import cloudinary from '../config/cloudinary.js';
+import { getUserFileConfig } from '../utils/cloudinaryStructure.js';
 
 // Configuration du stockage Cloudinary
 const storage = new CloudinaryStorage({
@@ -80,7 +80,4 @@ const handleUploadError = (error, req, res, next) => {
   });
 };
 
-module.exports = {
-  upload,
-  handleUploadError
-};
+export { upload, handleUploadError };

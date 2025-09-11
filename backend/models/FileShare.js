@@ -1,5 +1,5 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/database.js';
 
 const FileShare = sequelize.define('FileShare', {
     id: {
@@ -58,4 +58,4 @@ const FileShare = sequelize.define('FileShare', {
     updatedAt: 'updated_at'
   });
 
-module.exports = FileShare;
+export default FileShare;

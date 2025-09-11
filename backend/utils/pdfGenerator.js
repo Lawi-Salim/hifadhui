@@ -1,6 +1,11 @@
-const PDFDocument = require('pdfkit');
-const fs = require('fs');
-const path = require('path');
+import PDFDocument from 'pdfkit';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Créer le dossier des certificats s'il n'existe pas
 const certsDir = path.join(__dirname, '../certificates');
@@ -170,4 +175,4 @@ const generateCertificate = async (file, user) => {
   });
 };
 
-module.exports = { generateCertificate };
+export { generateCertificate };
