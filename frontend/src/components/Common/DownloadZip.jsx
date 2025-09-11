@@ -92,7 +92,9 @@ export const DownloadProgressIndicator = ({ progressBar, onClose }) => {
   );
 };
 
-export default {
+const DownloadZipExports = {
   useDownloadZip,
   DownloadProgressIndicator
 };
+
+export default DownloadZipExports;

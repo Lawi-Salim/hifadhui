@@ -35,7 +35,7 @@ const Register = () => {
       pattern: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/,
       lowercase: /[a-z]/.test(password),
       number: /[0-9]/.test(password),
-      special: /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)
+      special: /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password)
     };
     
     const score = Object.values(criteria).filter(Boolean).length;

@@ -31,21 +31,21 @@ const Footer = () => {
               <button className="text-gray-400 hover:text-white transition-colors">
                 Support
               </button>
-              <a href="#" className="social-link" aria-label="GitHub">
+              <button className="social-link" aria-label="GitHub">
                 <FiGithub />
-              </a>
-              <a href="#" className="social-link" aria-label="Twitter">
+              </button>
+              <button className="social-link" aria-label="Twitter">
                 <FiTwitter />
-              </a>
-              <a href="#" className="social-link" aria-label="LinkedIn">
+              </button>
+              <button className="social-link" aria-label="LinkedIn">
                 <FiLinkedin />
-              </a>
+              </button>
               <a href="mailto:contact@hifadhwi.com" className="social-link" aria-label="Email">
                 <FiMail />
               </a>
-              <a href="#" className="social-link" aria-label="WhatsApp">
+              <button className="social-link" aria-label="WhatsApp">
                 <FaWhatsapp />
-              </a>
+              </button>
             </div>
           </div>
 
