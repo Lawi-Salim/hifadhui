@@ -39,8 +39,8 @@ yarn-error.log*
 /backend/uploads
 
 # Scripts utils en développement
-/backend/scripts/reset-app-data.js
-/backend/scripts/generate-jwt.js
+/backend/scripts/*
+!/backend/scripts/create-admin.js
 
 # Fichiers générés par le système d'exploitation
 .DS_Store

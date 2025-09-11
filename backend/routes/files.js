@@ -357,13 +357,14 @@ router.post('/upload-zip', authenticateToken, uploadLocal.upload.single('documen
         }
 
         // Au lieu d'écrire localement, uploader directement sur Cloudinary
-        const { getFileType, generateCloudinaryPath } = require('../utils/cloudinaryStructure');
+        const { getFileType, generateCloudinaryPath, getUserFileFolder } = await import('../utils/cloudinaryStructure.js');
         
         const fileType = getFileType(fileMimeType);
         const cloudinaryPath = generateCloudinaryPath(entryName, req.user.username, fileType);
+        const folderPath = getUserFileFolder(req.user, fileType);
         
         // Créer un stream à partir du buffer
-        const { Readable } = require('stream');
+        const { Readable } = await import('stream');
         const stream = Readable.from(fileData);
         
         // Upload via stream avec timeout plus long
@@ -371,7 +372,7 @@ router.post('/upload-zip', authenticateToken, uploadLocal.upload.single('documen
           const uploadStream = cloudinary.uploader.upload_stream({
             public_id: cloudinaryPath,
             resource_type: fileType === 'images' ? 'image' : 'raw',
-            folder: `hifadhwi/upload/${req.user.username}/${fileType}`,
+            folder: folderPath,
             timeout: 120000 // 2 minutes timeout
           }, (error, result) => {
             if (error) {
@@ -639,9 +640,7 @@ router.get('/:id/download', authenticateToken, async (req, res) => {
     
     if (!file.file_url.startsWith('http')) {
       // Construire l'URL Cloudinary complète à partir du chemin relatif
-      const cloudinaryBaseUrl = process.env.CLOUDINARY_URL ? 
-        `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}` : 
-        'https://res.cloudinary.com/ddxypgvuh';
+      const cloudinaryBaseUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}`;
       
       // Déterminer le type de ressource basé sur le mimetype
       const resourceType = file.mimetype.startsWith('image/') ? 'image' : 'raw';
@@ -772,7 +771,15 @@ router.delete('/batch-delete', authenticateToken, async (req, res) => {
         transaction: t
       });
 
-      // Supprimer le certificat associé
+      // Supprimer le certificat associé (BDD + Cloudinary)
+      const certificate = await Certificate.findOne({ where: { root_file_id: rootFileId }, transaction: t });
+      if (certificate && certificate.pdf_url) {
+        try {
+          await deleteCloudinaryFile(certificate.pdf_url, 'application/pdf');
+        } catch (cloudinaryError) {
+          console.error(`Erreur suppression certificat Cloudinary:`, cloudinaryError);
+        }
+      }
       await Certificate.destroy({ where: { root_file_id: rootFileId }, transaction: t });
 
       // 3. Enregistrer l'activité de suppression pour le fichier racine
@@ -844,7 +851,18 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       transaction
     });
 
-    // Supprimer le certificat associé au fichier racine
+    // Supprimer le certificat associé au fichier racine (BDD + Cloudinary)
+    const certificate = await Certificate.findOne({ 
+      where: { root_file_id: rootFileId }, 
+      transaction 
+    });
+    if (certificate && certificate.pdf_url) {
+      try {
+        await deleteCloudinaryFile(certificate.pdf_url, 'application/pdf');
+      } catch (cloudinaryError) {
+        console.error(`Erreur suppression certificat Cloudinary:`, cloudinaryError);
+      }
+    }
     await Certificate.destroy({ 
       where: { root_file_id: rootFileId }, 
       transaction 

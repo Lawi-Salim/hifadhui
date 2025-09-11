@@ -16,8 +16,8 @@ async function deleteCloudinaryFile(fileUrl, mimetype = '') {
     
     // 1. Si c'est une URL Cloudinary complète
     if (fileUrl.includes('res.cloudinary.com')) {
-      // Exemple: https://res.cloudinary.com/ddxypgvuh/raw/upload/v1756555848/hifadhwi/upload/user/file.pdf
-      // ou: https://res.cloudinary.com/ddxypgvuh/image/upload/...
+      // Exemple: https://res.cloudinary.com/{cloud_name}/raw/upload/v1756555848/hifadhwi/upload/user/file.pdf
+      // ou: https://res.cloudinary.com/{cloud_name}/image/upload/...
       const urlParts = fileUrl.split('/');
       const uploadIndex = urlParts.findIndex(part => part === 'upload');
       
@@ -90,11 +90,11 @@ async function deleteCloudinaryFile(fileUrl, mimetype = '') {
 /**
  * Génère le chemin de dossier pour les fichiers utilisateur
  * @param {Object} user - L'objet utilisateur
- * @param {string} fileType - Le type de fichier ('images', 'pdfs', 'others')
+ * @param {string} fileType - Le type de fichier ('images', 'pdfs', 'certificats')
  * @returns {string} Le chemin du dossier
  */
 function getUserFileFolder(user, fileType = null) {
-  const userFolder = `hifadhwi/upload/${user.username || user.id}`;
+  const userFolder = `Hifadhwi/upload/${user.username || user.id}`;
   
   if (!fileType) {
     return userFolder;
@@ -107,7 +107,7 @@ function getUserFileFolder(user, fileType = null) {
  * Détermine le type de fichier basé sur le MIME type ou l'extension
  * @param {string} mimetype - Le type MIME du fichier
  * @param {string} filename - Le nom du fichier (optionnel, pour l'extension)
- * @returns {string} Le type de fichier ('images', 'pdfs', 'others')
+ * @returns {string} Le type de fichier ('images', 'pdfs', 'autres')
  */
 function getFileType(mimetype, filename = '') {
   // Vérifier d'abord le MIME type
@@ -131,7 +131,7 @@ function getFileType(mimetype, filename = '') {
     }
   }
   
-  return 'other';
+  return 'autres';
 }
 
 /**
@@ -151,7 +151,7 @@ function getUserFilePath(user, file) {
  * @returns {string} Le chemin du dossier certificats
  */
 function getCertificateFolder(user) {
-  return `hifadhwi/certificates/${user.username || user.id}`;
+  return `Hifadhwi/upload/${user.username || user.id}/certificats`;
 }
 
 /**
