@@ -3,8 +3,7 @@ Lawi.session.sql
 Features.md
 README-DEPLOYMENT.md
 *deployment*.md
-# !schema.sql
-# *.sql
+!schema-psql.sql
 
 # Dépendances
 /node_modules

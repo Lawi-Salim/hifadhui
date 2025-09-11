@@ -32,7 +32,7 @@ const Register = () => {
   const validatePasswordStrength = (password) => {
     const criteria = {
       length: password.length >= 8,
-      pattern: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/,
+      uppercase: /[A-Z]/.test(password),
       lowercase: /[a-z]/.test(password),
       number: /[0-9]/.test(password),
       special: /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password)
