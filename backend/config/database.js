@@ -1,4 +1,5 @@
 import { Sequelize } from 'sequelize';
+import pg from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -7,6 +8,7 @@ const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 5432,
   dialect: 'postgres',
+  dialectModule: pg,
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
   dialectOptions: {
     charset: 'utf8',
@@ -42,11 +44,15 @@ if (isProduction) {
   };
 }
 
-const sequelize = new Sequelize(
-  process.env.DB_NAME || 'hifadhui',
-  process.env.DB_USER || 'postgres',
-  process.env.DB_PASSWORD,
-  dbConfig
-);
+const useDatabaseUrl = Boolean(process.env.DATABASE_URL);
+
+const sequelize = useDatabaseUrl
+  ? new Sequelize(process.env.DATABASE_URL, dbConfig)
+  : new Sequelize(
+      process.env.DB_NAME || 'hifadhui',
+      process.env.DB_USER || 'postgres',
+      process.env.DB_PASSWORD,
+      dbConfig
+    );
 
 export { sequelize };
