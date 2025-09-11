@@ -149,13 +149,10 @@ const createDefaultAdmin = async () => {
     const hashedPassword = await bcrypt.hash('123456', 10);
     
     const newAdmin = await Utilisateur.create({
-      nom: 'Admin',
-      prenom: 'System',
+      username: 'Admin System',
       email: 'lawi@gmail.com',
-      motDePasse: hashedPassword,
-      role: 'admin',
-      statut: 'actif',
-      dateCreation: new Date()
+      password: hashedPassword,
+      role: 'admin'
     });
     
     console.log('🎉 [INIT] Admin par défaut créé avec succès!');
