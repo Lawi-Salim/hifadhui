@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "postinstall": "node scripts/create-admin.js"
+    "build": "npm install"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
