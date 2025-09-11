@@ -3,14 +3,24 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { v2 as cloudinary } from 'cloudinary';
+import { getCertificateConfig } from './cloudinaryStructure.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Créer le dossier des certificats s'il n'existe pas
+// En production, utiliser Cloudinary pour le stockage persistant
+// En développement, garder le stockage local pour debug
+const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
 const certsDir = path.join(__dirname, '../certificates');
-if (!fs.existsSync(certsDir)) {
-  fs.mkdirSync(certsDir, { recursive: true });
+
+// Créer le dossier des certificats seulement en développement
+if (!isProd && !fs.existsSync(certsDir)) {
+  try {
+    fs.mkdirSync(certsDir, { recursive: true });
+  } catch (error) {
+    console.warn('⚠️ Impossible de créer le dossier certificates:', error.message);
+  }
 }
 
 /**
@@ -32,10 +42,55 @@ const generateCertificate = async (file, user) => {
     });
 
     const pdfName = `certificat-${file.id}.pdf`;
-    const pdfPath = path.join(certsDir, pdfName);
-    const writeStream = fs.createWriteStream(pdfPath);
-
-    doc.pipe(writeStream);
+    
+    if (isProd) {
+      // En production : upload direct vers Cloudinary
+      const buffers = [];
+      
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', async () => {
+        try {
+          const pdfBuffer = Buffer.concat(buffers);
+          const config = getCertificateConfig(user, file.id);
+          
+          // Upload vers Cloudinary
+          const uploadResult = await new Promise((uploadResolve, uploadReject) => {
+            cloudinary.uploader.upload_stream(
+              {
+                resource_type: 'raw',
+                folder: config.folder,
+                public_id: config.public_id,
+                format: 'pdf'
+              },
+              (error, result) => {
+                if (error) uploadReject(error);
+                else uploadResolve(result);
+              }
+            ).end(pdfBuffer);
+          });
+          
+          console.log('📄 Certificat uploadé sur Cloudinary:', uploadResult.secure_url);
+          resolve(uploadResult.secure_url);
+        } catch (error) {
+          console.error('❌ Erreur upload certificat Cloudinary:', error);
+          reject(error);
+        }
+      });
+    } else {
+      // En développement : stockage local
+      const pdfPath = path.join(certsDir, pdfName);
+      const writeStream = fs.createWriteStream(pdfPath);
+      doc.pipe(writeStream);
+      
+      writeStream.on('finish', () => {
+        const relativePath = `/certificates/${pdfName}`;
+        resolve(relativePath);
+      });
+      
+      writeStream.on('error', (err) => {
+        reject(err);
+      });
+    }
 
     // En-tête principal avec couleur
     doc.fontSize(20).font('Helvetica-Bold')
@@ -164,14 +219,7 @@ const generateCertificate = async (file, user) => {
 
     doc.end();
 
-    writeStream.on('finish', () => {
-      const relativePath = `/certificates/${pdfName}`;
-      resolve(relativePath);
-    });
-
-    writeStream.on('error', (err) => {
-      reject(err);
-    });
+    // Cette section est maintenant gérée dans les blocs conditionnels ci-dessus
   });
 };
 

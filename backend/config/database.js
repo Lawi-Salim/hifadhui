@@ -9,7 +9,7 @@ const dbConfig = {
   port: process.env.DB_PORT || 5432,
   dialect: 'postgres',
   dialectModule: pg,
-  logging: process.env.NODE_ENV === 'development' ? console.log : false,
+  logging: false, // Désactiver les logs SQL
   dialectOptions: {
     charset: 'utf8',
     collate: 'utf8_unicode_ci',
