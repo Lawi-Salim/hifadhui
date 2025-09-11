@@ -55,7 +55,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Servir les fichiers statiques (certificats et uploads)
 app.use('/certificates', express.static(path.join(__dirname, 'certificates')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// En production sur Vercel, les fichiers uploadés sont stockés dans /tmp et ne sont pas persistants.
+// Éviter de servir un dossier inexistant dans /var/task
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+}
 
 // Middleware silencieux en production
 if (process.env.NODE_ENV !== 'production') {

@@ -7,24 +7,38 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Créer le dossier uploads s'il n'existe pas
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+// En production (Vercel), utiliser le stockage mémoire pour ne rien écrire sur disque.
+// En développement, écrire dans ../uploads pour faciliter le debug.
+const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+let uploadsDir = path.join(__dirname, '../uploads');
+if (!isProd) {
+  try {
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+  } catch (e) {
+    const fallback = path.join('/tmp', 'uploads');
+    if (!fs.existsSync(fallback)) {
+      fs.mkdirSync(fallback, { recursive: true });
+    }
+    uploadsDir = fallback;
+    console.warn('⚠️  Utilisation du dossier temporaire pour les uploads (dev):', fallback, e?.message);
+  }
 }
 
-// Configuration de stockage local
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    // Générer un nom unique avec timestamp
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const filename = file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname);
-    cb(null, filename);
-  }
-});
+// Configuration de stockage: mémoire en prod, disque en dev
+const storage = isProd
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (req, file, cb) => {
+        cb(null, uploadsDir);
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const filename = file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname);
+        cb(null, filename);
+      }
+    });
 
 // Configuration multer pour stockage local
 const upload = multer({

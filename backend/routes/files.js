@@ -202,7 +202,7 @@ router.post('/upload', authenticateToken, upload.single('document'), async (req,
       return res.status(400).json({ error: 'Aucun fichier fourni' });
     }
 
-    const { mimetype, path: filePath } = req.file;
+    const { mimetype, path: filePath, buffer } = req.file;
     const isZip = mimetype === 'application/zip';
 
     if (isZip) {
@@ -242,7 +242,7 @@ router.post('/zip-preview', authenticateToken, uploadLocal.upload.single('docume
       return res.status(400).json({ error: 'Aucun fichier fourni' });
     }
 
-    const { mimetype, path: filePath } = req.file;
+    const { mimetype, path: filePath, buffer } = req.file;
     const isZip = mimetype === 'application/zip' || mimetype === 'application/x-zip-compressed';
 
     if (!isZip) {
@@ -251,8 +251,8 @@ router.post('/zip-preview', authenticateToken, uploadLocal.upload.single('docume
       });
     }
 
-    // Lire le contenu du ZIP
-    const zipData = fs.readFileSync(filePath);
+    // Lire le contenu du ZIP (mémoire en prod, disque en dev)
+    const zipData = buffer ? buffer : fs.readFileSync(filePath);
     const zip = new AdmZip(zipData);
     const zipEntries = zip.getEntries();
     const fileList = [];
@@ -274,8 +274,10 @@ router.post('/zip-preview', authenticateToken, uploadLocal.upload.single('docume
       }
     }
 
-    // Supprimer le fichier temporaire
-    fs.unlinkSync(filePath);
+    // Supprimer le fichier temporaire uniquement en dev
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
 
     res.json({ files: fileList });
 
@@ -313,12 +315,12 @@ router.post('/upload-zip', authenticateToken, uploadLocal.upload.single('documen
       defaults: { name: dossierName, name_original: fixEncoding(originalDossierName), owner_id: req.user.id, parent_id: systemRoot.id },
     });
 
-    // Lire le fichier ZIP dans un buffer pour éviter les problèmes de verrouillage de fichier sur Windows
-    const zipData = fs.readFileSync(filePath);
+    // Lire le fichier ZIP (mémoire en prod via multer.memoryStorage, disque en dev)
+    const zipData = buffer ? buffer : fs.readFileSync(filePath);
     const zip = new AdmZip(zipData);
     const zipEntries = zip.getEntries();
     const processedFiles = [];
-    const uploadsDir = path.dirname(filePath);
+    const uploadsDir = filePath ? path.dirname(filePath) : '/tmp';
     let extractedImageCount = 0;
     let extractedPdfCount = 0;
 
@@ -330,7 +332,7 @@ router.post('/upload-zip', authenticateToken, uploadLocal.upload.single('documen
         const entryName = zipEntry.entryName;
         const fileData = zipEntry.getData();
         const newFileName = `${Date.now()}-${path.basename(entryName)}`;
-        const newFilePath = path.join(uploadsDir, newFileName);
+        // Pas d'écriture disque en production: on streame directement vers Cloudinary
 
         const extension = path.extname(entryName).toLowerCase();
         let fileMimeType;
@@ -395,8 +397,10 @@ router.post('/upload-zip', authenticateToken, uploadLocal.upload.single('documen
         processedFiles.push(processedFile);
       }
 
-    // Supprimer le fichier ZIP original
-    fs.unlinkSync(filePath);
+    // Supprimer le fichier ZIP original uniquement si présent (dev)
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
 
     // Enregistrer une seule activité pour l'ensemble du ZIP
     await ActivityLog.create({
