@@ -109,25 +109,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Route d'amorçage sécurisée pour (re)créer l'admin si nécessaire
-app.get('/api/bootstrap', async (req, res) => {
-  try {
-    const token = req.query.token || '';
-    if (!process.env.ADMIN_BOOTSTRAP_TOKEN || token !== process.env.ADMIN_BOOTSTRAP_TOKEN) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
-    console.log('🔐 [BOOTSTRAP] Reçu, tentative d\'auth DB et création admin...');
-    await sequelize.authenticate();
-    console.log('✅ [BOOTSTRAP] Connexion DB OK');
-    await createDefaultAdmin();
-    console.log('✅ [BOOTSTRAP] Terminé');
-    return res.json({ ok: true });
-  } catch (e) {
-    console.error('❌ [BOOTSTRAP] Échec:', e.message);
-    return res.status(500).json({ error: e.message });
-  }
-});
 
 
 // Gestion des erreurs 404
