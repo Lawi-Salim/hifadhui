@@ -74,7 +74,7 @@ const HomePage = () => {
         
         <div className="hero-visual">
           <div className="security-badge">
-            <img src="/Hifadhwi-logo.svg" alt="Hifadhwi Logo" className="Hifadhwi-logo" />
+            <img src="/hifadhwi-logo.svg" alt="Hifadhwi Logo" className="Hifadhwi-logo" />
           </div>
         </div>
       </section>
