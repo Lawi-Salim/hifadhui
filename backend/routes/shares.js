@@ -94,6 +94,7 @@ router.post('/:id/share', authenticateToken, async (req, res) => {
 router.get('/:token', async (req, res) => {
   try {
     const token = req.params.token;
+    const alreadyViewed = req.headers['x-already-viewed'] === 'true';
 
     // Trouver le partage actif et non expiré
     const fileShare = await FileShare.findOne({
@@ -135,8 +136,15 @@ router.get('/:token', async (req, res) => {
       });
     }
 
-    // Incrémenter le compteur d'accès
-    await fileShare.increment('access_count');
+    // Incrémenter le compteur d'accès seulement si pas déjà vu dans cette session
+    let updatedShare = fileShare;
+    if (!alreadyViewed) {
+      console.log('🔍 [DEBUG] Incrémentation pour token:', token, 'count actuel:', fileShare.access_count);
+      updatedShare = await fileShare.increment('access_count');
+      console.log('🔍 [DEBUG] Nouveau count après incrémentation:', updatedShare.access_count);
+    } else {
+      console.log('🔍 [DEBUG] Session déjà vue, pas d\'incrémentation pour token:', token);
+    }
 
     // Retourner les informations du fichier (sans possibilité de téléchargement)
     res.json({
@@ -155,7 +163,7 @@ router.get('/:token', async (req, res) => {
       share: {
         created_at: fileShare.created_at,
         expires_at: fileShare.expires_at,
-        access_count: fileShare.access_count + 1,
+        access_count: updatedShare.access_count,
         shared_by: fileShare.creator.username
       }
     });

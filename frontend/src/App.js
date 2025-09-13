@@ -66,7 +66,7 @@ function AppContent() {
   const { user } = useAuth();
   const location = useLocation();
 
-  const shouldShowSidebar = user && location.pathname !== '/';
+  const shouldShowSidebar = user && location.pathname !== '/' && !location.pathname.startsWith('/share/');
 
   return (
     <div className="App">

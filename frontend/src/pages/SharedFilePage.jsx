@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiClock, FiUser, FiEye, FiShield, FiAlertCircle } from 'react-icons/fi';
 import { FaFilePdf, FaFileImage, FaFileAlt } from 'react-icons/fa';
@@ -12,11 +12,30 @@ const SharedFilePage = () => {
   const [fileData, setFileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const hasFetched = useRef(false);
 
   useEffect(() => {
     const fetchSharedFile = async () => {
       try {
-        const response = await api.get(`/share/${token}`);
+        // Vérifier si cette session globale a déjà été comptée (tous onglets confondus)
+        const globalSessionKey = `share_viewed_${token}`;
+        const alreadyViewed = localStorage.getItem(globalSessionKey);
+        
+        console.log('🔍 [DEBUG Frontend] Token:', token, 'Already viewed:', alreadyViewed);
+        
+        const response = await api.get(`/share/${token}`, {
+          headers: {
+            'X-Already-Viewed': alreadyViewed ? 'true' : 'false'
+          }
+        });
+        
+        // Marquer comme vu pour cette session globale
+        if (!alreadyViewed) {
+          console.log('🔍 [DEBUG Frontend] Marquage comme vu pour token:', token);
+          localStorage.setItem(globalSessionKey, 'true');
+          localStorage.setItem(`${globalSessionKey}_timestamp`, Date.now().toString());
+        }
+        
         console.log('Données reçues:', response.data); // Debug
         setFileData(response.data);
       } catch (err) {
@@ -26,20 +45,40 @@ const SharedFilePage = () => {
       }
     };
 
-    if (token) {
+    if (token && !hasFetched.current) {
+      hasFetched.current = true;
       fetchSharedFile();
     }
 
-    // Logique d'expiration à la fermeture de la page
+    // Gestion de la session globale - nettoyer quand tous les onglets sont fermés
     const handleBeforeUnload = () => {
-      // Le lien expire quand l'utilisateur ferme la page
-      localStorage.setItem(`share_expired_${token}`, 'true');
+      // Vérifier s'il y a d'autres onglets ouverts avec ce lien
+      const globalSessionKey = `share_viewed_${token}`;
+      const tabId = `tab_${Date.now()}_${Math.random()}`;
+      
+      // Enregistrer cet onglet
+      sessionStorage.setItem('currentTabId', tabId);
+      
+      // Nettoyer la session globale seulement si c'est le dernier onglet
+      setTimeout(() => {
+        // Si aucun autre onglet n'a réinitialisé ce flag, on nettoie
+        const stillActive = sessionStorage.getItem('tabsActive');
+        if (!stillActive) {
+          localStorage.removeItem(globalSessionKey);
+          localStorage.removeItem(`${globalSessionKey}_timestamp`);
+        }
+      }, 1000);
     };
 
+    // Marquer cet onglet comme actif
+    sessionStorage.setItem('tabsActive', 'true');
+    
     window.addEventListener('beforeunload', handleBeforeUnload);
     
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Nettoyer le flag d'activité de cet onglet
+      sessionStorage.removeItem('tabsActive');
     };
   }, [token]);
 
@@ -160,7 +199,7 @@ const SharedFilePage = () => {
           <div className="header-info">
             <FiShield className="shield-icon" />
             <div>
-              <h1>Fichier partagé de manière sécurisée</h1>
+              <h1>Fichier partagé</h1>
               <p>Ce fichier vous est partagé pour prouver sa propriété</p>
             </div>
           </div>

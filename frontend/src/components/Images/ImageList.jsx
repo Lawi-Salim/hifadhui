@@ -6,6 +6,7 @@ import ItemList from '../Common/ItemList';
 import DeleteFileModal from '../Common/DeleteFileModal';
 import RenameFileModal from '../Common/RenameFileModal';
 import FileDetailModal from '../Common/FileDetailModal';
+import ShareModal from '../Files/ShareModal';
 import ContentToolbar from '../Common/ContentToolbar';
 import DeleteBatchModal from '../Common/DeleteBatchModal';
 import BulkActionsManager from '../Common/BulkActionsManager';
@@ -65,6 +66,8 @@ const ImageList = () => {
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [imageToRename, setImageToRename] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [fileToShare, setFileToShare] = useState(null);
 
   const handleDownload = async (image) => {
     try {
@@ -100,7 +103,8 @@ const ImageList = () => {
   };
 
   const handleShare = (image) => {
-    // Fonctionnalité de partage désactivée temporairement
+    setFileToShare(image);
+    setIsShareModalOpen(true);
     setOpenMenuId(null); // Fermer le menu
   };
 
@@ -359,6 +363,12 @@ const ImageList = () => {
       <DownloadProgressIndicator
         progressBar={progressBar}
         onClose={clearError}
+      />
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        file={fileToShare}
       />
     </BulkActionsManager>
   );
