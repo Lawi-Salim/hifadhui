@@ -70,6 +70,36 @@ Un outil personnel qui permet de stocker des documents numériques et permet la 
 - Partager plusieurs fichiers en une fois
 - Création d'albums temporaires
 - Gestion groupée des expirations
+---
+🎯 PLAN D'IMPLÉMENTATION - QR CODES POUR PARTAGE
+Excellente idée ! Voici comment procéder pour implémenter les QR codes de partage :
+
+📋 Architecture proposée :
+1. Backend (API) :
+Endpoint : GET /api/v1/files/:id/qr-code
+Fonctionnalité : Génère un QR code contenant l'URL de partage
+Format : Retourne l'image QR en base64 ou buffer PNG
+2. Frontend (UI) :
+Bouton QR dans le 
+ShareModal
+Aperçu du QR code généré
+Téléchargement en PNG
+Copie de l'image dans le presse-papier
+3. Intégration :
+QR code généré après création du lien de partage
+Contient l'URL complète : https://hifadhui.site/share/[token]
+Optimisé pour scan mobile
+🔄 Ordre d'implémentation :
+Backend : Endpoint de génération QR
+Frontend : Interface dans ShareModal
+UX : Boutons téléchargement/copie
+Tests : Validation scan mobile
+💡 Fonctionnalités QR :
+✅ Génération automatique
+✅ Téléchargement PNG
+✅ Taille optimisée (256x256px)
+✅ Correction d'erreur niveau M
+✅ Design avec logo Hifadhui (optionnel)
 
 ---
 ## 30/08/2025

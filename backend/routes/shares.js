@@ -69,8 +69,9 @@ router.post('/:id/share', authenticateToken, async (req, res) => {
       }
     });
 
-    // Construire l'URL de partage (frontend en développement)
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    // Construire l'URL de partage 
+    const frontendUrl = process.env.FRONTEND_URL || 
+                       (process.env.VERCEL ? 'https://hifadhui.site' : 'http://localhost:3000');
     const shareUrl = `${frontendUrl}/share/${token}`;
 
     res.status(201).json({
@@ -264,7 +265,7 @@ router.get('/:id/shares', authenticateToken, async (req, res) => {
         expires_at: share.expires_at,
         access_count: share.access_count,
         created_at: share.created_at,
-        shareUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/share/${share.token}`
+        shareUrl: `${process.env.FRONTEND_URL || (process.env.VERCEL ? 'https://hifadhui.site' : 'http://localhost:3000')}/share/${share.token}`
       }))
     });
 
