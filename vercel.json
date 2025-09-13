@@ -23,8 +23,12 @@
       "dest": "/frontend/static/$1"
     },
     {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg))",
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|json|txt|woff|woff2|ttf|eot))",
       "dest": "/frontend/$1"
+    },
+    {
+      "src": "/manifest\\.json",
+      "dest": "/frontend/manifest.json"
     },
     {
       "src": "/share/(.*)",
