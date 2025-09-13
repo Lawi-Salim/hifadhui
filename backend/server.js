@@ -44,6 +44,8 @@ app.use(cors({
   origin: [
     'http://localhost:3000',
     'https://hifadhui.vercel.app',
+    'https://hifadhui.site',
+    'https://www.hifadhui.site',
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true
