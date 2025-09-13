@@ -29,7 +29,9 @@ const DeleteFileModal = ({ isOpen, onClose, file, onFileDeleted }) => {
     deleteProgressBar.updateCurrentItem(file.filename);
     
     try {
-      await fileService.deleteFile(file.id);
+      console.log(`🗑️ [FRONTEND] Suppression fichier ${file.id} (${file.filename})`);
+      const response = await fileService.deleteFile(file.id);
+      console.log(`✅ [FRONTEND] Réponse suppression:`, response);
       
       deleteProgressBar.completeProgress();
       

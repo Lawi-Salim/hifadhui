@@ -236,13 +236,25 @@ router.delete('/delete', authenticateToken, async (req, res) => {
             // Supprimer de Cloudinary si nécessaire
             if (file.file_url) {
               try {
-                const { deleteCloudinaryFile } = require('../utils/cloudinaryStructure');
                 await deleteCloudinaryFile(file.file_url, file.mimetype);
                 console.log(`Fichier supprimé de Cloudinary: ${file.file_url}`);
               } catch (cloudinaryError) {
                 console.error(`Erreur suppression Cloudinary pour ${file.file_url}:`, cloudinaryError);
               }
             }
+
+            // Supprimer le certificat associé (BDD + Cloudinary)
+            const rootFileId = file.parent_file_id || file.id;
+            const certificate = await Certificate.findOne({ where: { root_file_id: rootFileId } });
+            if (certificate && certificate.pdf_url) {
+              try {
+                await deleteCloudinaryFile(certificate.pdf_url, 'application/pdf');
+                console.log(`Certificat supprimé de Cloudinary: ${certificate.pdf_url}`);
+              } catch (cloudinaryError) {
+                console.error(`Erreur suppression certificat Cloudinary:`, cloudinaryError);
+              }
+            }
+            await Certificate.destroy({ where: { root_file_id: rootFileId } });
             
             await file.destroy();
             deletedCount++;
@@ -359,19 +371,35 @@ const deleteDossierRecursive = async (dossierId, ownerId) => {
     await deleteDossierRecursive(subDossier.id, ownerId);
   }
 
-  // Supprimer les fichiers de Cloudinary avant de les supprimer de la base de données
+  // Supprimer les fichiers et leurs certificats de Cloudinary avant de les supprimer de la base de données
   const filesToDelete = await File.findAll({ where: { dossier_id: dossierId, owner_id: ownerId } });
   for (const file of filesToDelete) {
+    // Supprimer le fichier de Cloudinary
     if (file.file_url) {
       try {
-        const { deleteCloudinaryFile } = require('../utils/cloudinaryStructure');
         await deleteCloudinaryFile(file.file_url, file.mimetype);
         console.log(`Fichier supprimé de Cloudinary: ${file.file_url}`);
       } catch (cloudinaryError) {
         console.error(`Erreur suppression Cloudinary pour ${file.file_url}:`, cloudinaryError);
       }
     }
+
+    // Supprimer le certificat associé de Cloudinary
+    const rootFileId = file.parent_file_id || file.id;
+    const certificate = await Certificate.findOne({ where: { root_file_id: rootFileId } });
+    if (certificate && certificate.pdf_url) {
+      try {
+        await deleteCloudinaryFile(certificate.pdf_url, 'application/pdf');
+        console.log(`Certificat supprimé de Cloudinary: ${certificate.pdf_url}`);
+      } catch (cloudinaryError) {
+        console.error(`Erreur suppression certificat Cloudinary:`, cloudinaryError);
+      }
+    }
   }
+
+  // Supprimer les certificats de la base de données
+  const fileIds = filesToDelete.map(f => f.parent_file_id || f.id);
+  await Certificate.destroy({ where: { root_file_id: { [Op.in]: fileIds } } });
 
   await File.destroy({ where: { dossier_id: dossierId, owner_id: ownerId } });
   await Dossier.destroy({ where: { id: dossierId, owner_id: ownerId } });

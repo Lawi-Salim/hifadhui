@@ -101,7 +101,7 @@ app.get('/api/health', (req, res) => {
   
   res.json({ 
     status: 'OK', 
-    message: 'hifadhwi API est opérationnelle',
+    message: 'Hifadhwi API est opérationnelle',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
     database: 'Connected',

@@ -48,13 +48,20 @@ router.post('/generate/:fileId', authenticateToken, async (req, res) => {
     // Générer le PDF du certificat
     const pdfBuffer = await generateCertificatePDF(file, req.user);
 
-    // Uploader le PDF vers Cloudinary
-    const uploadResult = await uploadPDFToCloudinary(pdfBuffer, file.id, req.user);
+    // Uploader le PDF vers Cloudinary avec le nom du fichier original
+    const uploadResult = await uploadPDFToCloudinary(pdfBuffer, file.filename, req.user);
 
-    // Créer l'enregistrement du certificat
+    // Extraire le chemin relatif pour optimiser le stockage
+    let relativePath = uploadResult.secure_url;
+    if (uploadResult.secure_url.includes('/upload/')) {
+      const uploadIndex = uploadResult.secure_url.indexOf('/upload/');
+      relativePath = uploadResult.secure_url.substring(uploadIndex + 8); // +8 pour "/upload/"
+    }
+
+    // Créer l'enregistrement du certificat avec chemin relatif
     certificate = await Certificate.create({
       root_file_id: rootFileId,
-      pdf_url: uploadResult.secure_url
+      pdf_url: relativePath
     });
 
     res.status(201).json({
@@ -224,11 +231,11 @@ async function generateCertificatePDF(file, user) {
     
     doc.moveDown(2);
 
-    // Logo ou titre hifadhwi
+    // Logo ou titre Hifadhwi
     doc.fontSize(18)
        .font('Helvetica')
        .fillColor('#2563eb')
-       .text('hifadhwi - Coffre-fort Numérique', { align: 'center' });
+       .text('Hifadhwi - Coffre-fort Numérique', { align: 'center' });
 
     doc.moveDown(2);
     doc.fillColor('black');
@@ -273,7 +280,7 @@ async function generateCertificatePDF(file, user) {
 
     doc.moveDown(1);
     doc.font('Helvetica')
-       .text('Ce certificat atteste que le document mentionné ci-dessus a été déposé dans le coffre-fort numérique hifadhwi et appartient légitimement à l\'utilisateur identifié.');
+       .text('Ce certificat atteste que le document mentionné ci-dessus a été déposé dans le coffre-fort numérique Hifadhwi et appartient légitimement à l\'utilisateur identifié.');
 
     doc.moveDown(1);
     doc.text('L\'intégrité du document est garantie par son empreinte cryptographique SHA-256 et sa signature numérique unique.');
@@ -290,14 +297,14 @@ async function generateCertificatePDF(file, user) {
        .text('Pour vérifier l\'authenticité de ce certificat, vous pouvez:')
        .text('1. Vérifier le hash SHA-256 du document original')
        .text('2. Contrôler la signature numérique')
-       .text('3. Contacter hifadhwi pour validation');
+       .text('3. Contacter Hifadhwi pour validation');
 
     doc.moveDown(2);
 
     // Pied de page
     doc.fontSize(12)
        .text(`Certificat généré le: ${currentDate}`)
-       .text('hifadhwi - Système de preuve de propriété numérique')
+       .text('Hifadhwi - Système de preuve de propriété numérique')
        .text('Ce document est généré automatiquement et ne nécessite pas de signature manuscrite.');
 
     // Finaliser le PDF
@@ -306,15 +313,19 @@ async function generateCertificatePDF(file, user) {
 }
 
 // Fonction pour uploader le PDF vers Cloudinary
-async function uploadPDFToCloudinary(pdfBuffer, fileId, user) {
+async function uploadPDFToCloudinary(pdfBuffer, originalFileName, user) {
   return new Promise((resolve, reject) => {
-    const config = getCertificateConfig(user, fileId);
+    const config = getCertificateConfig(user, originalFileName);
+    console.log(`📄 [CERTIFICATE UPLOAD] Configuration:`, config);
+    
     const uploadStream = cloudinary.uploader.upload_stream(
       config,
       (error, result) => {
         if (error) {
+          console.error(`❌ [CERTIFICATE UPLOAD] Erreur:`, error);
           reject(error);
         } else {
+          console.log(`✅ [CERTIFICATE UPLOAD] Succès:`, result.secure_url);
           resolve(result);
         }
       }

@@ -137,17 +137,23 @@ const processSingleFile = async (fileData, user, req, dossierId = null, options 
     version: 1
   });
 
+  // Génération automatique du certificat sur Cloudinary
   try {
-    const relativePdfUrl = await generateCertificate(file, user);
-    const fullPdfUrl = `${req.protocol}://${req.get('host')}${relativePdfUrl}`;
-    const rootFileId = file.parent_file_id || file.id;
-    const certificate = await Certificate.findOne({ where: { root_file_id: rootFileId } });
-    if (certificate) {
-      certificate.pdf_url = fullPdfUrl;
-      await certificate.save();
+    const response = await fetch(`${req.protocol}://${req.get('host')}/api/v1/certificates/generate/${file.id}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': req.headers.authorization,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      console.log(`✅ Certificat généré automatiquement pour ${originalname}`);
+    } else {
+      console.log(`⚠️ Erreur génération certificat pour ${originalname}:`, await response.text());
     }
   } catch (certError) {
-    console.error(`Erreur de certificat pour ${originalname}:`, certError);
+    console.error(`❌ Erreur certificat pour ${originalname}:`, certError.message);
   }
 
   let action_type = 'FILE_UPLOAD';
@@ -235,6 +241,7 @@ router.post('/upload', authenticateToken, upload.single('document'), async (req,
   }
 });
 
+
 // Route pour obtenir la liste des fichiers dans un ZIP
 router.post('/zip-preview', authenticateToken, uploadLocal.upload.single('document'), async (req, res) => {
   try {
@@ -316,7 +323,7 @@ router.post('/upload-zip', authenticateToken, uploadLocal.upload.single('documen
     });
 
     // Lire le fichier ZIP (mémoire en prod via multer.memoryStorage, disque en dev)
-    const zipData = buffer ? buffer : fs.readFileSync(filePath);
+    const zipData = req.file.buffer ? req.file.buffer : fs.readFileSync(filePath);
     const zip = new AdmZip(zipData);
     const zipEntries = zip.getEntries();
     const processedFiles = [];
@@ -370,9 +377,9 @@ router.post('/upload-zip', authenticateToken, uploadLocal.upload.single('documen
         // Upload via stream avec timeout plus long
         const cloudinaryResult = await new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream({
+            folder: folderPath,
             public_id: cloudinaryPath,
             resource_type: fileType === 'images' ? 'image' : 'raw',
-            folder: folderPath,
             timeout: 120000 // 2 minutes timeout
           }, (error, result) => {
             if (error) {
@@ -750,37 +757,53 @@ router.delete('/batch-delete', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Aucun fichier trouvé ou vous n\'avez pas la permission.' });
     }
 
-    for (const file of filesToDelete) {
-      // 1. Supprimer de Cloudinary en utilisant la fonction utilitaire
-      try {
-        await deleteCloudinaryFile(file.file_url, file.mimetype);
-      } catch (cloudinaryError) {
-        console.error(`Erreur lors de la suppression Cloudinary pour le fichier ${file.id}:`, cloudinaryError);
-        // On continue même si la suppression Cloudinary échoue pour ne pas bloquer le processus
-      }
+    // Collecter tous les root_file_id pour traiter TOUS les certificats
+    const rootFileIds = filesToDelete.map(file => file.parent_file_id || file.id);
+    console.log(`🗑️ [BATCH DELETE] Root file IDs: ${rootFileIds.join(', ')}`);
 
-      // 2. Déterminer le root_file_id et supprimer toutes les versions et le certificat
-      const rootFileId = file.parent_file_id || file.id;
-
-      // Supprimer toutes les versions du fichier
-      await File.destroy({
-        where: {
-          [Op.or]: [{ id: rootFileId }, { parent_file_id: rootFileId }],
-          owner_id: userId
-        },
-        transaction: t
-      });
-
-      // Supprimer le certificat associé (BDD + Cloudinary)
-      const certificate = await Certificate.findOne({ where: { root_file_id: rootFileId }, transaction: t });
+    // Supprimer TOUS les certificats associés (BDD + Cloudinary) AVANT de supprimer les fichiers
+    console.log(`🔍 [CERTIFICATE SEARCH] Recherche certificats pour ${rootFileIds.length} fichier(s)`);
+    const certificates = await Certificate.findAll({ 
+      where: { root_file_id: rootFileIds }, 
+      transaction: t 
+    });
+    console.log(`🔍 [CERTIFICATE SEARCH] ${certificates.length} certificat(s) trouvé(s)`);
+    
+    // Supprimer chaque certificat de Cloudinary
+    for (const certificate of certificates) {
       if (certificate && certificate.pdf_url) {
+        console.log(`🗑️ [CERTIFICATE DELETE] Suppression certificat: ${certificate.pdf_url}`);
+        
         try {
-          await deleteCloudinaryFile(certificate.pdf_url, 'application/pdf');
+          const certDeleteResult = await deleteCloudinaryFile(certificate.pdf_url, 'application/pdf');
+          console.log(`✅ [CERTIFICATE DELETE] Certificat supprimé de Cloudinary:`, certDeleteResult);
         } catch (cloudinaryError) {
-          console.error(`Erreur suppression certificat Cloudinary:`, cloudinaryError);
+          console.error(`❌ [CERTIFICATE DELETE] Erreur suppression certificat Cloudinary:`, cloudinaryError);
         }
       }
-      await Certificate.destroy({ where: { root_file_id: rootFileId }, transaction: t });
+    }
+    
+    // Supprimer tous les certificats de la BDD
+    const deletedCerts = await Certificate.destroy({ 
+      where: { root_file_id: rootFileIds }, 
+      transaction: t 
+    });
+    console.log(`✅ [CERTIFICATE DELETE] ${deletedCerts} certificat(s) supprimé(s) de la BDD`);
+
+    for (const file of filesToDelete) {
+      console.log(`🗑️ [FILE DELETE] Début suppression fichier ${file.id} (${file.filename})`);
+      
+      const currentRootFileId = file.parent_file_id || file.id;
+      
+      // Supprimer de Cloudinary en utilisant la fonction utilitaire
+      try {
+        console.log(`🗑️ [FILE DELETE] Suppression Cloudinary du fichier: ${file.file_url}`);
+        const deleteResult = await deleteCloudinaryFile(file.file_url, file.mimetype);
+        console.log(`✅ [FILE DELETE] Fichier supprimé de Cloudinary:`, deleteResult);
+      } catch (cloudinaryError) {
+        console.error(`❌ [FILE DELETE] Erreur lors de la suppression Cloudinary pour le fichier ${file.id}:`, cloudinaryError);
+        // On continue même si la suppression Cloudinary échoue pour ne pas bloquer le processus
+      }
 
       // 3. Enregistrer l'activité de suppression pour le fichier racine
       let fileType = 'other';
@@ -792,11 +815,24 @@ router.delete('/batch-delete', authenticateToken, async (req, res) => {
         actionType: 'FILE_DELETE',
         details: { 
           filename: file.filename,
-          fileId: rootFileId, // Logger l'ID du fichier racine
+          fileId: currentRootFileId, // Logger l'ID du fichier racine
           fileType: fileType
         }
       }, { transaction: t });
     }
+
+    // Supprimer tous les fichiers de la base de données en une seule opération
+    await File.destroy({
+      where: {
+        [Op.or]: [
+          { id: rootFileIds },
+          { parent_file_id: rootFileIds }
+        ],
+        owner_id: userId
+      },
+      transaction: t
+    });
+    console.log(`✅ [BATCH DELETE] Tous les fichiers supprimés de la BDD`);
 
     await t.commit();
     res.status(200).json({ message: `${filesToDelete.length} fichier(s) supprimé(s) avec succès.` });
@@ -838,6 +874,34 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     // Déterminer le root_file_id de manière robuste
     const rootFileId = file.parent_file_id || file.id;
+    console.log(`🗑️ [FILE DELETE] Root file ID: ${rootFileId}`);
+
+    // Supprimer le certificat associé AVANT de supprimer les fichiers (BDD + Cloudinary)
+    console.log(`🔍 [CERTIFICATE SEARCH] Recherche certificat pour root_file_id: ${rootFileId}`);
+    const certificate = await Certificate.findOne({ 
+      where: { root_file_id: rootFileId }, 
+      transaction 
+    });
+    console.log(`🔍 [CERTIFICATE SEARCH] Certificat trouvé:`, certificate ? 'OUI' : 'NON');
+    
+    if (certificate && certificate.pdf_url) {
+      console.log(`🗑️ [CERTIFICATE DELETE] Suppression certificat: ${certificate.pdf_url}`);
+      try {
+        const certDeleteResult = await deleteCloudinaryFile(certificate.pdf_url, 'application/pdf');
+        console.log(`✅ [CERTIFICATE DELETE] Certificat supprimé de Cloudinary:`, certDeleteResult);
+      } catch (cloudinaryError) {
+        console.error(`❌ [CERTIFICATE DELETE] Erreur suppression certificat Cloudinary:`, cloudinaryError);
+      }
+    } else {
+      console.log(`ℹ️ [CERTIFICATE DELETE] Aucun certificat trouvé pour le fichier ${rootFileId}`);
+    }
+    
+    // Supprimer le certificat de la BDD
+    const deletedCerts = await Certificate.destroy({ 
+      where: { root_file_id: rootFileId }, 
+      transaction 
+    });
+    console.log(`✅ [CERTIFICATE DELETE] ${deletedCerts} certificat(s) supprimé(s) de la BDD`);
 
     // Supprimer toutes les versions du fichier
     await File.destroy({
@@ -849,23 +913,6 @@ router.delete('/:id', authenticateToken, async (req, res) => {
         owner_id: req.user.id
       },
       transaction
-    });
-
-    // Supprimer le certificat associé au fichier racine (BDD + Cloudinary)
-    const certificate = await Certificate.findOne({ 
-      where: { root_file_id: rootFileId }, 
-      transaction 
-    });
-    if (certificate && certificate.pdf_url) {
-      try {
-        await deleteCloudinaryFile(certificate.pdf_url, 'application/pdf');
-      } catch (cloudinaryError) {
-        console.error(`Erreur suppression certificat Cloudinary:`, cloudinaryError);
-      }
-    }
-    await Certificate.destroy({ 
-      where: { root_file_id: rootFileId }, 
-      transaction 
     });
 
     // 3. Enregistrer l'activité de suppression
@@ -885,8 +932,8 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       transaction
     });
 
-    // 4. Supprimer le fichier de la base de données
-    await file.destroy({ transaction });
+    // 4. Supprimer le fichier de la base de données (déjà fait dans File.destroy ci-dessus)
+    // await file.destroy({ transaction }); // Commenté car déjà supprimé dans File.destroy
     
     // Valider la transaction
     await transaction.commit();
@@ -1016,6 +1063,39 @@ router.get('/:id/history', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Erreur historique fichier:', error);
     res.status(500).json({ error: 'Erreur lors de la récupération de l\'historique' });
+  }
+});
+
+// Route pour servir les PDFs depuis Cloudinary avec les bonnes permissions
+router.get('/pdf/:fileId', authenticateToken, async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    
+    // Récupérer le fichier depuis la base de données
+    const file = await File.findOne({
+      where: { 
+        id: fileId,
+        owner_id: req.user.id,
+        mimetype: 'application/pdf'
+      }
+    });
+    
+    if (!file) {
+      return res.status(404).json({ error: 'Fichier PDF non trouvé' });
+    }
+    
+    // Construire l'URL Cloudinary raw
+    const cloudName = process.env.NODE_ENV === 'production' ? 'ddxypgvuh' : 'drpbnhwh6';
+    const pdfUrl = `https://res.cloudinary.com/${cloudName}/raw/upload/${file.file_url}`;
+    
+    console.log('Serving PDF from:', pdfUrl);
+    
+    // Rediriger vers l'URL Cloudinary
+    res.redirect(pdfUrl);
+    
+  } catch (error) {
+    console.error('Erreur lors de la récupération du PDF:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 

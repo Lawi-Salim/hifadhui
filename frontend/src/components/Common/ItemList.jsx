@@ -136,9 +136,27 @@ const ItemList = ({
   const getImageUrl = (fileUrl) => {
     if (!fileUrl) return '';
     if (fileUrl.startsWith('http')) return fileUrl;
-    if (fileUrl.startsWith('hifadhwi/') || /^v\d+\/hifadhwi\//.test(fileUrl)) {
-      return `https://res.cloudinary.com/ddxypgvuh/image/upload/${fileUrl}`;
+    
+    // Format standardisé avec Hifadhwi/ uniquement (support ancien 'upload' et nouveau 'uploads')
+    if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl) || /^v\d+\/[^/]+\.(jpg|jpeg|png|pdf)$/i.test(fileUrl)) {
+      // Déterminer le cloud name selon l'environnement
+      const cloudName = process.env.NODE_ENV === 'production' ? 'ddxypgvuh' : 'drpbnhwh6';
+      
+      // Nettoyer les doubles extensions
+      let cleanUrl = fileUrl;
+      if (cleanUrl.endsWith('.png.png')) {
+        cleanUrl = cleanUrl.replace('.png.png', '.png');
+      }
+      if (cleanUrl.endsWith('.jpg.jpg')) {
+        cleanUrl = cleanUrl.replace('.jpg.jpg', '.jpg');
+      }
+      if (cleanUrl.endsWith('.jpeg.jpeg')) {
+        cleanUrl = cleanUrl.replace('.jpeg.jpeg', '.jpeg');
+      }
+      
+      return `https://res.cloudinary.com/${cloudName}/image/upload/${cleanUrl}`;
     }
+    
     return `${process.env.REACT_APP_API_BASE_URL}${fileUrl}`;
   };
 

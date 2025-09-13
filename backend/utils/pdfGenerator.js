@@ -9,9 +9,8 @@ import { getCertificateConfig } from './cloudinaryStructure.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// En production, utiliser Cloudinary pour le stockage persistant
-// En développement, garder le stockage local pour debug
-const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+// Toujours utiliser Cloudinary pour cohérence dev/prod
+const isProd = true; // Force Cloudinary même en développement
 const certsDir = path.join(__dirname, '../certificates');
 
 // Créer le dossier des certificats seulement en développement

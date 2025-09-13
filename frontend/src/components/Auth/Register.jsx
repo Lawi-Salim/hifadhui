@@ -196,10 +196,10 @@ const Register = () => {
           <FiArrowLeft /> Retour à l'accueil
         </Link>
         <div className="auth-header">
-          <div className="auth-logo"><FiLock /> hifadhwi</div>
+          <div className="auth-logo"><FiLock /> Hifadhwi</div>
           <h1 className="auth-title">Créer un compte</h1>
           <p className="auth-subtitle">
-            Rejoignez hifadhwi et sécurisez vos documents
+            Rejoignez Hifadhwi et sécurisez vos documents
           </p>
         </div>
 

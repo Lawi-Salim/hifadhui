@@ -74,7 +74,7 @@ const HomePage = () => {
         
         <div className="hero-visual">
           <div className="security-badge">
-            <img src="/hifadhwi-logo.svg" alt="hifadhwi Logo" className="hifadhwi-logo" />
+            <img src="/Hifadhwi-logo.svg" alt="Hifadhwi Logo" className="Hifadhwi-logo" />
           </div>
         </div>
       </section>
@@ -120,7 +120,7 @@ const HomePage = () => {
           <div className="container-home">
             <div className="cta-content">
               <h2>Prêt à sécuriser vos documents ?</h2>
-              <p>Rejoignez hifadhwi et bénéficiez d'un stockage sécurisé avec preuve de propriété.</p>
+              <p>Rejoignez Hifadhwi et bénéficiez d'un stockage sécurisé avec preuve de propriété.</p>
               <Link to="/register" className="btn btn-primary">
                 Commencer gratuitement
               </Link>

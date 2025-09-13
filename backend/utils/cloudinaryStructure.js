@@ -16,7 +16,7 @@ async function deleteCloudinaryFile(fileUrl, mimetype = '') {
     
     // 1. Si c'est une URL Cloudinary complète
     if (fileUrl.includes('res.cloudinary.com')) {
-      // Exemple: https://res.cloudinary.com/{cloud_name}/raw/upload/v1756555848/hifadhwi/upload/user/file.pdf
+      // Exemple: https://res.cloudinary.com/{cloud_name}/raw/upload/v1756555848/Hifadhwi/upload/user/file.pdf
       // ou: https://res.cloudinary.com/{cloud_name}/image/upload/...
       const urlParts = fileUrl.split('/');
       const uploadIndex = urlParts.findIndex(part => part === 'upload');
@@ -29,25 +29,48 @@ async function deleteCloudinaryFile(fileUrl, mimetype = '') {
         publicId = publicId.replace(/^v\d+\//, '');
       }
     } 
-    // 2. Si c'est un chemin avec version (v123456/hifadhwi/...)
-    else if (fileUrl.startsWith('v') && fileUrl.includes('/hifadhwi/')) {
+    // 2. Si c'est un chemin avec version (v123456/Hifadhwi/...)
+    else if (fileUrl.startsWith('v') && fileUrl.includes('/Hifadhwi/')) {
       publicId = fileUrl.replace(/^v\d+\//, '');
     }
-    // 3. Si c'est déjà un chemin hifadhwi/...
-    else if (fileUrl.startsWith('hifadhwi/')) {
+    // 3. Si c'est déjà un chemin Hifadhwi/...
+    else if (fileUrl.startsWith('Hifadhwi/')) {
       publicId = fileUrl;
     }
 
     // Décoder les caractères encodés (comme %20 pour les espaces)
     publicId = decodeURIComponent(publicId);
     
-    // Supprimer l'extension du public_id
-    publicId = publicId.replace(/\.[^/.]+$/, '');
+    // Gestion spéciale pour les certificats et fichiers raw
+    const isCertificate = publicId.includes('/certificats/') || publicId.includes('certificate_');
+    const isRawFile = mimetype === 'application/pdf';
+    
+    if (isCertificate) {
+      console.log(`🔍 [CERTIFICATE DELETE] Détecté comme certificat: ${publicId}`);
+      // Les certificats sont stockés AVEC l'extension .pdf sur Cloudinary
+      // Ne pas supprimer l'extension
+    } else if (isRawFile) {
+      console.log(`🔍 [RAW FILE DELETE] Détecté comme fichier raw (PDF): ${publicId}`);
+      // Les PDFs sont stockés AVEC l'extension .pdf sur Cloudinary
+      // Ne pas supprimer l'extension
+    } else {
+      // Pour les images, supprimer l'extension
+      publicId = publicId.replace(/\.[^/.]+$/, '');
+    }
 
     // Déterminer le type de ressource
-    const resource_type = mimetype.startsWith('image/') ? 'image' : 'raw';
+    let resource_type = 'raw'; // Par défaut raw pour PDFs et certificats
+    if (mimetype.startsWith('image/')) {
+      resource_type = 'image';
+    }
 
-    console.log(`Suppression Cloudinary - public_id: ${publicId}, resource_type: ${resource_type}, original_url: ${fileUrl}`);
+    console.log(`🗑️ [CLOUDINARY DELETE] Tentative suppression:`);
+    console.log(`   - Original URL: ${fileUrl}`);
+    console.log(`   - Public ID: ${publicId}`);
+    console.log(`   - Resource type: ${resource_type}`);
+    console.log(`   - MIME type: ${mimetype}`);
+    console.log(`   - Is Certificate: ${isCertificate}`);
+    console.log(`   - Is Raw File: ${isRawFile}`);
     
     // Essayer d'abord avec le public_id tel quel
     let result = await cloudinary.uploader.destroy(publicId, { 
@@ -55,26 +78,49 @@ async function deleteCloudinaryFile(fileUrl, mimetype = '') {
       invalidate: true
     });
     
-    // Si non trouvé, essayer en encodant le public_id
+    console.log(`🔍 [CLOUDINARY DELETE] Premier essai - Résultat: ${result.result}`);
+    
+    // Si non trouvé, essayer différentes variantes du public_id
     if (result.result === 'not found') {
+      // Essai 1: Avec encodage URL
       const encodedPublicId = publicId.split('/').map(encodeURIComponent).join('/');
-      console.log(`Essai avec public_id encodé: ${encodedPublicId}`);
+      console.log(`🔄 [CLOUDINARY DELETE] Essai avec public_id encodé: ${encodedPublicId}`);
       
       result = await cloudinary.uploader.destroy(encodedPublicId, {
         resource_type,
         invalidate: true
       });
+      
+      console.log(`🔍 [CLOUDINARY DELETE] Deuxième essai - Résultat: ${result.result}`);
+      
+      // Essai 2: Si toujours pas trouvé, essayer avec l'extension pour les PDFs
+      if (result.result === 'not found' && (isRawFile || isCertificate)) {
+        const publicIdWithExt = `${publicId}.pdf`;
+        console.log(`🔄 [CLOUDINARY DELETE] Essai avec extension .pdf: ${publicIdWithExt}`);
+        
+        result = await cloudinary.uploader.destroy(publicIdWithExt, {
+          resource_type,
+          invalidate: true
+        });
+        
+        console.log(`🔍 [CLOUDINARY DELETE] Troisième essai - Résultat: ${result.result}`);
+      }
     }
     
-    // Si toujours non trouvé, c'est peut-être un problème de public_id
+    // Si toujours non trouvé, considérer comme déjà supprimé
     if (result.result === 'not found') {
-      console.log(`Fichier non trouvé sur Cloudinary: ${publicId}`);
-      console.log(`URL originale: ${fileUrl}`);
-      // Ne pas retourner 'ok' car le fichier existe peut-être encore
-      throw new Error(`Fichier non trouvé sur Cloudinary avec public_id: ${publicId}`);
+      console.log(`⚠️ [CLOUDINARY DELETE] Fichier non trouvé sur Cloudinary: ${publicId}`);
+      console.log(`   - URL originale: ${fileUrl}`);
+      console.log(`   - Considéré comme déjà supprimé`);
+      return { result: 'ok' };
     }
     
-    console.log('Résultat suppression Cloudinary:', result);
+    if (result.result === 'ok') {
+      console.log(`✅ [CLOUDINARY DELETE] Suppression réussie: ${publicId}`);
+    } else {
+      console.log(`❌ [CLOUDINARY DELETE] Échec suppression: ${publicId}`, result);
+    }
+    
     return result;
   } catch (error) {
     console.error('Erreur lors de la suppression Cloudinary:', error);
@@ -166,7 +212,26 @@ function generateUniqueFileName(originalName, prefix = '') {
   const extension = originalName.includes('.') ? originalName.split('.').pop() : '';
   
   const baseName = prefix ? `${prefix}_${nameWithoutExt}` : nameWithoutExt;
-  return extension ? `${baseName}_${timestamp}` : `${baseName}_${timestamp}`;
+  
+  // Pour les PDFs, garder l'extension car Cloudinary raw en a besoin
+  if (extension === 'pdf') {
+    return `${baseName}_${timestamp}.${extension}`;
+  }
+  
+  // Pour les images, pas d'extension (Cloudinary l'ajoute automatiquement)
+  return `${baseName}_${timestamp}`;
+}
+
+/**
+ * Génère un nom de certificat basé sur le nom du fichier original
+ * @param {string} originalFileName - Le nom original du fichier
+ * @param {number} timestamp - Timestamp optionnel (utilise Date.now() si non fourni)
+ * @returns {string} Le nom du certificat
+ */
+function generateCertificateName(originalFileName, timestamp = null) {
+  const ts = timestamp || Date.now();
+  const nameWithoutExt = originalFileName.replace(/\.[^/.]+$/, '');
+  return `certificate_${nameWithoutExt}_${ts}.pdf`;
 }
 
 /**
@@ -178,26 +243,39 @@ function generateUniqueFileName(originalName, prefix = '') {
 function getUserFileConfig(user, file) {
   const fileType = getFileType(file.mimetype, file.originalname);
   
-  return {
+  const config = {
     folder: getUserFilePath(user, file),
     allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'],
     resource_type: fileType === 'pdfs' ? 'raw' : 'auto',
     public_id: generateUniqueFileName(file.originalname),
     access_mode: 'public'
   };
+  
+  // Pour les PDFs (raw files), ajouter des paramètres spécifiques
+  if (fileType === 'pdfs') {
+    config.type = 'upload';
+    config.invalidate = true;
+  }
+  
+  return config;
 }
 
 /**
  * Configuration Cloudinary pour les certificats
  * @param {Object} user - L'objet utilisateur
- * @param {string} fileId - L'ID du fichier
+ * @param {string} originalFileName - Le nom original du fichier
+ * @param {number} timestamp - Timestamp optionnel
  * @returns {Object} Configuration Cloudinary
  */
-function getCertificateConfig(user, fileId) {
+function getCertificateConfig(user, originalFileName, timestamp = null) {
+  const certificateName = generateCertificateName(originalFileName, timestamp);
+  // Supprimer l'extension .pdf pour le public_id (Cloudinary l'ajoute automatiquement pour raw)
+  const publicId = certificateName.replace(/\.pdf$/, '');
+  
   return {
     resource_type: 'raw',
     folder: getCertificateFolder(user),
-    public_id: `certificate_${fileId}_${Date.now()}`,
+    public_id: publicId,
     format: 'pdf'
   };
 }
@@ -216,9 +294,10 @@ function generateCloudinaryPath(filename, username, fileType) {
 
 export {
   getFileType,
-  getUserFilePath,
+  getUserFileFolder,
   getCertificateFolder,
   generateUniqueFileName,
+  generateCertificateName,
   getUserFileConfig,
   getCertificateConfig,
   deleteCloudinaryFile,

@@ -16,7 +16,7 @@ const Footer = () => {
           <div className="footer-section">
             <div className="footer-brand">
               <FiShield className="footer-brand-icon" />
-              <span className="footer-brand-text">hifadhwi</span>
+              <span className="footer-brand-text">Hifadhwi</span>
             </div>
             <p className="footer-description">
               Votre coffre-fort numérique sécurisé pour stocker et partager vos documents importants avec une preuve de propriété incontestable.
@@ -40,7 +40,7 @@ const Footer = () => {
               <button className="social-link" aria-label="LinkedIn">
                 <FiLinkedin />
               </button>
-              <a href="mailto:contact@hifadhwi.com" className="social-link" aria-label="Email">
+              <a href="mailto:contact@Hifadhwi.com" className="social-link" aria-label="Email">
                 <FiMail />
               </a>
               <button className="social-link" aria-label="WhatsApp">
@@ -74,7 +74,7 @@ const Footer = () => {
           <div className="footer-section">
             <h3 className="footer-title">Support</h3>
             <ul className="footer-links">
-              <li><a href="mailto:support@hifadhwi.com">Support technique</a></li>
+              <li><a href="mailto:support@Hifadhwi.com">Support technique</a></li>
               <li><a href="#privacy">Politique de confidentialité</a></li>
               <li><a href="#terms">Conditions d'utilisation</a></li>
               <li><a href="#security">Sécurité</a></li>
@@ -86,7 +86,7 @@ const Footer = () => {
         <div className="footer-bottom">
           <div className="footer-bottom-content">
             <p className="footer-copyright">
-              © {currentYear} hifadhwi. Tous droits réservés.
+              © {currentYear} Hifadhwi. Tous droits réservés.
             </p>
             <p className="footer-made-with">
               Fait avec <FiHeart className="heart-icon" /> pour la sécurité de vos documents

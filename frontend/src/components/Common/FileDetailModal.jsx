@@ -17,11 +17,14 @@ const FileDetailModal = ({ file, onClose, type = 'file', isOpen }) => {
 
   // Fonction pour construire l'URL complète des images
   const getImageUrl = (fileUrl) => {
-    if (fileUrl.startsWith('http')) {
-      return fileUrl;
-    } else if (fileUrl.startsWith('hifadhwi/') || /^v\d+\/hifadhwi\//.test(fileUrl) ||
-               fileUrl.startsWith('hifadhui/') || /^v\d+\/hifadhui\//.test(fileUrl)) {
-      return `https://res.cloudinary.com/ddxypgvuh/image/upload/${fileUrl}`;
+    if (!fileUrl) return '';
+    if (fileUrl.startsWith('http')) return fileUrl;
+    
+    // Format standardisé avec Hifadhwi/ uniquement
+    if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl)) {
+      // Déterminer le cloud name selon l'environnement
+      const cloudName = process.env.NODE_ENV === 'production' ? 'ddxypgvuh' : 'drpbnhwh6';
+      return `https://res.cloudinary.com/${cloudName}/image/upload/${fileUrl}`;
     } else {
       return `${process.env.REACT_APP_API_BASE_URL}${fileUrl}`;
     }

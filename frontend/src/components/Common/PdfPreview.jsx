@@ -13,18 +13,36 @@ const PdfPreview = ({ fileUrl, fileId, className }) => {
       return null;
     }
     
+    console.log('PdfPreview - fileUrl original:', fileUrl);
+    
     if (fileUrl.startsWith('http')) {
       // URL complète déjà fournie (anciens fichiers)
-      return fileUrl.endsWith('.pdf.pdf') ? fileUrl.replace('.pdf.pdf', '.pdf') : fileUrl;
-    } else if (fileUrl.startsWith('hifadhwi/') || /^v\d+\/hifadhwi\//.test(fileUrl) ||
-               fileUrl.startsWith('hifadhui/') || /^v\d+\/hifadhui\//.test(fileUrl)) {
-      // Chemin relatif Cloudinary (avec ou sans version) - construire l'URL complète
-      // Support des anciens chemins hifadhui/ et nouveaux hifadhwi/
-      const cloudinaryBaseUrl = 'https://res.cloudinary.com/ddxypgvuh/raw/upload';
-      return `${cloudinaryBaseUrl}/${fileUrl}`;
+      const finalUrl = fileUrl.endsWith('.pdf.pdf') ? fileUrl.replace('.pdf.pdf', '.pdf') : fileUrl;
+      console.log('PdfPreview - URL complète:', finalUrl);
+      return finalUrl;
+    } else if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl) || /^v\d+\/[^/]+\.(jpg|jpeg|png|pdf)$/i.test(fileUrl)) {
+      // Accès direct Cloudinary avec la bonne structure
+      const cloudName = process.env.NODE_ENV === 'production' ? 'ddxypgvuh' : 'drpbnhwh6';
+      const cloudinaryBaseUrl = `https://res.cloudinary.com/${cloudName}/raw/upload`;
+      
+      // Nettoyer les doubles extensions avant de construire l'URL
+      let cleanUrl = fileUrl;
+      if (cleanUrl.endsWith('.pdf.pdf')) {
+        cleanUrl = cleanUrl.replace('.pdf.pdf', '.pdf');
+      }
+      
+      // Ajouter .pdf seulement si le chemin n'a pas d'extension du tout
+      const urlWithExtension = cleanUrl.includes('.') ? cleanUrl : `${cleanUrl}.pdf`;
+      const finalUrl = `${cloudinaryBaseUrl}/${urlWithExtension}`;
+      console.log('PdfPreview - URL Cloudinary directe (raw):', finalUrl);
+      console.log('PdfPreview - Cloud name utilisé:', cloudName);
+      console.log('PdfPreview - NODE_ENV:', process.env.NODE_ENV);
+      return finalUrl;
     } else {
       // Chemin local - utiliser l'API backend
-      return `${process.env.REACT_APP_API_BASE_URL}${fileUrl}`;
+      const finalUrl = `${process.env.REACT_APP_API_BASE_URL}${fileUrl}`;
+      console.log('PdfPreview - URL locale:', finalUrl);
+      return finalUrl;
     }
   }, [fileUrl]);
 

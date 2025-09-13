@@ -146,10 +146,13 @@ const FileUpload = () => {
       // Attendre un peu pour montrer 100%
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      setMessage({
-        type: 'success',
-        text: 'Fichier uploadé avec succès!'
-      });
+      // Vérifier si la réponse indique un succès réel
+      if (response.status === 200 || response.status === 201) {
+        setMessage({
+          type: 'success',
+          text: 'Fichier uploadé avec succès!'
+        });
+      }
 
       // Pas de redirection automatique - laisser l'utilisateur sur la page d'upload
 

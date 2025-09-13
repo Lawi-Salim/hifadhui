@@ -191,7 +191,7 @@ const FilesPage = () => {
         });
       }, 200);
       
-      await api.delete('/files/batch-delete', { data: { fileIds: selectedFiles } });
+      await api.delete('/files/batch-delete', { data: { fileIds: selectedFiles.map(file => file.id) } });
       
       // Compléter la progression
       clearInterval(progressInterval);

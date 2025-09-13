@@ -67,7 +67,7 @@ router.post('/', authenticateToken, async (req, res) => {
 // GET /api/dossiers - Lister les dossiers racine de l'utilisateur
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    // Récupérer le dossier système et lister ses enfants (masquer hifadhwi)
+    // Récupérer le dossier système et lister ses enfants (masquer Hifadhwi)
     const systemRoot = await Dossier.getSystemRoot();
     const dossiers = await Dossier.findAll({
       where: { 
@@ -569,16 +569,46 @@ const deleteDossierRecursive = async (dossierId, ownerId) => {
     deleteDossierRecursive(subDossier.id, ownerId)
   ));
 
-  // Supprimer les fichiers de Cloudinary en parallèle avant de les supprimer de la base de données
+  // Supprimer les fichiers et certificats de Cloudinary en parallèle avant de les supprimer de la base de données
   const filesToDelete = await File.findAll({ where: { dossier_id: dossierId, owner_id: ownerId } });
   
   if (filesToDelete.length > 0) {
     console.log(`Suppression de ${filesToDelete.length} fichiers de Cloudinary pour le dossier ${dossierId}...`);
     
-    // Supprimer tous les fichiers Cloudinary en parallèle avec un maximum de 10 suppressions simultanées
-    const { deleteCloudinaryFile } = require('../utils/cloudinaryStructure');
+    // Collecter tous les root_file_id pour les certificats
+    const rootFileIds = filesToDelete.map(file => file.parent_file_id || file.id);
+    console.log(`🔍 [FOLDER DELETE] Recherche certificats pour ${rootFileIds.length} fichier(s)`);
+    
+    // Récupérer tous les certificats associés
+    const certificates = await Certificate.findAll({ 
+      where: { root_file_id: rootFileIds }
+    });
+    console.log(`🔍 [FOLDER DELETE] ${certificates.length} certificat(s) trouvé(s)`);
+    
+    const { deleteCloudinaryFile } = await import('../utils/cloudinaryStructure.js');
     const batchSize = 10;
     
+    // Supprimer d'abord tous les certificats de Cloudinary
+    if (certificates.length > 0) {
+      console.log(`🗑️ [FOLDER DELETE] Suppression de ${certificates.length} certificats de Cloudinary...`);
+      
+      for (let i = 0; i < certificates.length; i += batchSize) {
+        const batch = certificates.slice(i, i + batchSize);
+        
+        await Promise.all(batch.map(async (certificate) => {
+          if (certificate.pdf_url) {
+            try {
+              const certDeleteResult = await deleteCloudinaryFile(certificate.pdf_url, 'application/pdf');
+              console.log(`✅ [FOLDER DELETE] Certificat supprimé de Cloudinary: ${certificate.pdf_url}`);
+            } catch (cloudinaryError) {
+              console.error(`❌ [FOLDER DELETE] Erreur suppression certificat Cloudinary:`, cloudinaryError);
+            }
+          }
+        }));
+      }
+    }
+    
+    // Ensuite supprimer tous les fichiers de Cloudinary
     for (let i = 0; i < filesToDelete.length; i += batchSize) {
       const batch = filesToDelete.slice(i, i + batchSize);
       
@@ -594,6 +624,15 @@ const deleteDossierRecursive = async (dossierId, ownerId) => {
         }
       }));
     }
+  }
+
+  // Supprimer tous les certificats de la base de données
+  const rootFileIds = filesToDelete.map(file => file.parent_file_id || file.id);
+  if (rootFileIds.length > 0) {
+    const deletedCerts = await Certificate.destroy({ 
+      where: { root_file_id: rootFileIds }
+    });
+    console.log(`✅ [FOLDER DELETE] ${deletedCerts} certificat(s) supprimé(s) de la BDD`);
   }
 
   await File.destroy({ where: { dossier_id: dossierId, owner_id: ownerId } });

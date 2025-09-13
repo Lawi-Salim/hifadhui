@@ -120,23 +120,8 @@ CREATE INDEX idx_dossier_system_root ON Dossier(is_system_root) WHERE is_system_
 -- TRIGGERS
 -- ========================================
 
--- Fonction pour créer un certificat automatiquement après l'insertion d'un fichier
-CREATE OR REPLACE FUNCTION create_certificate_after_file()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Insère un certificat avec une URL temporaire. Le backend la mettra à jour.
-    -- Utilise root_file_id : si c'est une nouvelle version, utilise parent_file_id, sinon l'id du fichier
-    INSERT INTO Certificate (root_file_id, pdf_url)
-    VALUES (COALESCE(NEW.parent_file_id, NEW.id), 'pending_generation');
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger qui se déclenche après chaque insertion dans la table 'file'
-CREATE TRIGGER trg_file_insert_certificate
-AFTER INSERT ON File
-FOR EACH ROW
-EXECUTE FUNCTION create_certificate_after_file();
+-- Trigger de génération automatique de certificats supprimé
+-- Les certificats sont maintenant générés manuellement via /api/v1/certificates/generate/:fileId
 
 -- Fonction générique pour mise à jour de updated_at
 CREATE OR REPLACE FUNCTION set_updated_at()

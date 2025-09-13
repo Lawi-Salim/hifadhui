@@ -97,7 +97,7 @@ const Sidebar = () => {
       <div className="sidebar-brand">
         <Link to="/dashboard" className="brand-link">
           <span className="brand-icon"><FiLock /></span>
-          {(!isMobile || isExpanded) && <span className="brand-text">hifadhwi</span>}
+          {(!isMobile || isExpanded) && <span className="brand-text">Hifadhwi</span>}
         </Link>
       </div>
 

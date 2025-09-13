@@ -25,15 +25,15 @@ const generateZipFileName = (selectedItems) => {
   if (uniqueTypes.length === 1) {
     switch (uniqueTypes[0]) {
       case 'image':
-        return 'hifadhwi-images.zip';
+        return 'Hifadhwi-images.zip';
       case 'pdf':
-        return 'hifadhwi-pdfs.zip';
+        return 'Hifadhwi-pdfs.zip';
       default:
-        return 'hifadhwi-files.zip';
+        return 'Hifadhwi-files.zip';
     }
   } else {
     // Fichiers mixtes
-    return 'hifadhwi-files.zip';
+    return 'Hifadhwi-files.zip';
   }
 };
 
@@ -87,9 +87,13 @@ const buildCloudinaryUrl = (item) => {
     return item.file_url;
   }
   
-  // Si c'est un chemin relatif Cloudinary
-  if (item.file_url.startsWith('hifadhwi/') || item.file_url.includes('hifadhwi/')) {
-    const baseUrl = 'https://res.cloudinary.com/ddxypgvuh';
+  // Si c'est un chemin relatif Cloudinary (format standardisé)
+  if (item.file_url.startsWith('Hifadhwi/') || item.file_url.includes('Hifadhwi/') ||
+      item.file_url.match(/^v\d+\/Hifadhwi\//)) {
+    
+    // Déterminer le cloud name selon l'environnement
+    const cloudName = process.env.NODE_ENV === 'production' ? 'ddxypgvuh' : 'drpbnhwh6';
+    const baseUrl = `https://res.cloudinary.com/${cloudName}`;
     const resourceType = item.mimetype.startsWith('image/') ? 'image' : 'raw';
     return `${baseUrl}/${resourceType}/upload/${item.file_url}`;
   }

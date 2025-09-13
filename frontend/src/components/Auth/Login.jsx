@@ -107,7 +107,7 @@ const Login = () => {
           <FiArrowLeft /> Retour à l'accueil
         </Link>
         <div className="auth-header">
-          <div className="auth-logo"><FiLock /> hifadhwi</div>
+          <div className="auth-logo"><FiLock /> Hifadhwi</div>
           <h1 className="auth-title">Connexion</h1>
           <p className="auth-subtitle">
             Accédez à votre coffre-fort numérique
