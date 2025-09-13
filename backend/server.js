@@ -92,7 +92,7 @@ app.use('/api/v1/bulk-actions', bulkActionsRoutes);
 app.use('/api/v1/share', shareRoutes); // Route publique pour accéder aux fichiers partagés
 
 // Servir les fichiers statiques du frontend React (en production)
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
   app.use(express.static(path.join(__dirname, '../frontend/build')));
   
   // Toutes les routes non-API servent l'app React
