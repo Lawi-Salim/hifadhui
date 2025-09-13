@@ -22,7 +22,7 @@ import shareRoutes from './routes/shares.js';
 import bulkActionsRoutes from './routes/bulkActions.js';
 
 // Importation des modèles et associations depuis l'index des modèles
-import { Utilisateur, ActivityLog, File, Dossier, Certificate } from './models/index.js';
+import { Utilisateur } from './models/index.js';
 
 
 const app = express();
@@ -92,7 +92,7 @@ app.use('/api/v1/bulk-actions', bulkActionsRoutes);
 app.use('/api/v1/share', shareRoutes); // Route publique pour accéder aux fichiers partagés
 
 // Servir les fichiers statiques du frontend React (en production)
-if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../frontend/build')));
   
   // Toutes les routes non-API servent l'app React
