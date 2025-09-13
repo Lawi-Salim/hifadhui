@@ -40,6 +40,8 @@ console.log('🟢 [BOOT] DB_HOST =', process.env.DB_HOST || '(non défini)');
 
 // Middlewares de sécurité
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+
+// Configuration CORS pour gérer les preflight requests
 app.use(cors({
   origin: [
     'http://localhost:3000',
@@ -48,7 +50,11 @@ app.use(cors({
     'https://www.hifadhui.site',
     process.env.FRONTEND_URL
   ].filter(Boolean),
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  preflightContinue: false,
+  optionsSuccessStatus: 200
 }));
 
 // Rate limiting
