@@ -122,11 +122,12 @@ app.get('/share/:token', async (req, res) => {
     const isImage = file.mimetype?.startsWith('image/');
     const isPdf = file.filename?.toLowerCase().endsWith('.pdf');
     
-    let imageUrl = 'https://hifadhui.site/favicon.png';
+    let imageUrl = 'https://hifadhui.site/favicon-black.png';
     if (isImage && file.file_url) {
-      // Utiliser la route sécurisée au lieu de l'URL Cloudinary directe
-      imageUrl = `https://hifadhui.site/share/${token}/image`;
-      console.log('🖼️ URL image sécurisée pour Open Graph:', imageUrl);
+      // Temporairement utiliser le favicon au lieu de l'image sécurisée pour déboguer
+      // imageUrl = `https://hifadhui.site/share/${token}/image`;
+      imageUrl = 'https://hifadhui.site/favicon-black.png';
+      console.log('🖼️ URL image pour Open Graph (temporaire favicon):', imageUrl);
     }
 
     const title = `${file.filename} - Partagé par ${file.fileUser.username}`;
@@ -180,6 +181,7 @@ app.get('/share/:token', async (req, res) => {
 app.get('/share/:token/image', async (req, res) => {
   try {
     const token = req.params.token;
+    console.log('🖼️ [DEBUG] Recherche image pour token:', token);
     
     const fileShare = await FileShare.findOne({
       where: {
@@ -190,7 +192,14 @@ app.get('/share/:token/image', async (req, res) => {
       include: [{ model: File, as: 'file' }]
     });
 
+    console.log('🖼️ [DEBUG] FileShare trouvé:', !!fileShare);
+    if (fileShare) {
+      console.log('🖼️ [DEBUG] Type de fichier:', fileShare.file?.mimetype);
+      console.log('🖼️ [DEBUG] URL fichier:', fileShare.file?.file_url);
+    }
+
     if (!fileShare || !fileShare.file.mimetype?.startsWith('image/')) {
+      console.log('🖼️ [ERROR] Image non trouvée ou pas une image');
       return res.status(404).send('Image non trouvée');
     }
 
