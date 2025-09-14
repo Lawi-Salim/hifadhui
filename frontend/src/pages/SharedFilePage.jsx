@@ -156,7 +156,7 @@ const SharedFilePage = () => {
               onContextMenu={(e) => e.preventDefault()}
             />
             <div className="watermark-overlay">
-              <span className="watermark-text">{file.owner}</span>
+              <span className="watermark-text">© {file.owner} - Hifadhwi</span>
             </div>
           </div>
         </div>
@@ -171,7 +171,7 @@ const SharedFilePage = () => {
               className="shared-pdf-preview"
             />
             <div className="watermark-overlay">
-              <span className="watermark-text">{file.owner}</span>
+              <span className="watermark-text">© {file.owner} - Hifadhwi</span>
             </div>
           </div>
         </div>
