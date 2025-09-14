@@ -102,21 +102,16 @@ if (process.env.NODE_ENV !== 'production') {
   console.log(' [DEBUG] Mode développement activé');
 }
 
-// Route spéciale pour les liens de partage avec métadonnées Open Graph
+// Route spéciale pour les liens de partage - servir toujours l'app React
 app.get('/share/:token', async (req, res) => {
   try {
     const token = req.params.token;
 
-    // Vérifier si c'est un bot/crawler (User-Agent)
+    // Vérifier si c'est un bot/crawler (User-Agent) pour les métadonnées Open Graph
     const userAgent = req.headers['user-agent'] || '';
     const isBot = /bot|crawler|spider|facebook|twitter|whatsapp|telegram|discord/i.test(userAgent);
 
-    if (!isBot) {
-      // Utilisateur normal - rediriger vers l'app React directement
-      return res.redirect(`https://hifadhui.site/share/${token}`);
-    }
-
-    // Bot/Crawler - servir HTML avec métadonnées Open Graph
+    // Vérifier que le token existe et est valide
     const fileShare = await FileShare.findOne({
       where: {
         token: token,
@@ -134,21 +129,32 @@ app.get('/share/:token', async (req, res) => {
     });
 
     if (!fileShare) {
-      return res.status(404).send('<h1>Lien de partage invalide ou expiré</h1>');
+      // Token invalide - servir une page d'erreur simple
+      return res.status(404).send(`
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <title>Lien invalide - Hifadhwi</title>
+</head>
+<body>
+    <h1>Lien de partage invalide ou expiré</h1>
+    <p>Ce lien n'est plus valide ou a expiré.</p>
+</body>
+</html>`);
     }
 
     const file = fileShare.file;
-    const isImage = file.mimetype?.startsWith('image/');
-    const isPdf = file.filename?.toLowerCase().endsWith('.pdf');
+    
+    if (isBot) {
+      // Bot/Crawler - servir HTML avec métadonnées Open Graph
+      const isImage = file.mimetype?.startsWith('image/');
+      const isPdf = file.filename?.toLowerCase().endsWith('.pdf');
+      const imageUrl = 'https://hifadhui.site/favicon.png';
+      const title = `${file.filename} - Partagé par ${file.fileUser.username}`;
+      const description = `Fichier ${isPdf ? 'PDF' : isImage ? 'image' : ''} partagé de manière sécurisée via Hifadhwi. Propriétaire: ${file.fileUser.username}`;
 
-    // Utiliser favicon.png comme image par défaut pour tous les partages
-    const imageUrl = 'https://hifadhui.site/favicon.png';
-
-    const title = `${file.filename} - Partagé par ${file.fileUser.username}`;
-    const description = `Fichier ${isPdf ? 'PDF' : isImage ? 'image' : ''} partagé de manière sécurisée via Hifadhwi. Propriétaire: ${file.fileUser.username}`;
-    const siteName = 'Hifadhwi';
-
-    const html = `
+      const html = `
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -165,25 +171,25 @@ app.get('/share/:token', async (req, res) => {
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:site_name" content="Hifadhwi" />
-    <meta property="og:site_name" content="${siteName}" />
-    <meta property="og:logo" content="https://hifadhui.site/favicon.png" />
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://hifadhui.site/share/${token}" />
     <meta property="twitter:title" content="${title}" />
     <meta property="twitter:description" content="${description}" />
     <meta property="twitter:image" content="${imageUrl}" />
-    
-    <meta http-equiv="refresh" content="0;url=https://hifadhui.site/share/${token}" />
 </head>
 <body>
-    <h1>Redirection vers le fichier partagé...</h1>
-    <p>Si vous n'êtes pas redirigé automatiquement, <a href="https://hifadhui.site/share/${token}">cliquez ici</a>.</p>
+    <h1>Fichier partagé</h1>
+    <p>Ce fichier vous a été partagé par ${file.fileUser.username} via Hifadhwi</p>
 </body>
 </html>`;
 
-    res.send(html);
+      return res.send(html);
+    }
+
+    // Utilisateur normal - servir l'app React directement
+    const reactAppPath = path.join(__dirname, '../frontend/build/index.html');
+    res.sendFile(reactAppPath);
 
   } catch (error) {
     console.error('Erreur lors de la génération des métadonnées:', error);
