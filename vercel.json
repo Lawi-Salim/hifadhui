@@ -43,8 +43,8 @@
       "dest": "/frontend/manifest.json"
     },
     {
-      "src": "/share/(.*)",
-      "dest": "/frontend/index.html"
+      "src": "/share/([a-f0-9]{64})",
+      "dest": "backend/server.js?token=$1&type=share"
     },
     {
       "src": "/(.*)",

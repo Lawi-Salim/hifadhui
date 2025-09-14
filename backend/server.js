@@ -22,7 +22,8 @@ import shareRoutes from './routes/shares.js';
 import bulkActionsRoutes from './routes/bulkActions.js';
 
 // Importation des modèles et associations depuis l'index des modèles
-import { Utilisateur } from './models/index.js';
+import { Utilisateur, File, FileShare } from './models/index.js';
+import { Op } from 'sequelize';
 
 
 const app = express();
@@ -81,15 +82,106 @@ if (process.env.NODE_ENV !== 'production') {
   // Logs uniquement en développement si nécessaire
 }
 
+// Route spéciale pour les liens de partage avec métadonnées Open Graph
+app.get('/share/:token', async (req, res) => {
+  try {
+    const token = req.params.token;
+    
+    // Vérifier si c'est un bot/crawler (User-Agent)
+    const userAgent = req.headers['user-agent'] || '';
+    const isBot = /bot|crawler|spider|facebook|twitter|whatsapp|telegram|discord/i.test(userAgent);
+    
+    if (!isBot) {
+      // Utilisateur normal - servir l'app React
+      return res.redirect(`https://hifadhui.site/?redirect=/share/${token}`);
+    }
+
+    // Bot/Crawler - servir HTML avec métadonnées Open Graph
+    const fileShare = await FileShare.findOne({
+      where: {
+        token: token,
+        is_active: true,
+        expires_at: { [Op.gt]: new Date() }
+      },
+      include: [
+        {
+          model: File,
+          as: 'file',
+          include: [{ model: Utilisateur, as: 'fileUser', attributes: ['username'] }]
+        },
+        { model: Utilisateur, as: 'creator', attributes: ['username'] }
+      ]
+    });
+
+    if (!fileShare) {
+      return res.status(404).send('<h1>Lien de partage invalide ou expiré</h1>');
+    }
+
+    const file = fileShare.file;
+    const isImage = file.mimetype?.startsWith('image/');
+    const isPdf = file.filename?.toLowerCase().endsWith('.pdf');
+    
+    let imageUrl = 'https://hifadhui.site/favicon.png';
+    if (isImage && file.file_url) {
+      if (file.file_url.startsWith('http')) {
+        imageUrl = file.file_url;
+      } else if (file.file_url.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(file.file_url)) {
+        imageUrl = `https://res.cloudinary.com/ddxypgvuh/image/upload/${file.file_url}`;
+      }
+    }
+
+    const title = `${file.filename} - Partagé par ${file.fileUser.username}`;
+    const description = `Fichier ${isPdf ? 'PDF' : isImage ? 'image' : ''} partagé de manière sécurisée via Hifadhwi. Propriétaire: ${file.fileUser.username}`;
+
+    const html = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <title>${title}</title>
+    <meta name="description" content="${description}" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://hifadhui.site/share/${token}" />
+    <meta property="og:title" content="${title}" />
+    <meta property="og:description" content="${description}" />
+    <meta property="og:image" content="${imageUrl}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="Hifadhwi" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://hifadhui.site/share/${token}" />
+    <meta property="twitter:title" content="${title}" />
+    <meta property="twitter:description" content="${description}" />
+    <meta property="twitter:image" content="${imageUrl}" />
+    
+    <meta http-equiv="refresh" content="0;url=https://hifadhui.site/share/${token}" />
+</head>
+<body>
+    <h1>Redirection vers le fichier partagé...</h1>
+    <p>Si vous n'êtes pas redirigé automatiquement, <a href="https://hifadhui.site/share/${token}">cliquez ici</a>.</p>
+</body>
+</html>`;
+
+    res.send(html);
+
+  } catch (error) {
+    console.error('Erreur lors de la génération des métadonnées:', error);
+    res.status(500).send('<h1>Erreur serveur</h1>');
+  }
+});
+
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/files', fileRoutes);
-app.use('/api/v1/files', shareRoutes); // Routes de partage sous /files
 app.use('/api/v1/certificates', certificateRoutes);
 app.use('/api/v1/dossiers', dossierRoutes);
-app.use('/api/v1/bulk-actions', bulkActionsRoutes);
-app.use('/api/v1/share', shareRoutes); // Route publique pour accéder aux fichiers partagés
+app.use('/api/v1/share', shareRoutes);
+app.use('/api/v1/bulk', bulkActionsRoutes);
 
 // Servir les fichiers statiques du frontend React (en production)
 if (process.env.NODE_ENV === 'production') {

@@ -89,6 +89,85 @@ router.post('/:id/share', authenticateToken, async (req, res) => {
   }
 });
 
+// @route   GET /api/v1/share/:token/meta
+// @desc    Obtenir les métadonnées d'un fichier partagé pour Open Graph
+// @access  Public
+router.get('/:token/meta', async (req, res) => {
+  try {
+    const token = req.params.token;
+
+    // Trouver le partage actif et non expiré
+    const fileShare = await FileShare.findOne({
+      where: {
+        token: token,
+        is_active: true,
+        expires_at: {
+          [Op.gt]: new Date()
+        }
+      },
+      include: [
+        {
+          model: File,
+          as: 'file',
+          include: [
+            {
+              model: Utilisateur,
+              as: 'fileUser',
+              attributes: ['username']
+            }
+          ]
+        },
+        {
+          model: Utilisateur,
+          as: 'creator',
+          attributes: ['username']
+        }
+      ]
+    });
+
+    if (!fileShare) {
+      return res.status(404).json({
+        error: 'Lien de partage invalide ou expiré'
+      });
+    }
+
+    const file = fileShare.file;
+    const isImage = file.mimetype?.startsWith('image/');
+    const isPdf = file.filename?.toLowerCase().endsWith('.pdf');
+    
+    // Construire l'URL de l'image pour Open Graph
+    let imageUrl = 'https://hifadhui.site/favicon.png'; // Image par défaut
+    
+    if (isImage && file.file_url) {
+      // Construire l'URL Cloudinary pour l'image
+      if (file.file_url.startsWith('http')) {
+        imageUrl = file.file_url;
+      } else if (file.file_url.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(file.file_url)) {
+        imageUrl = `https://res.cloudinary.com/ddxypgvuh/image/upload/${file.file_url}`;
+      }
+    }
+
+    const metadata = {
+      title: `${file.filename} - Partagé par ${file.fileUser.username}`,
+      description: `Fichier ${isPdf ? 'PDF' : isImage ? 'image' : ''} partagé de manière sécurisée via Hifadhwi. Propriétaire: ${file.fileUser.username}`,
+      image: imageUrl,
+      url: `https://hifadhui.site/share/${token}`,
+      type: isImage ? 'image' : 'document',
+      filename: file.filename,
+      owner: file.fileUser.username,
+      shared_by: fileShare.creator.username
+    };
+
+    res.json(metadata);
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération des métadonnées:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération des métadonnées'
+    });
+  }
+});
+
 // @route   GET /api/v1/share/:token
 // @desc    Consulter un fichier partagé (accès public)
 // @access  Public
