@@ -150,7 +150,9 @@ app.get('/share/:token', async (req, res) => {
       // Bot/Crawler - servir HTML avec métadonnées Open Graph
       const isImage = file.mimetype?.startsWith('image/');
       const isPdf = file.filename?.toLowerCase().endsWith('.pdf');
+      
       const imageUrl = 'https://hifadhui.site/favicon.png';
+      const shareUrl = `https://hifadhui.site/share/${token}`;
       const title = `${file.filename} - Partagé par ${file.fileUser.username}`;
       const description = `Fichier ${isPdf ? 'PDF' : isImage ? 'image' : ''} partagé de manière sécurisée via Hifadhwi. Propriétaire: ${file.fileUser.username}`;
 
@@ -168,7 +170,7 @@ app.get('/share/:token', async (req, res) => {
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://hifadhui.site/share/${token}" />
+    <meta property="og:url" content="${shareUrl}" />
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${description}" />
     <meta property="og:image" content="${imageUrl}" />
