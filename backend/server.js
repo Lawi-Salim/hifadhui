@@ -131,7 +131,7 @@ app.get('/api/share/:token/og', async (req, res) => {
     const isPdf = file.filename?.toLowerCase().endsWith('.pdf');
     
     // Utiliser une image statique par défaut pour tous les partages
-    const imageUrl = 'https://hifadhui.site/favicon-black.png';
+    const imageUrl = 'https://hifadhui.site/favicon.png';
 
     const metadata = {
       title: `${file.filename} - Partagé par ${file.fileUser.username}`,
@@ -150,8 +150,8 @@ app.get('/api/share/:token/og', async (req, res) => {
 <html lang="fr">
 <head>
     <meta charset="utf-8" />
-    <link rel="icon" type="image/png" href="https://hifadhui.site/favicon-black.png" />
-    <link rel="shortcut icon" type="image/png" href="https://hifadhui.site/favicon-black.png" />
+    <link rel="icon" type="image/png" href="https://hifadhui.site/favicon.png" />
+    <link rel="shortcut icon" type="image/png" href="https://hifadhui.site/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
     
