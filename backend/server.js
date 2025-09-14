@@ -178,9 +178,10 @@ app.get('/share/:token', async (req, res) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/files', fileRoutes);
+app.use('/api/v1/files', shareRoutes); // Routes de partage sous /files pour POST /:id/share
 app.use('/api/v1/certificates', certificateRoutes);
 app.use('/api/v1/dossiers', dossierRoutes);
-app.use('/api/v1/share', shareRoutes);
+app.use('/api/v1/share', shareRoutes); // Routes publiques pour accéder aux partages
 app.use('/api/v1/bulk', bulkActionsRoutes);
 
 // Servir les fichiers statiques du frontend React (en production)
