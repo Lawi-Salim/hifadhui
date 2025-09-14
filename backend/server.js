@@ -126,7 +126,9 @@ app.get('/share/:token', async (req, res) => {
       if (file.file_url.startsWith('http')) {
         imageUrl = file.file_url;
       } else if (file.file_url.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(file.file_url)) {
+        // Construire l'URL Cloudinary avec l'encodage correct
         imageUrl = `https://res.cloudinary.com/ddxypgvuh/image/upload/${file.file_url}`;
+        console.log('🖼️ URL image pour Open Graph:', imageUrl);
       }
     }
 
