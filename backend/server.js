@@ -6,7 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import axios from 'axios';
-import sharp from 'sharp';
+// import sharp from 'sharp'; // Temporairement désactivé pour debug
 
 dotenv.config();
 
@@ -232,59 +232,12 @@ app.get('/share/:token/image', async (req, res) => {
       return res.status(404).send('Image non accessible');
     }
 
-    // Récupérer l'image depuis Cloudinary et ajouter un filigrane
+    // Temporairement rediriger vers l'image Cloudinary directe
     try {
-      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-      
-      // Créer le filigrane avec Sharp
-      const watermarkText = `© ${file.fileUser.username} - Hifadhwi`;
-      
-      // Créer une image de filigrane en SVG
-      const watermarkSvg = `
-        <svg width="400" height="100">
-          <defs>
-            <filter id="shadow">
-              <feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="black" flood-opacity="0.8"/>
-            </filter>
-          </defs>
-          <text x="200" y="50" font-family="Arial Black" font-size="24" font-weight="bold" 
-                text-anchor="middle" fill="rgba(255,255,255,0.9)" filter="url(#shadow)" 
-                transform="rotate(-30 200 50)">
-            ${watermarkText}
-          </text>
-        </svg>
-      `;
-      
-      // Traiter l'image avec Sharp
-      const processedImage = await sharp(Buffer.from(response.data))
-        .composite([
-          {
-            input: Buffer.from(watermarkSvg),
-            gravity: 'center',
-            blend: 'over'
-          }
-        ])
-        .jpeg({ quality: 85 })
-        .toBuffer();
-
-      // Headers de sécurité
-      res.set({
-        'Content-Type': 'image/jpeg',
-        'Content-Security-Policy': "default-src 'none'; img-src 'self'",
-        'X-Content-Type-Options': 'nosniff',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-        'X-Frame-Options': 'DENY',
-        'Content-Disposition': 'inline',
-      });
-
-      // Envoyer l'image avec filigrane
-      res.send(processedImage);
-      
-    } catch (streamError) {
-      console.error('Erreur lors du traitement de l\'image:', streamError);
-      res.status(404).send('Image non accessible');
+      return res.redirect(302, imageUrl);
+    } catch (error) {
+      console.error('Erreur lors de la redirection vers l\'image:', error);
+      return res.status(500).send('Erreur lors du traitement de l\'image');
     }
 
   } catch (error) {
