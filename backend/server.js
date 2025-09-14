@@ -92,8 +92,8 @@ app.get('/share/:token', async (req, res) => {
     const isBot = /bot|crawler|spider|facebook|twitter|whatsapp|telegram|discord/i.test(userAgent);
     
     if (!isBot) {
-      // Utilisateur normal - servir l'app React
-      return res.redirect(`https://hifadhui.site/?redirect=/share/${token}`);
+      // Utilisateur normal - rediriger vers l'app React directement
+      return res.redirect(`https://hifadhui.site/share/${token}`);
     }
 
     // Bot/Crawler - servir HTML avec métadonnées Open Graph

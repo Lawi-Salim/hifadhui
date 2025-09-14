@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { FiShield, FiUpload, FiShare2, FiEye, FiLock, FiCheck } from 'react-icons/fi';
 import PublicNavbar from '../components/Layout/PublicNavbar';
@@ -8,6 +8,19 @@ import './HomePage.css';
 
 const HomePage = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Vérifier s'il y a un paramètre redirect dans l'URL
+    const urlParams = new URLSearchParams(location.search);
+    const redirectPath = urlParams.get('redirect');
+    
+    if (redirectPath) {
+      // Rediriger vers le chemin spécifié
+      navigate(redirectPath, { replace: true });
+    }
+  }, [location, navigate]);
 
   const features = [
     {
