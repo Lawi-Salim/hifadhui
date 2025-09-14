@@ -16,15 +16,15 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/index.js"
+      "dest": "backend/server.js"
     },
     {
       "src": "/share/([a-f0-9]+)/image",
-      "dest": "/api/index.js"
+      "dest": "backend/server.js"
     },
     {
-      "src": "/share/([a-f0-9]+)",
-      "dest": "/api/index.js"
+      "src": "/static/(.*)",
+      "dest": "/frontend/static/$1"
     },
     {
       "src": "/share/static/(.*)",
