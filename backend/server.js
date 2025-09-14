@@ -6,8 +6,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import dotenv from 'dotenv';
-import axios from 'axios';
-import sharp from 'sharp';
 
 dotenv.config();
 
@@ -101,6 +99,7 @@ if (process.env.NODE_ENV !== 'production') {
 // Middleware silencieux en production
 if (process.env.NODE_ENV !== 'production') {
   // Logs uniquement en développement si nécessaire
+  console.log(' [DEBUG] Mode développement activé');
 }
 
 // Route pour les métadonnées Open Graph (accessible via /api/share/:token/og)
@@ -131,11 +130,8 @@ app.get('/api/share/:token/og', async (req, res) => {
     const isImage = file.mimetype?.startsWith('image/');
     const isPdf = file.filename?.toLowerCase().endsWith('.pdf');
     
-    let imageUrl = 'https://hifadhui.site/favicon-black.png';
-    if (isImage && file.file_url) {
-      // Utiliser la route sécurisée pour les images dans les métadonnées Open Graph
-      imageUrl = `https://hifadhui.site/share/${token}/image`;
-    }
+    // Utiliser une image statique par défaut pour tous les partages
+    const imageUrl = 'https://hifadhui.site/favicon-black.png';
 
     const metadata = {
       title: `${file.filename} - Partagé par ${file.fileUser.username}`,
@@ -223,7 +219,7 @@ app.get('/api/share/:token/og', async (req, res) => {
 </head>
 <body>
     <div class="container">
-        <h1>📁 Fichier partagé</h1>
+        <h1> Fichier partagé</h1>
         <p>Ce fichier vous a été partagé par <strong>${metadata.username}</strong> via Hifadhwi</p>
         <p><strong>Fichier:</strong> ${metadata.filename}</p>
         <a href="${metadata.url}">Voir le fichier</a>
@@ -239,117 +235,6 @@ app.get('/api/share/:token/og', async (req, res) => {
   }
 });
 
-// Route sécurisée pour servir les images partagées (empêche téléchargement direct)
-app.get('/share/:token/image', async (req, res) => {
-  try {
-    const token = req.params.token;
-    console.log(' [DEBUG] Recherche image pour token:', token);
-    
-    const fileShare = await FileShare.findOne({
-      where: {
-        token: token,
-        is_active: true,
-        expires_at: { [Op.gt]: new Date() }
-      },
-      include: [{ model: File, as: 'file' }]
-    });
-
-    console.log(' [DEBUG] FileShare trouvé:', !!fileShare);
-    if (fileShare) {
-      console.log(' [DEBUG] Type de fichier:', fileShare.file?.mimetype);
-      console.log(' [DEBUG] URL fichier:', fileShare.file?.file_url);
-      console.log(' [DEBUG] Is active:', fileShare.is_active);
-      console.log(' [DEBUG] Expires at:', fileShare.expires_at);
-    } else {
-      // Chercher sans les conditions pour voir si le token existe
-      const anyShare = await FileShare.findOne({
-        where: { token: token },
-        include: [{ model: File, as: 'file' }]
-      });
-      console.log('🖼️ [DEBUG] Token existe (sans conditions):', !!anyShare);
-      if (anyShare) {
-        console.log('🖼️ [DEBUG] Is active (any):', anyShare.is_active);
-        console.log('🖼️ [DEBUG] Expires at (any):', anyShare.expires_at);
-        console.log('🖼️ [DEBUG] Current time:', new Date());
-      }
-    }
-
-    if (!fileShare || !fileShare.file?.mimetype?.startsWith('image/')) {
-      console.log('🖼️ [ERROR] Image non trouvée ou pas une image');
-      return res.status(404).send('Image non trouvée');
-    }
-
-    const file = fileShare.file;
-    let imageUrl;
-
-    if (file.file_url.startsWith('http')) {
-      imageUrl = file.file_url;
-    } else if (file.file_url.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(file.file_url)) {
-      imageUrl = `https://res.cloudinary.com/ddxypgvuh/image/upload/${file.file_url}`;
-    } else {
-      return res.status(404).send('Image non accessible');
-    }
-
-    // Récupérer l'image depuis Cloudinary et ajouter un filigrane
-    try {
-      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-      
-      // Créer le filigrane avec Sharp
-      const watermarkText = `© ${file.fileUser.username} - Hifadhwi`;
-      
-      // Créer une image de filigrane en SVG
-      const watermarkSvg = `
-        <svg width="400" height="100">
-          <defs>
-            <filter id="shadow">
-              <feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="black" flood-opacity="0.8"/>
-            </filter>
-          </defs>
-          <text x="200" y="50" font-family="Arial Black" font-size="24" font-weight="bold" 
-                text-anchor="middle" fill="rgba(255,255,255,0.9)" filter="url(#shadow)" 
-                transform="rotate(-30 200 50)">
-            ${watermarkText}
-          </text>
-        </svg>
-      `;
-      
-      // Traiter l'image avec Sharp
-      const processedImage = await sharp(Buffer.from(response.data))
-        .composite([
-          {
-            input: Buffer.from(watermarkSvg),
-            gravity: 'center',
-            blend: 'over'
-          }
-        ])
-        .jpeg({ quality: 85 })
-        .toBuffer();
-
-      // Headers de sécurité
-      res.set({
-        'Content-Type': 'image/jpeg',
-        'Content-Security-Policy': "default-src 'none'; img-src 'self'",
-        'X-Content-Type-Options': 'nosniff',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-        'X-Frame-Options': 'DENY',
-        'Content-Disposition': 'inline',
-      });
-
-      // Envoyer l'image avec filigrane
-      res.send(processedImage);
-      
-    } catch (streamError) {
-      console.error('Erreur lors du traitement de l\'image:', streamError);
-      res.status(404).send('Image non accessible');
-    }
-
-  } catch (error) {
-    console.error('Erreur lors de la récupération de l\'image:', error);
-    res.status(500).send('Erreur serveur');
-  }
-});
 
 // Routes
 app.use('/api/v1/auth', authRoutes);
