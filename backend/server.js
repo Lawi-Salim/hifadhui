@@ -93,8 +93,25 @@ app.get('/share/:token', async (req, res) => {
     const isBot = /bot|crawler|spider|facebook|twitter|whatsapp|telegram|discord/i.test(userAgent);
     
     if (!isBot) {
-      // Utilisateur normal - servir l'app React avec redirection côté client
-      return res.redirect(`https://hifadhui.site/?redirect=/share/${token}`);
+      // Utilisateur normal - servir l'app React directement
+      const html = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/png" href="https://hifadhui.site/favicon-black.png" />
+    <title>Redirection vers fichier partagé...</title>
+    <script>
+      // Redirection côté client vers l'app React
+      window.location.href = 'https://hifadhui.site/share/${token}';
+    </script>
+</head>
+<body>
+    <h1>Redirection vers le fichier partagé...</h1>
+    <p>Si vous n'êtes pas redirigé automatiquement, <a href="https://hifadhui.site/share/${token}">cliquez ici</a>.</p>
+</body>
+</html>`;
+      return res.send(html);
     }
 
     // Bot/Crawler - servir HTML avec métadonnées Open Graph
@@ -124,10 +141,9 @@ app.get('/share/:token', async (req, res) => {
     
     let imageUrl = 'https://hifadhui.site/favicon-black.png';
     if (isImage && file.file_url) {
-      // Temporairement utiliser le favicon au lieu de l'image sécurisée pour déboguer
-      // imageUrl = `https://hifadhui.site/share/${token}/image`;
-      imageUrl = 'https://hifadhui.site/favicon-black.png';
-      console.log('🖼️ URL image pour Open Graph (temporaire favicon):', imageUrl);
+      // Utiliser la route sécurisée pour les images dans Open Graph
+      imageUrl = `https://hifadhui.site/share/${token}/image`;
+      console.log('🖼️ URL image sécurisée pour Open Graph:', imageUrl);
     }
 
     const title = `${file.filename} - Partagé par ${file.fileUser.username}`;
@@ -189,7 +205,11 @@ app.get('/share/:token/image', async (req, res) => {
         is_active: true,
         expires_at: { [Op.gt]: new Date() }
       },
-      include: [{ model: File, as: 'file' }]
+      include: [{ 
+        model: File, 
+        as: 'file',
+        include: [{ model: Utilisateur, as: 'fileUser', attributes: ['username'] }]
+      }]
     });
 
     console.log('🖼️ [DEBUG] FileShare trouvé:', !!fileShare);
@@ -224,11 +244,15 @@ app.get('/share/:token/image', async (req, res) => {
         'Content-Type': response.headers['content-type'] || 'image/jpeg',
         'Content-Security-Policy': "default-src 'none'; img-src 'self'",
         'X-Content-Type-Options': 'nosniff',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Cache-Control': 'no-cache, no-store, must-revalidate, private',
         'Pragma': 'no-cache',
         'Expires': '0',
         'X-Frame-Options': 'DENY',
-        'Content-Disposition': 'inline', // Empêche le téléchargement automatique
+        'Content-Disposition': 'inline; filename=""', // Empêche le téléchargement
+        'X-Robots-Tag': 'noindex, nofollow, nosnippet, noarchive, noimageindex',
+        'Referrer-Policy': 'no-referrer',
+        'X-Download-Options': 'noopen',
+        'X-Permitted-Cross-Domain-Policies': 'none'
       });
 
       // Streamer l'image directement
