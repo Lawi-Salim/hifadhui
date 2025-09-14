@@ -41,6 +41,12 @@ const SharedFilePage = () => {
         }
         
         console.log('Données reçues:', response.data); // Debug
+        console.log('Structure des données:', {
+          hasFile: !!response.data?.file,
+          hasShare: !!response.data?.share,
+          fileKeys: response.data?.file ? Object.keys(response.data.file) : [],
+          shareKeys: response.data?.share ? Object.keys(response.data.share) : []
+        });
         setFileData(response.data);
       } catch (err) {
         setError(err.response?.data?.error || 'Erreur lors du chargement du fichier');
@@ -203,6 +209,17 @@ const SharedFilePage = () => {
           <button onClick={() => navigate('/')} className="btn btn-primary">
             Retour à l'accueil
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!fileData || !fileData.file || !fileData.share) {
+    return (
+      <div className="shared-file-page">
+        <div className="loading-container">
+          <div className="loading"></div>
+          <p>Chargement des données...</p>
         </div>
       </div>
     );
