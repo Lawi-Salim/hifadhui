@@ -38,5 +38,21 @@
     <noscript>Vous devez activer JavaScript pour utiliser cette application.</noscript>
     <div id="root"></div>
     <div id="modal-root"></div>
+    
+    <script>
+      // Redirection pour les bots vers les métadonnées Open Graph
+      (function() {
+        const userAgent = navigator.userAgent || '';
+        const isBot = /bot|crawler|spider|facebook|twitter|whatsapp|telegram|discord/i.test(userAgent);
+        const isSharePage = window.location.pathname.startsWith('/share/') && !window.location.pathname.includes('/preview');
+        
+        if (isBot && isSharePage) {
+          const token = window.location.pathname.split('/share/')[1];
+          if (token) {
+            window.location.replace('/share/' + token + '/preview');
+          }
+        }
+      })();
+    </script>
   </body>
 </html>

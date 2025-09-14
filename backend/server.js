@@ -84,21 +84,10 @@ if (process.env.NODE_ENV !== 'production') {
   // Logs uniquement en développement si nécessaire
 }
 
-// Route spéciale pour les liens de partage avec métadonnées Open Graph
-app.get('/share/:token', async (req, res) => {
+// Route pour les métadonnées Open Graph des partages
+app.get('/share/:token/preview', async (req, res) => {
   try {
     const token = req.params.token;
-    
-    // Vérifier si c'est un bot/crawler (User-Agent)
-    const userAgent = req.headers['user-agent'] || '';
-    const isBot = /bot|crawler|spider|facebook|twitter|whatsapp|telegram|discord/i.test(userAgent);
-    
-    if (!isBot) {
-      // Utilisateur normal - servir le HTML React
-      return res.redirect(301, `https://hifadhui.site/#/share/${token}`);
-    }
-
-    // Bot/Crawler - servir HTML avec métadonnées Open Graph
     const fileShare = await FileShare.findOne({
       where: {
         token: token,
