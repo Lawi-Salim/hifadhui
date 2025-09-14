@@ -23,7 +23,7 @@
       "dest": "backend/server.js"
     },
     {
-      "src": "/share/([a-f0-9]+)/preview",
+      "src": "/share/([a-f0-9]+)",
       "dest": "backend/server.js"
     },
     {
