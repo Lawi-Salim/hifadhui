@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 import dotenv from 'dotenv';
 import axios from 'axios';
 import sharp from 'sharp';
@@ -97,9 +98,6 @@ app.get('/share/:token', async (req, res) => {
     
     if (!isBot) {
       // Utilisateur normal - servir l'index.html React
-      const fs = require('fs');
-      const path = require('path');
-      
       try {
         const indexPath = path.join(__dirname, '../frontend/build/index.html');
         if (fs.existsSync(indexPath)) {
