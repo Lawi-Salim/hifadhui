@@ -121,12 +121,26 @@ const SharedFilePage = () => {
       );
     }
 
+    // Construire l'URL complète pour Cloudinary
+    const getFullImageUrl = (fileUrl) => {
+      if (fileUrl.startsWith('http')) {
+        return fileUrl; // URL complète déjà
+      } else if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl)) {
+        return `https://res.cloudinary.com/ddxypgvuh/image/upload/${fileUrl}`;
+      } else {
+        return `${process.env.REACT_APP_API_BASE_URL}${fileUrl}`;
+      }
+    };
+
     if (file.mimetype?.startsWith('image/')) {
+      const imageUrl = getFullImageUrl(file.file_url);
+      console.log('URL image construite:', imageUrl); // Debug
+      
       return (
         <div className="shared-file-preview">
           <div className="image-preview-container">
             <img 
-              src={file.file_url}
+              src={imageUrl}
               alt={file.filename}
               className="shared-image"
               onContextMenu={(e) => e.preventDefault()}
