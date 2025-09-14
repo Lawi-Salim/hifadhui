@@ -15,7 +15,7 @@ const dbConfig = {
     collate: 'utf8_unicode_ci',
   },
   pool: {
-    max: 5,
+    max: process.env.VERCEL ? 1 : 5,
     min: 0,
     acquire: 30000,
     idle: 10000,
