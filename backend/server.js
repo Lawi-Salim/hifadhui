@@ -162,25 +162,45 @@ app.get('/share/:token', async (req, res) => {
     <title>${title}</title>
     <meta name="description" content="${description}" />
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="${imageUrl}" />
+    <link rel="shortcut icon" type="image/png" href="${imageUrl}" />
+    
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://hifadhui.site/share/${token}" />
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${description}" />
     <meta property="og:image" content="${imageUrl}" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Logo Hifadhwi - Partage sécurisé de fichiers" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
     <meta property="og:site_name" content="Hifadhwi" />
+    <meta property="og:locale" content="fr_FR" />
     
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:title" content="${title}" />
-    <meta property="twitter:description" content="${description}" />
-    <meta property="twitter:image" content="${imageUrl}" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@hifadhwi" />
+    <meta name="twitter:title" content="${title}" />
+    <meta name="twitter:description" content="${description}" />
+    <meta name="twitter:image" content="${imageUrl}" />
+    <meta name="twitter:image:alt" content="Logo Hifadhwi - Partage sécurisé de fichiers" />
+    
+    <!-- WhatsApp / Telegram -->
+    <meta property="og:image:secure_url" content="${imageUrl}" />
+    
+    <!-- Refresh automatique vers React App -->
+    <meta http-equiv="refresh" content="3;url=/#/share/${token}" />
 </head>
 <body>
-    <h1>Fichier partagé</h1>
-    <p>Ce fichier vous a été partagé par ${file.fileUser.username} via Hifadhwi</p>
+    <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+        <img src="${imageUrl}" alt="Hifadhwi" style="width: 64px; height: 64px; margin-bottom: 20px;" />
+        <h1>Fichier partagé via Hifadhwi</h1>
+        <p>Ce fichier vous a été partagé par <strong>${file.fileUser.username}</strong></p>
+        <p>Redirection automatique en cours...</p>
+        <p><a href="/#/share/${token}">Cliquez ici si la redirection ne fonctionne pas</a></p>
+    </div>
 </body>
 </html>`;
 
