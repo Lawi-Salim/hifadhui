@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FiClock, FiUser, FiEye, FiShield, FiAlertCircle } from 'react-icons/fi';
 import { FaFilePdf, FaFileImage, FaFileAlt } from 'react-icons/fa';
 import PdfPreview from '../components/Common/PdfPreview';
-import api from '../services/api';
+import axios from 'axios';
 import './SharedFilePage.css';
 
 const SharedFilePage = () => {
@@ -23,7 +23,11 @@ const SharedFilePage = () => {
         
         console.log('🔍 [DEBUG Frontend] Token:', token, 'Already viewed:', alreadyViewed);
         
-        const response = await api.get(`/share/${token}`, {
+        // Créer une instance axios sans intercepteurs pour les partages publics
+        const isProd = process.env.NODE_ENV === 'production';
+        const API_BASE_URL = process.env.REACT_APP_API_URL || (isProd ? '/api/v1' : 'http://localhost:5000/api/v1');
+        
+        const response = await axios.get(`${API_BASE_URL}/share/${token}`, {
           headers: {
             'X-Already-Viewed': alreadyViewed ? 'true' : 'false'
           }
