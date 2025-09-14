@@ -123,17 +123,14 @@ app.get('/share/:token', async (req, res) => {
     
     let imageUrl = 'https://hifadhui.site/favicon.png';
     if (isImage && file.file_url) {
-      if (file.file_url.startsWith('http')) {
-        imageUrl = file.file_url;
-      } else if (file.file_url.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(file.file_url)) {
-        // Construire l'URL Cloudinary avec l'encodage correct
-        imageUrl = `https://res.cloudinary.com/ddxypgvuh/image/upload/${file.file_url}`;
-        console.log('🖼️ URL image pour Open Graph:', imageUrl);
-      }
+      // Utiliser la route sécurisée au lieu de l'URL Cloudinary directe
+      imageUrl = `https://hifadhui.site/share/${token}/image`;
+      console.log('🖼️ URL image sécurisée pour Open Graph:', imageUrl);
     }
 
     const title = `${file.filename} - Partagé par ${file.fileUser.username}`;
     const description = `Fichier ${isPdf ? 'PDF' : isImage ? 'image' : ''} partagé de manière sécurisée via Hifadhwi. Propriétaire: ${file.fileUser.username}`;
+    const siteName = 'Hifadhwi';
 
     const html = `
 <!DOCTYPE html>
@@ -151,7 +148,8 @@ app.get('/share/:token', async (req, res) => {
     <meta property="og:image" content="${imageUrl}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:site_name" content="Hifadhwi" />
+    <meta property="og:site_name" content="${siteName}" />
+    <meta property="og:logo" content="https://hifadhui.site/favicon-black.png" />
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
@@ -173,6 +171,53 @@ app.get('/share/:token', async (req, res) => {
   } catch (error) {
     console.error('Erreur lors de la génération des métadonnées:', error);
     res.status(500).send('<h1>Erreur serveur</h1>');
+  }
+});
+
+// Route sécurisée pour servir les images partagées (empêche téléchargement direct)
+app.get('/share/:token/image', async (req, res) => {
+  try {
+    const token = req.params.token;
+    
+    const fileShare = await FileShare.findOne({
+      where: {
+        token: token,
+        is_active: true,
+        expires_at: { [Op.gt]: new Date() }
+      },
+      include: [{ model: File, as: 'file' }]
+    });
+
+    if (!fileShare || !fileShare.file.mimetype?.startsWith('image/')) {
+      return res.status(404).send('Image non trouvée');
+    }
+
+    const file = fileShare.file;
+    let imageUrl;
+
+    if (file.file_url.startsWith('http')) {
+      imageUrl = file.file_url;
+    } else if (file.file_url.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(file.file_url)) {
+      imageUrl = `https://res.cloudinary.com/ddxypgvuh/image/upload/${file.file_url}`;
+    } else {
+      return res.status(404).send('Image non accessible');
+    }
+
+    // Headers de sécurité pour empêcher le téléchargement
+    res.set({
+      'Content-Security-Policy': "default-src 'none'; img-src 'self'",
+      'X-Content-Type-Options': 'nosniff',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+
+    // Rediriger vers Cloudinary mais avec headers de sécurité
+    res.redirect(imageUrl);
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'image:', error);
+    res.status(500).send('Erreur serveur');
   }
 });
 

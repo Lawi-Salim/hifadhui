@@ -23,6 +23,10 @@
       "dest": "backend/server.js"
     },
     {
+      "src": "/share/([a-f0-9]{64})/image",
+      "dest": "backend/server.js"
+    },
+    {
       "src": "/static/(.*)",
       "dest": "/frontend/static/$1"
     },
