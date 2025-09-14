@@ -125,9 +125,13 @@ app.get('/share/:token', async (req, res) => {
     
     let imageUrl = 'https://hifadhui.site/favicon-black.png';
     if (isImage && file.file_url) {
-      // Utiliser la route sécurisée pour les images dans les métadonnées Open Graph
-      imageUrl = `https://hifadhui.site/share/${token}/image`;
-      console.log('🖼️ URL image sécurisée pour Open Graph:', imageUrl);
+      // Temporairement utiliser l'URL Cloudinary directe en attendant de corriger la route /image
+      if (file.file_url.startsWith('http')) {
+        imageUrl = file.file_url;
+      } else if (file.file_url.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(file.file_url)) {
+        imageUrl = `https://res.cloudinary.com/ddxypgvuh/image/upload/${file.file_url}`;
+      }
+      console.log('🖼️ URL image Cloudinary directe pour Open Graph:', imageUrl);
     }
 
     const title = `${file.filename} - Partagé par ${file.fileUser.username}`;
