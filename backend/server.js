@@ -93,25 +93,8 @@ app.get('/share/:token', async (req, res) => {
     const isBot = /bot|crawler|spider|facebook|twitter|whatsapp|telegram|discord/i.test(userAgent);
     
     if (!isBot) {
-      // Utilisateur normal - servir l'app React directement
-      const html = `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/png" href="https://hifadhui.site/favicon-black.png" />
-    <title>Redirection vers fichier partagé...</title>
-    <script>
-      // Redirection côté client vers l'app React
-      window.location.href = 'https://hifadhui.site/share/${token}';
-    </script>
-</head>
-<body>
-    <h1>Redirection vers le fichier partagé...</h1>
-    <p>Si vous n'êtes pas redirigé automatiquement, <a href="https://hifadhui.site/share/${token}">cliquez ici</a>.</p>
-</body>
-</html>`;
-      return res.send(html);
+      // Utilisateur normal - laisser React gérer la route
+      return res.status(404).send('Not found');
     }
 
     // Bot/Crawler - servir HTML avec métadonnées Open Graph
@@ -141,7 +124,7 @@ app.get('/share/:token', async (req, res) => {
     
     let imageUrl = 'https://hifadhui.site/favicon-black.png';
     if (isImage && file.file_url) {
-      // Utiliser la route sécurisée pour les images dans Open Graph
+      // Utiliser la route sécurisée pour les images dans les métadonnées Open Graph
       imageUrl = `https://hifadhui.site/share/${token}/image`;
       console.log('🖼️ URL image sécurisée pour Open Graph:', imageUrl);
     }
@@ -205,20 +188,30 @@ app.get('/share/:token/image', async (req, res) => {
         is_active: true,
         expires_at: { [Op.gt]: new Date() }
       },
-      include: [{ 
-        model: File, 
-        as: 'file',
-        include: [{ model: Utilisateur, as: 'fileUser', attributes: ['username'] }]
-      }]
+      include: [{ model: File, as: 'file' }]
     });
 
     console.log('🖼️ [DEBUG] FileShare trouvé:', !!fileShare);
     if (fileShare) {
       console.log('🖼️ [DEBUG] Type de fichier:', fileShare.file?.mimetype);
       console.log('🖼️ [DEBUG] URL fichier:', fileShare.file?.file_url);
+      console.log('🖼️ [DEBUG] Is active:', fileShare.is_active);
+      console.log('🖼️ [DEBUG] Expires at:', fileShare.expires_at);
+    } else {
+      // Chercher sans les conditions pour voir si le token existe
+      const anyShare = await FileShare.findOne({
+        where: { token: token },
+        include: [{ model: File, as: 'file' }]
+      });
+      console.log('🖼️ [DEBUG] Token existe (sans conditions):', !!anyShare);
+      if (anyShare) {
+        console.log('🖼️ [DEBUG] Is active (any):', anyShare.is_active);
+        console.log('🖼️ [DEBUG] Expires at (any):', anyShare.expires_at);
+        console.log('🖼️ [DEBUG] Current time:', new Date());
+      }
     }
 
-    if (!fileShare || !fileShare.file.mimetype?.startsWith('image/')) {
+    if (!fileShare || !fileShare.file?.mimetype?.startsWith('image/')) {
       console.log('🖼️ [ERROR] Image non trouvée ou pas une image');
       return res.status(404).send('Image non trouvée');
     }
@@ -244,15 +237,11 @@ app.get('/share/:token/image', async (req, res) => {
         'Content-Type': response.headers['content-type'] || 'image/jpeg',
         'Content-Security-Policy': "default-src 'none'; img-src 'self'",
         'X-Content-Type-Options': 'nosniff',
-        'Cache-Control': 'no-cache, no-store, must-revalidate, private',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
         'X-Frame-Options': 'DENY',
-        'Content-Disposition': 'inline; filename=""', // Empêche le téléchargement
-        'X-Robots-Tag': 'noindex, nofollow, nosnippet, noarchive, noimageindex',
-        'Referrer-Policy': 'no-referrer',
-        'X-Download-Options': 'noopen',
-        'X-Permitted-Cross-Domain-Policies': 'none'
+        'Content-Disposition': 'inline', // Empêche le téléchargement automatique
       });
 
       // Streamer l'image directement

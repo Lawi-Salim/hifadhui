@@ -54,16 +54,8 @@ const PublicRoute = ({ children }) => {
     return children;
   }
   
-  // Si utilisateur connecté, vérifier s'il y a un paramètre redirect
+  // Si utilisateur connecté, rediriger vers dashboard
   if (user) {
-    const urlParams = new URLSearchParams(location.search);
-    const redirectPath = urlParams.get('redirect');
-    
-    if (redirectPath) {
-      // Permettre le traitement du redirect sur HomePage
-      return children;
-    }
-    
     return <Navigate to="/dashboard" />;
   }
   
