@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import axios from 'axios';
+import sharp from 'sharp';
 
 dotenv.config();
 
@@ -227,28 +228,58 @@ app.get('/share/:token/image', async (req, res) => {
       return res.status(404).send('Image non accessible');
     }
 
-    // Récupérer l'image depuis Cloudinary et la servir avec protection
-    
+    // Récupérer l'image depuis Cloudinary et ajouter un filigrane
     try {
-      const response = await axios.get(imageUrl, { responseType: 'stream' });
+      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
       
-      // Headers de sécurité pour empêcher le téléchargement
+      // Créer le filigrane avec Sharp
+      const watermarkText = `© ${file.fileUser.username} - Hifadhwi`;
+      
+      // Créer une image de filigrane en SVG
+      const watermarkSvg = `
+        <svg width="400" height="100">
+          <defs>
+            <filter id="shadow">
+              <feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="black" flood-opacity="0.8"/>
+            </filter>
+          </defs>
+          <text x="200" y="50" font-family="Arial Black" font-size="24" font-weight="bold" 
+                text-anchor="middle" fill="rgba(255,255,255,0.9)" filter="url(#shadow)" 
+                transform="rotate(-30 200 50)">
+            ${watermarkText}
+          </text>
+        </svg>
+      `;
+      
+      // Traiter l'image avec Sharp
+      const processedImage = await sharp(Buffer.from(response.data))
+        .composite([
+          {
+            input: Buffer.from(watermarkSvg),
+            gravity: 'center',
+            blend: 'over'
+          }
+        ])
+        .jpeg({ quality: 85 })
+        .toBuffer();
+
+      // Headers de sécurité
       res.set({
-        'Content-Type': response.headers['content-type'] || 'image/jpeg',
+        'Content-Type': 'image/jpeg',
         'Content-Security-Policy': "default-src 'none'; img-src 'self'",
         'X-Content-Type-Options': 'nosniff',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
         'X-Frame-Options': 'DENY',
-        'Content-Disposition': 'inline', // Empêche le téléchargement automatique
+        'Content-Disposition': 'inline',
       });
 
-      // Streamer l'image directement
-      response.data.pipe(res);
+      // Envoyer l'image avec filigrane
+      res.send(processedImage);
       
     } catch (streamError) {
-      console.error('Erreur lors du streaming de l\'image:', streamError);
+      console.error('Erreur lors du traitement de l\'image:', streamError);
       res.status(404).send('Image non accessible');
     }
 

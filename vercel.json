@@ -19,7 +19,7 @@
       "dest": "backend/server.js"
     },
     {
-      "src": "/share/([a-f0-9]{64})/image",
+      "src": "/share/([a-f0-9]+)/image",
       "dest": "backend/server.js"
     },
     {

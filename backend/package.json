@@ -1,5 +1,5 @@
 {
-  "name": "Hifadhwi-backend",
+  "name": "hifadhwi-backend",
   "version": "1.0.0",
   "description": "Backend pour le coffre-fort numérique Hifadhwi",
   "main": "server.js",
@@ -30,6 +30,7 @@
     "pg-hstore": "^2.3.4",
     "qrcode": "^1.5.4",
     "sequelize": "^6.37.7",
+    "sharp": "^0.34.3",
     "streamifier": "^0.1.1"
   },
   "devDependencies": {
