@@ -106,11 +106,9 @@ const SharedFilePage = () => {
     const title = `${file.filename} - Partagé par ${file.fileUser?.username || 'Utilisateur'}`;
     const description = `Fichier ${isPdf ? 'PDF' : isImage ? 'image' : ''} partagé de manière sécurisée via Hifadhwi. Propriétaire: ${file.fileUser?.username || 'Utilisateur'}`;
     
-    let imageUrl = 'https://hifadhui.site/favicon-black.png';
-    if (isImage && file.file_url) {
-      // Utiliser la route sécurisée avec filigrane Sharp
-      imageUrl = `https://hifadhui.site/share/${token}/image`;
-    }
+    let imageUrl = 'https://hifadhui.site/favicon.png';
+    // Utiliser toujours l'image par défaut pour les métadonnées Open Graph
+    // Plus de traitement d'image dynamique
     
     // Mettre à jour le titre de la page
     document.title = title;
