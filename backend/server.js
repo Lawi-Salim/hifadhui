@@ -42,8 +42,26 @@ console.log('🟢 [BOOT] VERCEL =', process.env.VERCEL ? '1' : '0');
 console.log('🟢 [BOOT] DATABASE_URL défini =', Boolean(process.env.DATABASE_URL));
 console.log('🟢 [BOOT] DB_HOST =', process.env.DB_HOST || '(non défini)');
 
-// Middlewares de sécurité
-app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+// Middlewares de sécurité avec CSP adaptée pour les partages
+app.use(helmet({ 
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "https:", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://hifadhui.site"],
+      fontSrc: ["'self'", "https:", "data:"],
+      connectSrc: ["'self'", "https://hifadhui.site"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'self'"],
+      upgradeInsecureRequests: []
+    }
+  }
+}));
 
 // Configuration CORS pour gérer les preflight requests
 app.use(cors({
@@ -85,35 +103,10 @@ if (process.env.NODE_ENV !== 'production') {
   // Logs uniquement en développement si nécessaire
 }
 
-// Route principale pour les partages avec détection bot/utilisateur
-app.get('/share/:token', async (req, res) => {
+// Route pour les métadonnées Open Graph (accessible via /api/share/:token/og)
+app.get('/api/share/:token/og', async (req, res) => {
   try {
     const token = req.params.token;
-    
-    // Vérifier si c'est un bot/crawler (User-Agent)
-    const userAgent = req.headers['user-agent'] || '';
-    const isBot = /bot|crawler|spider|facebook|twitter|whatsapp|telegram|discord/i.test(userAgent);
-    
-    console.log(`🔍 [DEBUG] /share/${token} - User-Agent: ${userAgent.substring(0, 50)}... - IsBot: ${isBot}`);
-    
-    if (!isBot) {
-      // Utilisateur normal - servir l'index.html React
-      try {
-        const indexPath = path.join(__dirname, '../frontend/build/index.html');
-        if (fs.existsSync(indexPath)) {
-          const html = fs.readFileSync(indexPath, 'utf8');
-          return res.send(html);
-        } else {
-          // Fallback si le build n'existe pas
-          return res.redirect(301, 'https://hifadhui.site/');
-        }
-      } catch (err) {
-        console.error('Erreur lecture index.html:', err);
-        return res.redirect(301, 'https://hifadhui.site/');
-      }
-    }
-
-    // Bot/Crawler - servir HTML avec métadonnées Open Graph
     const fileShare = await FileShare.findOne({
       where: {
         token: token,
