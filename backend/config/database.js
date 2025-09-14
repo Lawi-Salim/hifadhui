@@ -15,10 +15,10 @@ const dbConfig = {
     collate: 'utf8_unicode_ci',
   },
   pool: {
-    max: process.env.VERCEL ? 1 : 5,
+    max: 1,
     min: 0,
-    acquire: 30000,
-    idle: 10000,
+    acquire: 60000,
+    idle: 300000,
   },
   define: {
     timestamps: true,
@@ -41,6 +41,15 @@ if (isProduction) {
       require: true,
       rejectUnauthorized: false, // Nécessaire pour les connexions à Supabase
     },
+  };
+  
+  // Configuration spéciale pour Vercel + Supabase
+  dbConfig.pool = {
+    max: 1,
+    min: 0,
+    acquire: 60000,
+    idle: 300000,
+    evict: 1000,
   };
 }
 
