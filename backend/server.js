@@ -102,10 +102,21 @@ if (process.env.NODE_ENV !== 'production') {
   console.log(' [DEBUG] Mode développement activé');
 }
 
-// Route pour les métadonnées Open Graph (accessible via /api/share/:token/og)
-app.get('/api/share/:token/og', async (req, res) => {
+// Route spéciale pour les liens de partage avec métadonnées Open Graph
+app.get('/share/:token', async (req, res) => {
   try {
     const token = req.params.token;
+
+    // Vérifier si c'est un bot/crawler (User-Agent)
+    const userAgent = req.headers['user-agent'] || '';
+    const isBot = /bot|crawler|spider|facebook|twitter|whatsapp|telegram|discord/i.test(userAgent);
+
+    if (!isBot) {
+      // Utilisateur normal - rediriger vers l'app React directement
+      return res.redirect(`https://hifadhui.site/share/${token}`);
+    }
+
+    // Bot/Crawler - servir HTML avec métadonnées Open Graph
     const fileShare = await FileShare.findOne({
       where: {
         token: token,
@@ -123,107 +134,52 @@ app.get('/api/share/:token/og', async (req, res) => {
     });
 
     if (!fileShare) {
-      return res.status(404).json({ error: 'Lien de partage invalide ou expiré' });
+      return res.status(404).send('<h1>Lien de partage invalide ou expiré</h1>');
     }
 
     const file = fileShare.file;
     const isImage = file.mimetype?.startsWith('image/');
     const isPdf = file.filename?.toLowerCase().endsWith('.pdf');
-    
-    // Utiliser une image statique par défaut pour tous les partages
+
+    // Utiliser favicon.png comme image par défaut pour tous les partages
     const imageUrl = 'https://hifadhui.site/favicon.png';
 
-    const metadata = {
-      title: `${file.filename} - Partagé par ${file.fileUser.username}`,
-      description: `Fichier ${isPdf ? 'PDF' : isImage ? 'image' : ''} partagé de manière sécurisée via Hifadhwi. Propriétaire: ${file.fileUser.username}`,
-      image: imageUrl,
-      url: `https://hifadhui.site/share/${token}`,
-      siteName: 'Hifadhwi',
-      filename: file.filename,
-      username: file.fileUser.username,
-      isImage,
-      isPdf
-    };
+    const title = `${file.filename} - Partagé par ${file.fileUser.username}`;
+    const description = `Fichier ${isPdf ? 'PDF' : isImage ? 'image' : ''} partagé de manière sécurisée via Hifadhwi. Propriétaire: ${file.fileUser.username}`;
+    const siteName = 'Hifadhwi';
 
     const html = `
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="utf-8" />
-    <link rel="icon" type="image/png" href="https://hifadhui.site/favicon.png" />
-    <link rel="shortcut icon" type="image/png" href="https://hifadhui.site/favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <title>${title}</title>
+    <meta name="description" content="${description}" />
     
-    <!-- Métadonnées Open Graph pour WhatsApp/Facebook -->
-    <meta property="og:title" content="${metadata.title}" />
-    <meta property="og:description" content="${metadata.description}" />
-    <meta property="og:image" content="${metadata.image}" />
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://hifadhui.site/share/${token}" />
+    <meta property="og:title" content="${title}" />
+    <meta property="og:description" content="${description}" />
+    <meta property="og:image" content="${imageUrl}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:url" content="${metadata.url}" />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="${metadata.siteName}" />
+    <meta property="og:site_name" content="Hifadhwi" />
+    <meta property="og:site_name" content="${siteName}" />
+    <meta property="og:logo" content="https://hifadhui.site/favicon.png" />
     
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${metadata.title}" />
-    <meta name="twitter:description" content="${metadata.description}" />
-    <meta name="twitter:image" content="${metadata.image}" />
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://hifadhui.site/share/${token}" />
+    <meta property="twitter:title" content="${title}" />
+    <meta property="twitter:description" content="${description}" />
+    <meta property="twitter:image" content="${imageUrl}" />
     
-    <title>${metadata.title}</title>
-    
-    <style>
-      body { 
-        font-family: Arial, sans-serif; 
-        text-align: center; 
-        padding: 50px; 
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        min-height: 100vh;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-      }
-      .container {
-        background: rgba(255,255,255,0.1);
-        padding: 40px;
-        border-radius: 15px;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-      }
-      h1 { margin-bottom: 20px; }
-      p { margin-bottom: 30px; opacity: 0.9; }
-      a { 
-        color: #fff; 
-        background: rgba(255,255,255,0.2);
-        padding: 12px 24px;
-        border-radius: 25px;
-        text-decoration: none;
-        font-weight: bold;
-        transition: all 0.3s ease;
-      }
-      a:hover {
-        background: rgba(255,255,255,0.3);
-        transform: translateY(-2px);
-      }
-    </style>
-    <script>
-      // Rediriger les navigateurs normaux vers React
-      if (!/bot|crawler|spider|facebook|twitter|whatsapp|telegram|discord/i.test(navigator.userAgent)) {
-        window.location.href = '${metadata.url}';
-      }
-    </script>
+    <meta http-equiv="refresh" content="0;url=https://hifadhui.site/share/${token}" />
 </head>
 <body>
-    <div class="container">
-        <h1> Fichier partagé</h1>
-        <p>Ce fichier vous a été partagé par <strong>${metadata.username}</strong> via Hifadhwi</p>
-        <p><strong>Fichier:</strong> ${metadata.filename}</p>
-        <a href="${metadata.url}">Voir le fichier</a>
-    </div>
+    <h1>Redirection vers le fichier partagé...</h1>
+    <p>Si vous n'êtes pas redirigé automatiquement, <a href="https://hifadhui.site/share/${token}">cliquez ici</a>.</p>
 </body>
 </html>`;
 
@@ -231,7 +187,7 @@ app.get('/api/share/:token/og', async (req, res) => {
 
   } catch (error) {
     console.error('Erreur lors de la génération des métadonnées:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).send('<h1>Erreur serveur</h1>');
   }
 });
 
