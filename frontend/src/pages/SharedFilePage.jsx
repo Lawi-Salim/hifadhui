@@ -145,9 +145,8 @@ const SharedFilePage = () => {
       
       // Si c'est un chemin Cloudinary (avec ou sans version)
       if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl)) {
-        // Décoder l'URL pour éviter les problèmes d'encodage
-        const decodedUrl = decodeURIComponent(fileUrl);
-        return `https://res.cloudinary.com/ddxypgvuh/image/upload/${decodedUrl}`;
+        // Garder l'encodage pour l'URL Cloudinary (ne pas décoder)
+        return `https://res.cloudinary.com/ddxypgvuh/image/upload/${fileUrl}`;
       }
       
       // Pour les chemins locaux, utiliser l'API backend
