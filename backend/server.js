@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import axios from 'axios';
 
 dotenv.config();
 
@@ -92,8 +93,8 @@ app.get('/share/:token', async (req, res) => {
     const isBot = /bot|crawler|spider|facebook|twitter|whatsapp|telegram|discord/i.test(userAgent);
     
     if (!isBot) {
-      // Utilisateur normal - rediriger vers l'app React directement
-      return res.redirect(`https://hifadhui.site/share/${token}`);
+      // Utilisateur normal - servir l'app React avec redirection côté client
+      return res.redirect(`https://hifadhui.site/?redirect=/share/${token}`);
     }
 
     // Bot/Crawler - servir HTML avec métadonnées Open Graph
@@ -137,6 +138,8 @@ app.get('/share/:token', async (req, res) => {
 <html lang="fr">
 <head>
     <meta charset="utf-8" />
+    <link rel="icon" type="image/png" href="https://hifadhui.site/favicon-black.png" />
+    <link rel="shortcut icon" type="image/png" href="https://hifadhui.site/favicon-black.png" />
     <title>${title}</title>
     <meta name="description" content="${description}" />
     
@@ -149,7 +152,6 @@ app.get('/share/:token', async (req, res) => {
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:site_name" content="${siteName}" />
-    <meta property="og:logo" content="https://hifadhui.site/favicon-black.png" />
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
@@ -203,17 +205,30 @@ app.get('/share/:token/image', async (req, res) => {
       return res.status(404).send('Image non accessible');
     }
 
-    // Headers de sécurité pour empêcher le téléchargement
-    res.set({
-      'Content-Security-Policy': "default-src 'none'; img-src 'self'",
-      'X-Content-Type-Options': 'nosniff',
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    });
+    // Récupérer l'image depuis Cloudinary et la servir avec protection
+    
+    try {
+      const response = await axios.get(imageUrl, { responseType: 'stream' });
+      
+      // Headers de sécurité pour empêcher le téléchargement
+      res.set({
+        'Content-Type': response.headers['content-type'] || 'image/jpeg',
+        'Content-Security-Policy': "default-src 'none'; img-src 'self'",
+        'X-Content-Type-Options': 'nosniff',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'X-Frame-Options': 'DENY',
+        'Content-Disposition': 'inline', // Empêche le téléchargement automatique
+      });
 
-    // Rediriger vers Cloudinary mais avec headers de sécurité
-    res.redirect(imageUrl);
+      // Streamer l'image directement
+      response.data.pipe(res);
+      
+    } catch (streamError) {
+      console.error('Erreur lors du streaming de l\'image:', streamError);
+      res.status(404).send('Image non accessible');
+    }
 
   } catch (error) {
     console.error('Erreur lors de la récupération de l\'image:', error);
