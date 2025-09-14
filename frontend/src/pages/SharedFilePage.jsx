@@ -49,6 +49,11 @@ const SharedFilePage = () => {
         });
         console.log('URL du fichier:', response.data?.file?.file_url); // Debug URL
         setFileData(response.data);
+        
+        // Injecter les métadonnées Open Graph dynamiquement
+        if (response.data?.file) {
+          updateOpenGraphMeta(response.data.file, response.data.share, token);
+        }
       } catch (err) {
         setError(err.response?.data?.error || 'Erreur lors du chargement du fichier');
       } finally {
@@ -92,6 +97,68 @@ const SharedFilePage = () => {
       sessionStorage.removeItem('tabsActive');
     };
   }, [token]);
+
+  // Fonction pour mettre à jour les métadonnées Open Graph
+  const updateOpenGraphMeta = (file, share, token) => {
+    const isImage = file.mimetype?.startsWith('image/');
+    const isPdf = file.filename?.toLowerCase().endsWith('.pdf');
+    
+    const title = `${file.filename} - Partagé par ${file.fileUser?.username || 'Utilisateur'}`;
+    const description = `Fichier ${isPdf ? 'PDF' : isImage ? 'image' : ''} partagé de manière sécurisée via Hifadhwi. Propriétaire: ${file.fileUser?.username || 'Utilisateur'}`;
+    
+    let imageUrl = 'https://hifadhui.site/favicon-black.png';
+    if (isImage && file.file_url) {
+      // Utiliser la route sécurisée avec filigrane Sharp
+      imageUrl = `https://hifadhui.site/share/${token}/image`;
+    }
+    
+    // Mettre à jour le titre de la page
+    document.title = title;
+    
+    // Mettre à jour ou créer les balises meta Open Graph
+    const updateOrCreateMeta = (property, content) => {
+      let meta = document.querySelector(`meta[property="${property}"]`);
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('property', property);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
+    
+    const updateOrCreateMetaName = (name, content) => {
+      let meta = document.querySelector(`meta[name="${name}"]`);
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', name);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
+    
+    // Open Graph
+    updateOrCreateMeta('og:title', title);
+    updateOrCreateMeta('og:description', description);
+    updateOrCreateMeta('og:image', imageUrl);
+    updateOrCreateMeta('og:image:width', '1200');
+    updateOrCreateMeta('og:image:height', '630');
+    updateOrCreateMeta('og:url', `https://hifadhui.site/share/${token}`);
+    updateOrCreateMeta('og:type', 'website');
+    updateOrCreateMeta('og:site_name', 'Hifadhwi');
+    
+    // Twitter Card
+    updateOrCreateMetaName('twitter:card', 'summary_large_image');
+    updateOrCreateMetaName('twitter:title', title);
+    updateOrCreateMetaName('twitter:description', description);
+    updateOrCreateMetaName('twitter:image', imageUrl);
+    
+    console.log('🔍 [DEBUG] Métadonnées Open Graph mises à jour:', {
+      title,
+      description,
+      imageUrl,
+      token
+    });
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Date inconnue';
