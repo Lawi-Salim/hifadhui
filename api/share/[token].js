@@ -20,8 +20,29 @@ export default async function handler(request) {
   console.log('🔍 [Edge Function] Is Bot:', isBot)
   
   if (!isBot) {
-    // Utilisateur normal - rediriger vers l'app React
-    return Response.redirect(`https://hifadhui.site/share/${finalToken}`, 302)
+    // Utilisateur normal - servir l'index.html directement pour éviter les boucles
+    try {
+      const indexResponse = await fetch('https://hifadhui.site/')
+      const indexHtml = await indexResponse.text()
+      return new Response(indexHtml, {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+      })
+    } catch (error) {
+      // Fallback simple
+      return new Response(`
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Hifadhwi</title>
+  <script>window.location.href = '/share/${finalToken}';</script>
+</head>
+<body>
+  <p>Redirection...</p>
+</body>
+</html>`, {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+      })
+    }
   }
   
   try {
