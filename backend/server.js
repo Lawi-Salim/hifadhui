@@ -89,12 +89,18 @@ app.get('/share/:token', async (req, res) => {
     
     // Vérifier si c'est un bot/crawler (User-Agent)
     const userAgent = req.headers['user-agent'] || '';
-    const isBot = /bot|crawler|spider|facebook|twitter|whatsapp|telegram|discord/i.test(userAgent);
+    const isBot = /bot|crawler|spider|facebook|twitter|whatsapp|telegram|discord|facebookexternalhit/i.test(userAgent);
+    
+    console.log('🤖 User-Agent:', userAgent);
+    console.log('🤖 Is Bot:', isBot);
     
     if (!isBot) {
       // Utilisateur normal - rediriger vers l'app React directement
+      console.log('👤 Redirection utilisateur normal vers React');
       return res.redirect(`https://hifadhui.site/share/${token}`);
     }
+    
+    console.log('🤖 Bot détecté - génération métadonnées Open Graph');
 
     // Bot/Crawler - servir HTML avec métadonnées Open Graph
     const fileShare = await FileShare.findOne({
