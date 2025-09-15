@@ -107,6 +107,21 @@ const SharedFilePage = () => {
     return <FaFileAlt className="file-icon" />;
   };
 
+  const getCloudinaryUrl = (fileUrl, isImage = true) => {
+    if (!fileUrl) return null;
+    
+    // Si c'est déjà une URL complète, la retourner telle quelle
+    if (fileUrl.startsWith('http')) {
+      return fileUrl;
+    }
+    
+    // Construire l'URL Cloudinary selon le type de fichier
+    const baseUrl = 'https://res.cloudinary.com/ddxypgvuh';
+    const resourceType = isImage ? 'image' : 'raw';
+    
+    return `${baseUrl}/${resourceType}/upload/${fileUrl}`;
+  };
+
   const renderFilePreview = (file) => {
     console.log('Rendu aperçu pour:', file.filename, 'URL:', file.file_url); // Debug
     
@@ -122,11 +137,14 @@ const SharedFilePage = () => {
     }
 
     if (file.mimetype?.startsWith('image/')) {
+      const imageUrl = getCloudinaryUrl(file.file_url, true);
+      console.log('URL image construite:', imageUrl); // Debug
+      
       return (
         <div className="shared-file-preview">
           <div className="image-preview-container">
             <img 
-              src={file.file_url}
+              src={imageUrl}
               alt={file.filename}
               className="shared-image"
               onContextMenu={(e) => e.preventDefault()}
@@ -138,11 +156,14 @@ const SharedFilePage = () => {
         </div>
       );
     } else if (file.filename?.toLowerCase().endsWith('.pdf')) {
+      const pdfUrl = getCloudinaryUrl(file.file_url, false);
+      console.log('URL PDF construite:', pdfUrl); // Debug
+      
       return (
         <div className="shared-file-preview">
           <div className="pdf-preview-container">
             <PdfPreview 
-              fileUrl={file.file_url} 
+              fileUrl={pdfUrl} 
               fileId={file.id}
               className="shared-pdf-preview"
             />
