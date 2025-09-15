@@ -135,17 +135,8 @@ router.get('/:token/meta', async (req, res) => {
     const isImage = file.mimetype?.startsWith('image/');
     const isPdf = file.filename?.toLowerCase().endsWith('.pdf');
     
-    // Construire l'URL de l'image pour Open Graph
-    let imageUrl = 'https://hifadhui.site/favicon.png'; // Image par défaut
-    
-    if (isImage && file.file_url) {
-      // Construire l'URL Cloudinary pour l'image
-      if (file.file_url.startsWith('http')) {
-        imageUrl = file.file_url;
-      } else if (file.file_url.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(file.file_url)) {
-        imageUrl = `https://res.cloudinary.com/ddxypgvuh/image/upload/${file.file_url}`;
-      }
-    }
+    // Utiliser toujours le favicon comme image d'aperçu pour tous les types de fichiers
+    let imageUrl = 'https://hifadhui.site/favicon.png';
 
     const metadata = {
       title: `${file.filename} - Partagé par ${file.fileUser.username}`,

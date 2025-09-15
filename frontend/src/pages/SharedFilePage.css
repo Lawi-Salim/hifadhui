@@ -122,23 +122,20 @@
 }
 
 .watermark-text {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: bold;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.8);
   text-shadow: 
-    3px 3px 6px rgba(0, 0, 0, 0.9),
-    -3px -3px 6px rgba(0, 0, 0, 0.9),
-    3px -3px 6px rgba(0, 0, 0, 0.9),
-    -3px 3px 6px rgba(0, 0, 0, 0.9),
-    0 0 20px rgba(0, 0, 0, 0.8);
+    2px 2px 4px rgba(0, 0, 0, 0.8),
+    -2px -2px 4px rgba(0, 0, 0, 0.8),
+    2px -2px 4px rgba(0, 0, 0, 0.8),
+    -2px 2px 4px rgba(0, 0, 0, 0.8);
   transform: rotate(-45deg);
   user-select: none;
   white-space: nowrap;
   text-transform: uppercase;
-  letter-spacing: 0.3em;
-  backdrop-filter: blur(2px);
-  opacity: 0.85;
-  font-family: 'Arial Black', Arial, sans-serif;
+  letter-spacing: 0.2em;
+  backdrop-filter: blur(1px);
 }
 
 .no-preview {

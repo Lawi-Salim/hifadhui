@@ -89,18 +89,12 @@ app.get('/share/:token', async (req, res) => {
     
     // Vérifier si c'est un bot/crawler (User-Agent)
     const userAgent = req.headers['user-agent'] || '';
-    const isBot = /bot|crawler|spider|facebook|twitter|whatsapp|telegram|discord|facebookexternalhit/i.test(userAgent);
-    
-    console.log('🤖 User-Agent:', userAgent);
-    console.log('🤖 Is Bot:', isBot);
+    const isBot = /bot|crawler|spider|facebook|twitter|whatsapp|telegram|discord/i.test(userAgent);
     
     if (!isBot) {
-      // Utilisateur normal - rediriger vers l'app React avec un paramètre différent
-      console.log('👤 Redirection utilisateur normal vers React');
-      return res.redirect(`https://hifadhui.site/?redirect=/share/${token}`);
+      // Utilisateur normal - rediriger vers l'app React directement
+      return res.redirect(`https://hifadhui.site/share/${token}`);
     }
-    
-    console.log('🤖 Bot détecté - génération métadonnées Open Graph');
 
     // Bot/Crawler - servir HTML avec métadonnées Open Graph
     const fileShare = await FileShare.findOne({
@@ -127,16 +121,8 @@ app.get('/share/:token', async (req, res) => {
     const isImage = file.mimetype?.startsWith('image/');
     const isPdf = file.filename?.toLowerCase().endsWith('.pdf');
     
+    // Utiliser toujours le favicon comme image d'aperçu pour tous les types de fichiers
     let imageUrl = 'https://hifadhui.site/favicon.png';
-    if (isImage && file.file_url) {
-      if (file.file_url.startsWith('http')) {
-        imageUrl = file.file_url;
-      } else if (file.file_url.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(file.file_url)) {
-        // Construire l'URL Cloudinary avec l'encodage correct
-        imageUrl = `https://res.cloudinary.com/ddxypgvuh/image/upload/${file.file_url}`;
-        console.log('🖼️ URL image pour Open Graph:', imageUrl);
-      }
-    }
 
     const title = `${file.filename} - Partagé par ${file.fileUser.username}`;
     const description = `Fichier ${isPdf ? 'PDF' : isImage ? 'image' : ''} partagé de manière sécurisée via Hifadhwi. Propriétaire: ${file.fileUser.username}`;

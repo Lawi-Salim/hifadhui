@@ -47,7 +47,6 @@ const SharedFilePage = () => {
           fileKeys: response.data?.file ? Object.keys(response.data.file) : [],
           shareKeys: response.data?.share ? Object.keys(response.data.share) : []
         });
-        console.log('URL du fichier:', response.data?.file?.file_url); // Debug URL
         setFileData(response.data);
       } catch (err) {
         setError(err.response?.data?.error || 'Erreur lors du chargement du fichier');
@@ -134,23 +133,13 @@ const SharedFilePage = () => {
 
     // Construire l'URL complète pour Cloudinary
     const getFullImageUrl = (fileUrl) => {
-      console.log('🔍 getFullImageUrl appelée avec:', fileUrl);
-      
-      if (!fileUrl) return null;
-      
-      // Si c'est déjà une URL complète, l'utiliser directement
       if (fileUrl.startsWith('http')) {
-        return fileUrl;
-      }
-      
-      // Si c'est un chemin Cloudinary (avec ou sans version)
-      if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl)) {
-        // Garder l'encodage pour l'URL Cloudinary (ne pas décoder)
+        return fileUrl; // URL complète déjà
+      } else if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl)) {
         return `https://res.cloudinary.com/ddxypgvuh/image/upload/${fileUrl}`;
+      } else {
+        return `${process.env.REACT_APP_API_BASE_URL}${fileUrl}`;
       }
-      
-      // Pour les chemins locaux, utiliser l'API backend
-      return `${process.env.REACT_APP_API_BASE_URL}/files/${file.id}/download`;
     };
 
     if (file.mimetype?.startsWith('image/')) {
@@ -165,14 +154,9 @@ const SharedFilePage = () => {
               alt={file.filename}
               className="shared-image"
               onContextMenu={(e) => e.preventDefault()}
-              onError={(e) => {
-                console.error('❌ Erreur chargement image:', imageUrl);
-                console.log('Tentative avec URL API backend...');
-                e.target.src = `${process.env.REACT_APP_API_BASE_URL}/files/${file.id}/download`;
-              }}
             />
             <div className="watermark-overlay">
-              <span className="watermark-text">© {file.owner} - Hifadhwi</span>
+              <span className="watermark-text">{file.owner}</span>
             </div>
           </div>
         </div>
@@ -187,7 +171,7 @@ const SharedFilePage = () => {
               className="shared-pdf-preview"
             />
             <div className="watermark-overlay">
-              <span className="watermark-text">© {file.owner} - Hifadhwi</span>
+              <span className="watermark-text">{file.owner}</span>
             </div>
           </div>
         </div>
