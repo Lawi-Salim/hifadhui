@@ -47,6 +47,10 @@
       "dest": "/frontend/manifest.json"
     },
     {
+      "src": "/share/([a-f0-9]{64})",
+      "dest": "/api/share/[token].js?token=$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/frontend/index.html"
     }
