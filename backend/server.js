@@ -121,7 +121,7 @@ app.get('/share/:token', async (req, res) => {
     const isImage = file.mimetype?.startsWith('image/');
     const isPdf = file.filename?.toLowerCase().endsWith('.pdf');
     
-    // Utiliser toujours le favicon comme image d'aperçu pour tous les types de fichiers
+    // Utiliser le favicon comme image Open Graph
     let imageUrl = 'https://hifadhui.site/favicon.png';
 
     const title = `${file.filename} - Partagé par ${file.fileUser.username}`;
@@ -141,16 +141,19 @@ app.get('/share/:token', async (req, res) => {
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${description}" />
     <meta property="og:image" content="${imageUrl}" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Hifadhwi - Coffre-fort numérique" />
     <meta property="og:site_name" content="Hifadhwi" />
     
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:card" content="summary" />
     <meta property="twitter:url" content="https://hifadhui.site/share/${token}" />
     <meta property="twitter:title" content="${title}" />
     <meta property="twitter:description" content="${description}" />
     <meta property="twitter:image" content="${imageUrl}" />
+    <meta property="twitter:image:alt" content="Hifadhwi - Coffre-fort numérique" />
     
     <meta http-equiv="refresh" content="0;url=https://hifadhui.site/share/${token}" />
 </head>
