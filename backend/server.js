@@ -168,29 +168,39 @@ app.get('/share/:token', async (req, res) => {
     <link rel="icon" type="image/png" href="${imageUrl}" />
     <link rel="shortcut icon" type="image/png" href="${imageUrl}" />
     
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph / Facebook - Optimisé pour WhatsApp -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Hifadhwi" />
     <meta property="og:url" content="${shareUrl}" />
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${description}" />
     <meta property="og:image" content="${imageUrl}" />
-    <meta property="og:image:alt" content="Logo Hifadhwi - Partage sécurisé de fichiers" />
+    <meta property="og:image:url" content="${imageUrl}" />
+    <meta property="og:image:secure_url" content="${imageUrl}" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="512" />
     <meta property="og:image:height" content="512" />
-    <meta property="og:site_name" content="Hifadhwi" />
+    <meta property="og:image:alt" content="Logo Hifadhwi - Partage sécurisé de fichiers" />
     <meta property="og:locale" content="fr_FR" />
     
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary" />
+    <!-- Twitter Card - Amélioré -->
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@hifadhwi" />
+    <meta name="twitter:creator" content="@hifadhwi" />
     <meta name="twitter:title" content="${title}" />
     <meta name="twitter:description" content="${description}" />
     <meta name="twitter:image" content="${imageUrl}" />
     <meta name="twitter:image:alt" content="Logo Hifadhwi - Partage sécurisé de fichiers" />
     
-    <!-- WhatsApp / Telegram -->
-    <meta property="og:image:secure_url" content="${imageUrl}" />
+    <!-- Métadonnées supplémentaires pour de meilleurs aperçus -->
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="msapplication-TileColor" content="#2563eb" />
+    <meta name="msapplication-TileImage" content="${imageUrl}" />
+    
+    <!-- Balises spécifiques pour les applications mobiles -->
+    <meta name="apple-mobile-web-app-title" content="Hifadhwi" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     
     <!-- Refresh automatique vers React App -->
     <meta http-equiv="refresh" content="3;url=/#/share/${token}" />

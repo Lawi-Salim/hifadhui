@@ -134,21 +134,44 @@ const SharedFilePage = () => {
       meta.setAttribute('content', content);
     };
     
-    // Open Graph
-    updateOrCreateMeta('og:title', title);
-    updateOrCreateMeta('og:description', description);
-    updateOrCreateMeta('og:image', imageUrl);
-    updateOrCreateMeta('og:image:width', '1200');
-    updateOrCreateMeta('og:image:height', '630');
-    updateOrCreateMeta('og:url', `https://hifadhui.site/share/${token}`);
+    // Mise à jour des balises meta de base
+    updateOrCreateMetaName('description', description);
+    updateOrCreateMetaName('author', 'Hifadhwi');
+    updateOrCreateMetaName('robots', 'index, follow');
+    
+    // Open Graph - Métadonnées essentielles pour WhatsApp
     updateOrCreateMeta('og:type', 'website');
     updateOrCreateMeta('og:site_name', 'Hifadhwi');
+    updateOrCreateMeta('og:title', title);
+    updateOrCreateMeta('og:description', description);
+    updateOrCreateMeta('og:url', `https://hifadhui.site/share/${token}`);
+    updateOrCreateMeta('og:image', imageUrl);
+    updateOrCreateMeta('og:image:url', imageUrl);
+    updateOrCreateMeta('og:image:secure_url', imageUrl);
+    updateOrCreateMeta('og:image:type', 'image/png');
+    updateOrCreateMeta('og:image:width', '512');
+    updateOrCreateMeta('og:image:height', '512');
+    updateOrCreateMeta('og:image:alt', 'Logo Hifadhwi - Partage sécurisé de fichiers');
+    updateOrCreateMeta('og:locale', 'fr_FR');
     
-    // Twitter Card
+    // Twitter Card - Amélioré pour de meilleurs aperçus
     updateOrCreateMetaName('twitter:card', 'summary_large_image');
+    updateOrCreateMetaName('twitter:site', '@hifadhwi');
+    updateOrCreateMetaName('twitter:creator', '@hifadhwi');
     updateOrCreateMetaName('twitter:title', title);
     updateOrCreateMetaName('twitter:description', description);
     updateOrCreateMetaName('twitter:image', imageUrl);
+    updateOrCreateMetaName('twitter:image:alt', 'Logo Hifadhwi - Partage sécurisé de fichiers');
+    
+    // Métadonnées supplémentaires pour de meilleurs aperçus
+    updateOrCreateMetaName('theme-color', '#2563eb');
+    updateOrCreateMetaName('msapplication-TileColor', '#2563eb');
+    updateOrCreateMetaName('msapplication-TileImage', imageUrl);
+    
+    // Balises spécifiques pour les applications mobiles
+    updateOrCreateMetaName('apple-mobile-web-app-title', 'Hifadhwi');
+    updateOrCreateMetaName('apple-mobile-web-app-capable', 'yes');
+    updateOrCreateMetaName('apple-mobile-web-app-status-bar-style', 'default');
     
     console.log('🔍 [DEBUG] Métadonnées Open Graph mises à jour:', {
       title,
