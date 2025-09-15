@@ -135,7 +135,7 @@ router.get('/:token/meta', async (req, res) => {
     const isImage = file.mimetype?.startsWith('image/');
     const isPdf = file.filename?.toLowerCase().endsWith('.pdf');
     
-    // Utiliser toujours le favicon comme image d'aperçu pour tous les types de fichiers
+    // Utiliser le favicon comme image Open Graph
     let imageUrl = 'https://hifadhui.site/favicon.png';
 
     const metadata = {
