@@ -39,7 +39,6 @@ const PrivateRoute = ({ children }) => {
 // Composant pour rediriger les utilisateurs connectés
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  const location = useLocation();
   
   if (loading) {
     return (
@@ -47,11 +46,6 @@ const PublicRoute = ({ children }) => {
         <div className="loading"></div>
       </div>
     );
-  }
-  
-  // Ne pas rediriger si on est sur une page de partage
-  if (location.pathname.startsWith('/share/')) {
-    return children;
   }
   
   // Si utilisateur connecté, rediriger vers dashboard
@@ -138,11 +132,7 @@ function AppContent() {
             <Route path="/admin/users" element={<ListeUtilisateurs />} />
             <Route path="/admin" element={<AdminDashboard />} />
           </Route>
-          <Route path="/share/:token" element={
-            <PublicRoute>
-              <SharedFilePage />
-            </PublicRoute>
-          } />
+          <Route path="/share/:token" element={<SharedFilePage />} />
           <Route path="/" element={
             <PublicRoute>
               <HomePage />

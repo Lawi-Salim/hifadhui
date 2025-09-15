@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FiClock, FiUser, FiEye, FiShield, FiAlertCircle } from 'react-icons/fi';
 import { FaFilePdf, FaFileImage, FaFileAlt } from 'react-icons/fa';
 import PdfPreview from '../components/Common/PdfPreview';
-import axios from 'axios';
+import api from '../services/api';
 import './SharedFilePage.css';
 
 const SharedFilePage = () => {
@@ -15,47 +15,6 @@ const SharedFilePage = () => {
   const hasFetched = useRef(false);
 
   useEffect(() => {
-    // Ajouter des métadonnées Open Graph dynamiques
-    const updateOpenGraphMeta = async () => {
-      try {
-        const isProd = process.env.NODE_ENV === 'production';
-        const API_BASE_URL = process.env.REACT_APP_API_URL || (isProd ? '/api/v1' : 'http://localhost:5000/api/v1');
-        
-        console.log('🔍 [DEBUG OG] Récupération métadonnées pour token:', token);
-        
-        const metaResponse = await axios.get(`${API_BASE_URL}/share/${token}/meta`);
-        const metadata = metaResponse.data;
-        
-        console.log('🔍 [DEBUG OG] Métadonnées reçues:', metadata);
-        
-        // Mettre à jour les métadonnées Open Graph
-        document.title = metadata.title;
-        
-        // Mettre à jour ou créer les balises meta
-        const updateMeta = (property, content) => {
-          let meta = document.querySelector(`meta[property="${property}"]`);
-          if (!meta) {
-            meta = document.createElement('meta');
-            meta.setAttribute('property', property);
-            document.head.appendChild(meta);
-          }
-          meta.setAttribute('content', content);
-          console.log(`🔍 [DEBUG OG] Mis à jour ${property}:`, content);
-        };
-        
-        updateMeta('og:title', metadata.title);
-        updateMeta('og:description', metadata.description);
-        updateMeta('og:image', metadata.image);
-        updateMeta('og:url', metadata.url);
-        updateMeta('twitter:title', metadata.title);
-        updateMeta('twitter:description', metadata.description);
-        updateMeta('twitter:image', metadata.image);
-        
-      } catch (error) {
-        console.error('🔍 [DEBUG OG] Erreur récupération métadonnées:', error);
-      }
-    };
-
     const fetchSharedFile = async () => {
       try {
         // Vérifier si cette session globale a déjà été comptée (tous onglets confondus)
@@ -64,21 +23,11 @@ const SharedFilePage = () => {
         
         console.log('🔍 [DEBUG Frontend] Token:', token, 'Already viewed:', alreadyViewed);
         
-        // Créer une instance axios sans intercepteurs pour les partages publics
-        const isProd = process.env.NODE_ENV === 'production';
-        const API_BASE_URL = process.env.REACT_APP_API_URL || (isProd ? '/api/v1' : 'http://localhost:5000/api/v1');
-        
-        console.log('🔍 [DEBUG Frontend] API_BASE_URL:', API_BASE_URL);
-        console.log('🔍 [DEBUG Frontend] URL complète:', `${API_BASE_URL}/share/${token}`);
-        
-        const response = await axios.get(`${API_BASE_URL}/share/${token}`, {
+        const response = await api.get(`/share/${token}`, {
           headers: {
             'X-Already-Viewed': alreadyViewed ? 'true' : 'false'
           }
         });
-        
-        console.log('🔍 [DEBUG Frontend] Response status:', response.status);
-        console.log('🔍 [DEBUG Frontend] Response headers:', response.headers);
         
         // Marquer comme vu pour cette session globale
         if (!alreadyViewed) {
@@ -88,12 +37,6 @@ const SharedFilePage = () => {
         }
         
         console.log('Données reçues:', response.data); // Debug
-        console.log('Structure des données:', {
-          hasFile: !!response.data?.file,
-          hasShare: !!response.data?.share,
-          fileKeys: response.data?.file ? Object.keys(response.data.file) : [],
-          shareKeys: response.data?.share ? Object.keys(response.data.share) : []
-        });
         setFileData(response.data);
       } catch (err) {
         setError(err.response?.data?.error || 'Erreur lors du chargement du fichier');
@@ -104,7 +47,6 @@ const SharedFilePage = () => {
 
     if (token && !hasFetched.current) {
       hasFetched.current = true;
-      updateOpenGraphMeta(); // Mettre à jour les métadonnées en premier
       fetchSharedFile();
     }
 
@@ -179,26 +121,12 @@ const SharedFilePage = () => {
       );
     }
 
-    // Construire l'URL complète pour Cloudinary
-    const getFullImageUrl = (fileUrl) => {
-      if (fileUrl.startsWith('http')) {
-        return fileUrl; // URL complète déjà
-      } else if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl)) {
-        return `https://res.cloudinary.com/ddxypgvuh/image/upload/${fileUrl}`;
-      } else {
-        return `${process.env.REACT_APP_API_BASE_URL}${fileUrl}`;
-      }
-    };
-
     if (file.mimetype?.startsWith('image/')) {
-      const imageUrl = getFullImageUrl(file.file_url);
-      console.log('URL image construite:', imageUrl); // Debug
-      
       return (
         <div className="shared-file-preview">
           <div className="image-preview-container">
             <img 
-              src={imageUrl}
+              src={file.file_url}
               alt={file.filename}
               className="shared-image"
               onContextMenu={(e) => e.preventDefault()}
@@ -257,17 +185,6 @@ const SharedFilePage = () => {
           <button onClick={() => navigate('/')} className="btn btn-primary">
             Retour à l'accueil
           </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!fileData || !fileData.file || !fileData.share) {
-    return (
-      <div className="shared-file-page">
-        <div className="loading-container">
-          <div className="loading"></div>
-          <p>Chargement des données...</p>
         </div>
       </div>
     );

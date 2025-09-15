@@ -22,8 +22,7 @@ import shareRoutes from './routes/shares.js';
 import bulkActionsRoutes from './routes/bulkActions.js';
 
 // Importation des modèles et associations depuis l'index des modèles
-import { Utilisateur, File, FileShare } from './models/index.js';
-import { Op } from 'sequelize';
+import { Utilisateur } from './models/index.js';
 
 
 const app = express();
@@ -82,17 +81,15 @@ if (process.env.NODE_ENV !== 'production') {
   // Logs uniquement en développement si nécessaire
 }
 
-
-
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/files', fileRoutes);
-app.use('/api/v1/files', shareRoutes); // Routes de partage sous /files pour POST /:id/share
+app.use('/api/v1/files', shareRoutes); // Routes de partage sous /files
 app.use('/api/v1/certificates', certificateRoutes);
 app.use('/api/v1/dossiers', dossierRoutes);
-app.use('/api/v1/share', shareRoutes); // Routes publiques pour accéder aux partages
-app.use('/api/v1/bulk', bulkActionsRoutes);
+app.use('/api/v1/bulk-actions', bulkActionsRoutes);
+app.use('/api/v1/share', shareRoutes); // Route publique pour accéder aux fichiers partagés
 
 // Servir les fichiers statiques du frontend React (en production)
 if (process.env.NODE_ENV === 'production') {
