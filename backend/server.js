@@ -95,9 +95,9 @@ app.get('/share/:token', async (req, res) => {
     console.log('🤖 Is Bot:', isBot);
     
     if (!isBot) {
-      // Utilisateur normal - rediriger vers l'app React directement
+      // Utilisateur normal - rediriger vers l'app React avec un paramètre différent
       console.log('👤 Redirection utilisateur normal vers React');
-      return res.redirect(`https://hifadhui.site/share/${token}`);
+      return res.redirect(`https://hifadhui.site/?redirect=/share/${token}`);
     }
     
     console.log('🤖 Bot détecté - génération métadonnées Open Graph');
