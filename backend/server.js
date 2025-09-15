@@ -92,8 +92,23 @@ app.get('/share/:token', async (req, res) => {
     const isBot = /bot|crawler|spider|facebook|twitter|whatsapp|telegram|discord/i.test(userAgent);
     
     if (!isBot) {
-      // Utilisateur normal - rediriger vers l'app React directement
-      return res.redirect(`https://hifadhui.site/share/${token}`);
+      // Utilisateur normal - servir l'app React avec redirection côté client
+      const html = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content="0;url=https://hifadhui.site/?redirect=/share/${token}" />
+    <title>Redirection...</title>
+</head>
+<body>
+    <p>Redirection en cours...</p>
+    <script>
+      window.location.href = 'https://hifadhui.site/?redirect=/share/${token}';
+    </script>
+</body>
+</html>`;
+      return res.send(html);
     }
 
     // Bot/Crawler - servir HTML avec métadonnées Open Graph
