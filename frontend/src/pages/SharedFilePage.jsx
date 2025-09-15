@@ -15,6 +15,47 @@ const SharedFilePage = () => {
   const hasFetched = useRef(false);
 
   useEffect(() => {
+    // Ajouter des métadonnées Open Graph dynamiques
+    const updateOpenGraphMeta = async () => {
+      try {
+        const isProd = process.env.NODE_ENV === 'production';
+        const API_BASE_URL = process.env.REACT_APP_API_URL || (isProd ? '/api/v1' : 'http://localhost:5000/api/v1');
+        
+        console.log('🔍 [DEBUG OG] Récupération métadonnées pour token:', token);
+        
+        const metaResponse = await axios.get(`${API_BASE_URL}/share/${token}/meta`);
+        const metadata = metaResponse.data;
+        
+        console.log('🔍 [DEBUG OG] Métadonnées reçues:', metadata);
+        
+        // Mettre à jour les métadonnées Open Graph
+        document.title = metadata.title;
+        
+        // Mettre à jour ou créer les balises meta
+        const updateMeta = (property, content) => {
+          let meta = document.querySelector(`meta[property="${property}"]`);
+          if (!meta) {
+            meta = document.createElement('meta');
+            meta.setAttribute('property', property);
+            document.head.appendChild(meta);
+          }
+          meta.setAttribute('content', content);
+          console.log(`🔍 [DEBUG OG] Mis à jour ${property}:`, content);
+        };
+        
+        updateMeta('og:title', metadata.title);
+        updateMeta('og:description', metadata.description);
+        updateMeta('og:image', metadata.image);
+        updateMeta('og:url', metadata.url);
+        updateMeta('twitter:title', metadata.title);
+        updateMeta('twitter:description', metadata.description);
+        updateMeta('twitter:image', metadata.image);
+        
+      } catch (error) {
+        console.error('🔍 [DEBUG OG] Erreur récupération métadonnées:', error);
+      }
+    };
+
     const fetchSharedFile = async () => {
       try {
         // Vérifier si cette session globale a déjà été comptée (tous onglets confondus)
@@ -27,11 +68,17 @@ const SharedFilePage = () => {
         const isProd = process.env.NODE_ENV === 'production';
         const API_BASE_URL = process.env.REACT_APP_API_URL || (isProd ? '/api/v1' : 'http://localhost:5000/api/v1');
         
+        console.log('🔍 [DEBUG Frontend] API_BASE_URL:', API_BASE_URL);
+        console.log('🔍 [DEBUG Frontend] URL complète:', `${API_BASE_URL}/share/${token}`);
+        
         const response = await axios.get(`${API_BASE_URL}/share/${token}`, {
           headers: {
             'X-Already-Viewed': alreadyViewed ? 'true' : 'false'
           }
         });
+        
+        console.log('🔍 [DEBUG Frontend] Response status:', response.status);
+        console.log('🔍 [DEBUG Frontend] Response headers:', response.headers);
         
         // Marquer comme vu pour cette session globale
         if (!alreadyViewed) {
@@ -57,6 +104,7 @@ const SharedFilePage = () => {
 
     if (token && !hasFetched.current) {
       hasFetched.current = true;
+      updateOpenGraphMeta(); // Mettre à jour les métadonnées en premier
       fetchSharedFile();
     }
 

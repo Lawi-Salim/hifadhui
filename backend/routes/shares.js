@@ -95,6 +95,9 @@ router.post('/:id/share', authenticateToken, async (req, res) => {
 router.get('/:token/meta', async (req, res) => {
   try {
     const token = req.params.token;
+    
+    console.log('🔍 [DEBUG Backend Meta] Token reçu:', token);
+    console.log('🔍 [DEBUG Backend Meta] User-Agent:', req.headers['user-agent']);
 
     // Trouver le partage actif et non expiré
     const fileShare = await FileShare.findOne({
@@ -126,6 +129,7 @@ router.get('/:token/meta', async (req, res) => {
     });
 
     if (!fileShare) {
+      console.log('🔍 [DEBUG Backend Meta] Partage non trouvé pour token:', token);
       return res.status(404).json({
         error: 'Lien de partage invalide ou expiré'
       });
@@ -137,6 +141,13 @@ router.get('/:token/meta', async (req, res) => {
     
     // Utiliser le favicon comme image Open Graph
     let imageUrl = 'https://hifadhui.site/favicon.png';
+    
+    console.log('🔍 [DEBUG Backend Meta] Fichier trouvé:', {
+      filename: file.filename,
+      mimetype: file.mimetype,
+      owner: file.fileUser.username,
+      imageUrl: imageUrl
+    });
 
     const metadata = {
       title: `${file.filename} - Partagé par ${file.fileUser.username}`,
@@ -148,6 +159,8 @@ router.get('/:token/meta', async (req, res) => {
       owner: file.fileUser.username,
       shared_by: fileShare.creator.username
     };
+    
+    console.log('🔍 [DEBUG Backend Meta] Métadonnées générées:', metadata);
 
     res.json(metadata);
 
