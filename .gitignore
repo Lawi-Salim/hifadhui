@@ -5,8 +5,6 @@ README-DEPLOYMENT.md
 *deployment*.md
 !schema-psql.sql
 remove-certificate-trigger.sql
-GUIDE_APERCU_LIENS.md
-test-metadata.html
 
 # Dépendances
 /node_modules

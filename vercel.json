@@ -39,14 +39,6 @@
       "dest": "/frontend/$1"
     },
     {
-      "src": "/favicon\\.png",
-      "dest": "/frontend/favicon.png"
-    },
-    {
-      "src": "/share/favicon\\.png", 
-      "dest": "/frontend/favicon.png"
-    },
-    {
       "src": "/manifest\\.json",
       "dest": "/frontend/manifest.json"
     },
