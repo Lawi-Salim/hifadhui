@@ -1,5 +1,5 @@
 {
-  "name": "Hifadhwi-backend",
+  "name": "hifadhwi-backend",
   "version": "1.0.0",
   "description": "Backend pour le coffre-fort numérique Hifadhwi",
   "main": "server.js",

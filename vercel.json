@@ -23,6 +23,14 @@
       "dest": "/frontend/static/$1"
     },
     {
+      "src": "/share/static/(.*)",
+      "dest": "/frontend/static/$1"
+    },
+    {
+      "src": "/share/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|json|txt|woff|woff2|ttf|eot))",
+      "dest": "/frontend/$1"
+    },
+    {
       "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|json|txt|woff|woff2|ttf|eot))",
       "dest": "/frontend/$1"
     },
