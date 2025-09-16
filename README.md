@@ -31,6 +31,9 @@ Dans un monde où le contenu digital est facilement dupliqué, Hifadhui apporte 
 
 Le nom **“Hifadhui”** vient du swahili et signifie **“protéger, préserver”**. En shikomori, la langue parlée aux Comores, on dit **“Hifadhwi”** avec un son légèrement différent. Nous avons choisi **“Hifadhui”** pour sa portée régionale et sa familiarité, tout en honorant la richesse linguistique comorienne avec **“Hifadhwi”**. Les deux mots partagent la même racine et symbolisent la protection de vos créations numériques.
 
+**Quelques infos importantes**
+  📧 *mavuna@hifadhui.site*
+
 ## ✨ Fonctionnalités Clés
 
 Le projet intègre déjà un ensemble de fonctionnalités puissantes, et d'autres sont à venir.

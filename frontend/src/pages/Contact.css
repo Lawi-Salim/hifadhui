@@ -1,0 +1,86 @@
+/* Contact page - styles cohérents avec Auth.css */
+
+/* Styles spécifiques pour la page Contact */
+.contact-container {
+  max-width: 600px;
+}
+
+/* Disposition en ligne pour les champs nom et email */
+.form-row {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: var(--font-family);
+  transition: all 0.2s ease;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+.contact-info {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.contact-note {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.contact-note strong {
+  color: var(--primary-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .contact-container {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  
+  .form-textarea {
+    min-height: 100px;
+  }
+  
+  .success-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}

@@ -7,6 +7,7 @@ DROP TABLE IF EXISTS Certificate CASCADE;
 DROP TABLE IF EXISTS File CASCADE;
 DROP TABLE IF EXISTS Dossier CASCADE;
 DROP TABLE IF EXISTS ActivityLogs CASCADE;
+DROP TABLE IF EXISTS passwordresettokens CASCADE;
 DROP TABLE IF EXISTS Utilisateur CASCADE;
 
 -- ========================================
@@ -79,6 +80,20 @@ CREATE TABLE ActivityLogs (
 );
 
 -- ========================================
+-- TABLE : passwordresettokens
+-- ========================================
+CREATE TABLE passwordresettokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    token VARCHAR(255) UNIQUE NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    user_id UUID NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE,
+    expires_at TIMESTAMP NOT NULL,
+    used BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========================================
 -- TABLE : FileShares
 -- ========================================
 CREATE TABLE FileShares (
@@ -106,6 +121,9 @@ CREATE INDEX idx_fileshares_file_id ON FileShares(file_id);
 CREATE INDEX idx_fileshares_token ON FileShares(token);
 CREATE INDEX idx_fileshares_expires_at ON FileShares(expires_at);
 CREATE INDEX idx_fileshares_created_by ON FileShares(created_by);
+CREATE INDEX idx_password_reset_tokens_token ON passwordresettokens(token);
+CREATE INDEX idx_password_reset_tokens_email ON passwordresettokens(email);
+CREATE INDEX idx_password_reset_tokens_expires_at ON passwordresettokens(expires_at);
 
 -- Unicité des noms de dossiers à la racine pour un utilisateur (exclut le dossier système)
 CREATE UNIQUE INDEX idx_dossier_racine_unique_nom ON Dossier(owner_id, name) WHERE parent_id IS NULL AND is_system_root = FALSE;
@@ -155,6 +173,11 @@ EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_fileshares_updated
 BEFORE UPDATE ON FileShares
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_password_reset_tokens_updated
+BEFORE UPDATE ON passwordresettokens
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 

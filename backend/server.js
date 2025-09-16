@@ -20,6 +20,7 @@ import certificateRoutes from './routes/certificates.js';
 import dossierRoutes from './routes/dossiers.js';
 import shareRoutes from './routes/shares.js';
 import bulkActionsRoutes from './routes/bulkActions.js';
+import contactRoutes from './routes/contact.js';
 
 // Importation des modèles et associations depuis l'index des modèles
 import { Utilisateur } from './models/index.js';
@@ -90,6 +91,7 @@ app.use('/api/v1/certificates', certificateRoutes);
 app.use('/api/v1/dossiers', dossierRoutes);
 app.use('/api/v1/bulk-actions', bulkActionsRoutes);
 app.use('/api/v1/share', shareRoutes); // Route publique pour accéder aux fichiers partagés
+app.use('/api/v1/contact', contactRoutes);
 
 // Servir les fichiers statiques du frontend React (en production)
 if (process.env.NODE_ENV === 'production') {

@@ -7,7 +7,9 @@ import Sidebar from './components/Layout/Sidebar.jsx';
 import Login from './components/Auth/Login.jsx';
 import Register from './components/Auth/Register.jsx';
 import ForgotPassword from './components/Auth/ForgotPassword.jsx';
+import ResetPassword from './components/Auth/ResetPassword.jsx';
 import HomePage from './pages/HomePage.jsx';
+import Contact from './pages/Contact.jsx';
 import Dashboard from './components/Dashboard/Dashboard.jsx';
 import FileUpload from './components/Files/FileUpload.jsx';
 import FilesPage from './components/Files/FilesPage.jsx';
@@ -81,6 +83,16 @@ function AppContent() {
           <Route path="/forgot-password" element={
             <PublicRoute>
               <ForgotPassword />
+            </PublicRoute>
+          } />
+          <Route path="/reset-password/:token" element={
+            <PublicRoute>
+              <ResetPassword />
+            </PublicRoute>
+          } />
+          <Route path="/contact" element={
+            <PublicRoute>
+              <Contact />
             </PublicRoute>
           } />
           <Route path="/register" element={

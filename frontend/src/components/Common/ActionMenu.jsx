@@ -1,16 +1,16 @@
 import React from 'react';
-import { FaPencilAlt, FaTrash, FaUpload, FaDownload, FaShare } from 'react-icons/fa';
+import { FaPencilAlt, FaTrash, FaUpload, FaDownload, FaShare, FaEye } from 'react-icons/fa';
 import './ActionMenu.css';
 
 const ActionMenu = ({ 
+  onShow,
   onDownload, 
   onShare, 
   onRename, 
   onUpload, 
   onDelete, 
   position = 'bottom', 
-  isOpen,
-  onClose
+  isOpen
 }) => {
   if (!isOpen) return null;
 
@@ -23,6 +23,11 @@ const ActionMenu = ({
       className={`actions-menu position-${position}`}
       style={{ '--menu-height': `${menuHeight}px` }}
     >
+      {onShow && (
+        <button className="menu-item" onClick={(e) => { e.stopPropagation(); onShow(); }}>
+          <FaEye /> Voir
+        </button>
+      )}
       {onDownload && (
         <button className="menu-item" onClick={(e) => { e.stopPropagation(); onDownload(); }}>
           <FaDownload /> Télécharger

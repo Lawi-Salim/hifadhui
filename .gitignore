@@ -1,10 +1,13 @@
-# Fichiers spécifiques à l'utilisateur
+# Fichiers/dossiers spécifiques à l'utilisateur
 Lawi.session.sql
 Features.md
 README-DEPLOYMENT.md
 *deployment*.md
 !schema-psql.sql
 remove-certificate-trigger.sql
+
+# Roadmap
+Roadmap-features
 
 # Dépendances
 /node_modules
