@@ -115,11 +115,25 @@ const SharedFilePage = () => {
       return fileUrl;
     }
     
+    // Décoder l'URL pour éviter le double encodage
+    let cleanUrl = fileUrl;
+    try {
+      cleanUrl = decodeURIComponent(fileUrl);
+    } catch (e) {
+      // Si le décodage échoue, utiliser l'URL originale
+      cleanUrl = fileUrl;
+    }
+    
     // Construire l'URL Cloudinary selon le type de fichier
-    const baseUrl = 'https://res.cloudinary.com/ddxypgvuh';
+    // Utiliser le cloud name depuis les variables d'environnement ou fallback
+    const cloudName = 'drpbnhwh6'; // Cloud de développement
+    const baseUrl = `https://res.cloudinary.com/${cloudName}`;
     const resourceType = isImage ? 'image' : 'raw';
     
-    return `${baseUrl}/${resourceType}/upload/${fileUrl}`;
+    // Réencoder seulement les caractères nécessaires pour Cloudinary
+    const encodedUrl = cleanUrl.replace(/ /g, '%20');
+    
+    return `${baseUrl}/${resourceType}/upload/${encodedUrl}`;
   };
 
   const renderFilePreview = (file) => {

@@ -20,9 +20,17 @@ const PdfPreview = ({ fileUrl, fileId, className }) => {
       const finalUrl = fileUrl.endsWith('.pdf.pdf') ? fileUrl.replace('.pdf.pdf', '.pdf') : fileUrl;
       console.log('PdfPreview - URL complète:', finalUrl);
       return finalUrl;
-    } else if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl) || /^v\d+\/[^/]+\.(jpg|jpeg|png|pdf)$/i.test(fileUrl)) {
+    } else if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl)) {
+      // Chemin Cloudinary relatif - utiliser raw pour les PDFs
+      const cloudName = 'drpbnhwh6'; // Cloud de développement
+      const fullFileUrl = `https://res.cloudinary.com/${cloudName}/raw/upload/${fileUrl}`;
+      console.log('PdfPreview - URL Cloudinary relative (raw):', fullFileUrl);
+      console.log('PdfPreview - Cloud name utilisé:', cloudName);
+      
+      return fullFileUrl;
+    } else if (/^v\d+\/[^/]+\.(jpg|jpeg|png|pdf)$/i.test(fileUrl)) {
       // Accès direct Cloudinary avec la bonne structure
-      const cloudName = process.env.NODE_ENV === 'production' ? 'ddxypgvuh' : 'drpbnhwh6';
+      const cloudName = 'drpbnhwh6'; // Cloud de développement
       const cloudinaryBaseUrl = `https://res.cloudinary.com/${cloudName}/raw/upload`;
       
       // Nettoyer les doubles extensions avant de construire l'URL

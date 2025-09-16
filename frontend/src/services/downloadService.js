@@ -88,16 +88,20 @@ const buildCloudinaryUrl = (item) => {
   }
   
   // Si c'est un chemin relatif Cloudinary (format standardisé)
-  if (item.file_url.startsWith('Hifadhwi/') || item.file_url.includes('Hifadhwi/') ||
-      item.file_url.match(/^v\d+\/Hifadhwi\//)) {
-    
-    // Déterminer le cloud name selon l'environnement
-    const cloudName = process.env.NODE_ENV === 'production' ? 'ddxypgvuh' : 'drpbnhwh6';
+  const fileUrl = item.file_url;
+  let directUrl;
+  if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl)) {
+    // Chemin Cloudinary relatif
+    const cloudName = 'drpbnhwh6'; // Cloud de développement
+    directUrl = `https://res.cloudinary.com/${cloudName}/image/upload/${fileUrl}`;
+  } else {
+    // Cloud de développement
+    const cloudName = 'drpbnhwh6';
     const baseUrl = `https://res.cloudinary.com/${cloudName}`;
     const resourceType = item.mimetype.startsWith('image/') ? 'image' : 'raw';
-    return `${baseUrl}/${resourceType}/upload/${item.file_url}`;
+    directUrl = `${baseUrl}/${resourceType}/upload/${item.file_url}`;
   }
-  
+  return directUrl;
   return null;
 };
 

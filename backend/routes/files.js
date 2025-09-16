@@ -921,15 +921,21 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     else if (file.mimetype === 'application/pdf') fileType = 'pdf';
     else if (file.mimetype === 'application/zip') fileType = 'zip';
 
-    await ActivityLog.create({
-      userId: req.user.id,
-      actionType: 'FILE_DELETE',
-      details: {
-        fileId: file.id,
-        fileName: file.filename,
-        fileType: fileType,
-      },
-      transaction
+    // Créer le log d'activité de manière asynchrone pour éviter les timeouts
+    setImmediate(async () => {
+      try {
+        await ActivityLog.create({
+          userId: req.user.id,
+          actionType: 'FILE_DELETE',
+          details: {
+            fileId: file.id,
+            fileName: file.filename,
+            fileType: fileType,
+          }
+        });
+      } catch (logError) {
+        console.error('Erreur lors de la création du log d\'activité:', logError);
+      }
     });
 
     // 4. Supprimer le fichier de la base de données (déjà fait dans File.destroy ci-dessus)

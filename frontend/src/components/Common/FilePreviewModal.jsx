@@ -20,9 +20,10 @@ const FilePreviewModal = ({ file, onClose }) => {
     if (fileUrl.startsWith('http')) return fileUrl;
     
     // Format standardisé avec Hifadhwi/ uniquement
-    if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl) || /^v\d+\/[^/]+\.(jpg|jpeg|png|pdf)$/i.test(fileUrl)) {
-      // Déterminer le cloud name selon l'environnement
-      const cloudName = process.env.NODE_ENV === 'production' ? 'ddxypgvuh' : 'drpbnhwh6';
+    else if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl)) {
+      // Chemin Cloudinary relatif - utiliser le dev par défaut
+      const cloudName = 'drpbnhwh6'; // Cloud de développement
+      let fullFileUrl = `https://res.cloudinary.com/${cloudName}/image/upload/${fileUrl}`;
       
       // Nettoyer les doubles extensions
       let cleanUrl = fileUrl;

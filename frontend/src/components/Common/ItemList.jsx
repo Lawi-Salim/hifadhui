@@ -138,9 +138,13 @@ const ItemList = ({
     if (fileUrl.startsWith('http')) return fileUrl;
     
     // Format standardisé avec Hifadhwi/ uniquement (support ancien 'upload' et nouveau 'uploads')
-    if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl) || /^v\d+\/[^/]+\.(jpg|jpeg|png|pdf)$/i.test(fileUrl)) {
-      // Déterminer le cloud name selon l'environnement
-      const cloudName = process.env.NODE_ENV === 'production' ? 'ddxypgvuh' : 'drpbnhwh6';
+    else if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl)) {
+      // Chemin Cloudinary relatif
+      const cloudName = 'drpbnhwh6'; // Cloud de développement
+      const fullFileUrl = `https://res.cloudinary.com/${cloudName}/image/upload/${fileUrl}`;
+      return fullFileUrl;
+    } else {
+      const cloudName = 'drpbnhwh6'; // Cloud de développement
       
       // Nettoyer les doubles extensions
       let cleanUrl = fileUrl;

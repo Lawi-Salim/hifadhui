@@ -15,10 +15,11 @@ const dbConfig = {
     collate: 'utf8_unicode_ci',
   },
   pool: {
-    max: 1,
+    max: 5,
     min: 0,
-    acquire: 60000,
-    idle: 300000,
+    acquire: 30000,
+    idle: 10000,
+    evict: 1000,
   },
   define: {
     timestamps: true,
@@ -45,10 +46,10 @@ if (isProduction) {
   
   // Configuration spéciale pour Vercel + Supabase
   dbConfig.pool = {
-    max: 1,
+    max: 3,
     min: 0,
-    acquire: 60000,
-    idle: 300000,
+    acquire: 30000,
+    idle: 10000,
     evict: 1000,
   };
 }

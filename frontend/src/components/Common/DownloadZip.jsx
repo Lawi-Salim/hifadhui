@@ -7,7 +7,7 @@ import { useProgressBar } from '../../hooks/useProgressBar';
  * Hook personnalisé pour gérer le téléchargement ZIP
  * @returns {Object} - Fonctions et état pour le téléchargement ZIP
  */
-export const useDownloadZip = () => {
+const useDownloadZip = () => {
   const progressBar = useProgressBar({ 
     type: 'download',
     maxProgress: 90,
@@ -76,7 +76,7 @@ export const useDownloadZip = () => {
  * Composant d'indicateur de progrès pour le téléchargement ZIP
  * Utilise maintenant le composant ProgressBar centralisé
  */
-export const DownloadProgressIndicator = ({ progressBar, onClose }) => {
+const DownloadProgressIndicator = ({ progressBar, onClose }) => {
   return (
     <ProgressBar
       isVisible={progressBar.isActive}
@@ -92,9 +92,4 @@ export const DownloadProgressIndicator = ({ progressBar, onClose }) => {
   );
 };
 
-const DownloadZipExports = {
-  useDownloadZip,
-  DownloadProgressIndicator
-};
-
-export default DownloadZipExports;
+export { useDownloadZip, DownloadProgressIndicator };
