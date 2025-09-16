@@ -22,15 +22,6 @@ const Footer = () => {
               Votre coffre-fort numérique sécurisé pour stocker et partager vos documents importants avec une preuve de propriété incontestable.
             </p>
             <div className="footer-social">
-              <button className="text-gray-400 hover:text-white transition-colors">
-                Politique de confidentialité
-              </button>
-              <button className="text-gray-400 hover:text-white transition-colors">
-                Conditions d'utilisation
-              </button>
-              <button className="text-gray-400 hover:text-white transition-colors">
-                Support
-              </button>
               <button className="social-link" aria-label="GitHub">
                 <FiGithub />
               </button>
