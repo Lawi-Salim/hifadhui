@@ -133,28 +133,24 @@ app.use('/api/v1/bulk-actions', bulkActionsRoutes);
 app.use('/api/v1/share', shareRoutes); // Route publique pour accéder aux fichiers partagés
 app.use('/api/v1/contact', contactRoutes);
 
-// Route pour les partages publics - redirection simple vers l'app React
+// Route pour les partages publics - servir l'app React directement
 app.get('/share/:token', (req, res) => {
-  const { token } = req.params;
-  
-  // Rediriger directement vers l'application React
-  const frontendUrl = process.env.NODE_ENV === 'production' 
-    ? 'https://hifadhui.site' 
-    : 'http://localhost:3000';
-  
-  res.redirect(`${frontendUrl}/share/${token}`);
+  // En production, servir l'app React directement sans redirection
+  if (process.env.NODE_ENV === 'production') {
+    res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+  } else {
+    // En développement, rediriger vers le serveur de développement React
+    res.redirect(`http://localhost:3000/share/${req.params.token}`);
+  }
 });
 
 // Servir les fichiers statiques du frontend React (en production)
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../frontend/build')));
   
-  // Toutes les routes non-API servent l'app React (sauf /share/:token qui est géré au-dessus)
+  // Toutes les autres routes non-API servent l'app React
   app.get('*', (req, res) => {
-    // Éviter de capturer les routes /share/:token
-    if (req.path.startsWith('/share/')) {
-      return res.status(404).json({ error: 'Partage non trouvé' });
-    }
+    // Les routes /share/:token sont déjà gérées au-dessus
     res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
   });
 }
