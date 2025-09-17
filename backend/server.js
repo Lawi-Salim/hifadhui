@@ -134,138 +134,16 @@ app.use('/api/v1/bulk-actions', bulkActionsRoutes);
 app.use('/api/v1/share', shareRoutes); // Route publique pour accéder aux fichiers partagés
 app.use('/api/v1/contact', contactRoutes);
 
-// Route pour les partages publics avec métadonnées Open Graph
-app.get('/share/:token', async (req, res) => {
-  try {
-    const { token } = req.params;
-    
-    // Si c'est une requête avec le paramètre view=app, rediriger vers l'app React
-    if (req.query.view === 'app') {
-      const frontendUrl = process.env.NODE_ENV === 'production' 
-        ? 'https://hifadhui.vercel.app' 
-        : 'http://localhost:3000';
-      return res.redirect(`${frontendUrl}/share/${token}`);
-    }
-    
-    // Importer les modèles nécessaires
-    const { FileShare, File, Utilisateur } = await import('./models/index.js');
-    const { Op } = await import('sequelize');
-    
-    // Trouver le partage actif et non expiré
-    const fileShare = await FileShare.findOne({
-      where: {
-        token: token,
-        is_active: true,
-        expires_at: {
-          [Op.gt]: new Date()
-        }
-      },
-      include: [
-        {
-          model: File,
-          as: 'file',
-          include: [
-            {
-              model: Utilisateur,
-              as: 'fileUser',
-              attributes: ['username']
-            }
-          ]
-        }
-      ]
-    });
-
-    if (!fileShare) {
-      // Si le partage n'existe pas, servir l'app React normale
-      if (process.env.NODE_ENV === 'production') {
-        return res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
-      } else {
-        return res.redirect(`http://localhost:3000/share/${token}`);
-      }
-    }
-
-    const file = fileShare.file;
-    const owner = file.fileUser;
-    
-    // Déterminer le type de fichier pour l'icône
-    const isImage = file.mimetype?.startsWith('image/');
-    const isPDF = file.mimetype === 'application/pdf';
-    const fileType = isImage ? 'Image' : (isPDF ? 'PDF' : 'Fichier');
-    
-    // URL de base
-    const baseUrl = process.env.FRONTEND_URL || 
-                   (process.env.VERCEL ? 'https://hifadhui.site' : 'http://localhost:3000');
-    
-    // Générer le HTML avec les métadonnées Open Graph
-    const html = `
-      <!DOCTYPE html>
-      <html lang="fr">
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        
-        <!-- Métadonnées de base -->
-        <title>${file.filename} - Partagé par ${owner.username}</title>
-        <meta name="description" content="${fileType} partagé de manière sécurisée via Hifadhui. Propriétaire: ${owner.username}" />
-        
-        <!-- Open Graph / Facebook -->
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="${baseUrl}/share/${token}" />
-        <meta property="og:title" content="${file.filename} - Partagé par ${owner.username}" />
-        <meta property="og:description" content="${fileType} partagé de manière sécurisée via Hifadhui. Propriétaire: ${owner.username}" />
-        <meta property="og:image" content="${baseUrl}/og-image.png" />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta property="og:image:alt" content="Hifadhui - Coffre-fort numérique" />
-        <meta property="og:site_name" content="Hifadhui" />
-        
-        <!-- Twitter Card -->
-        <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content="${baseUrl}/share/${token}" />
-        <meta property="twitter:title" content="${file.filename} - Partagé par ${owner.username}" />
-        <meta property="twitter:description" content="${fileType} partagé de manière sécurisée via Hifadhui. Propriétaire: ${owner.username}" />
-        <meta property="twitter:image" content="${baseUrl}/og-image.png" />
-        <meta property="twitter:image:alt" content="Hifadhui - Coffre-fort numérique" />
-        
-        <!-- WhatsApp spécifique -->
-        <meta property="og:locale" content="fr_FR" />
-        
-        <!-- Favicon -->
-        <link rel="icon" href="${baseUrl}/favicon.png" />
-        
-        <!-- Lien vers l'application -->
-        <script>
-          // Redirection JavaScript au lieu de meta refresh pour éviter les boucles
-          setTimeout(() => {
-            const appUrl = '${process.env.NODE_ENV === 'production' ? 'https://hifadhui.vercel.app' : 'http://localhost:3000'}/share/${token}';
-            window.location.href = appUrl;
-          }, 2000);
-        </script>
-      </head>
-      <body>
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: Arial, sans-serif; background: #f8fafc;">
-          <img src="${baseUrl}/favicon.png" alt="Hifadhui" style="width: 64px; height: 64px; margin-bottom: 20px;" />
-          <h1 style="color: #1e293b; margin-bottom: 10px;">${file.filename}</h1>
-          <p style="color: #64748b; margin-bottom: 20px;">Partagé par ${owner.username}</p>
-          <p style="color: #94a3b8; font-size: 14px;">Redirection en cours...</p>
-        </div>
-      </body>
-      </html>
-    `;
-
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.send(html);
-
-  } catch (error) {
-    console.error('Erreur lors de la génération des métadonnées Open Graph:', error);
-    
-    // En cas d'erreur, servir l'app React normale
-    if (process.env.NODE_ENV === 'production') {
-      res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
-    } else {
-      res.redirect(`http://localhost:3000/share/${req.params.token}`);
-    }
-  }
+// Route pour les partages publics - redirection simple vers l'app React
+app.get('/share/:token', (req, res) => {
+  const { token } = req.params;
+  
+  // Rediriger directement vers l'application React
+  const frontendUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://hifadhui.vercel.app' 
+    : 'http://localhost:3000';
+  
+  res.redirect(`${frontendUrl}/share/${token}`);
 });
 
 // Servir les fichiers statiques du frontend React (en production)
