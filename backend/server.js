@@ -69,6 +69,31 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Middleware de gestion des connexions DB pour Vercel
+if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
+  app.use((req, res, next) => {
+    // Fermer les connexions après chaque réponse
+    res.on('finish', async () => {
+      try {
+        const pool = sequelize.connectionManager.pool;
+        if (pool && pool.numFree() > 0) {
+          // Attendre un peu puis nettoyer les connexions libres
+          setTimeout(async () => {
+            try {
+              await pool.clear();
+            } catch (error) {
+              // Ignorer les erreurs de nettoyage
+            }
+          }, 1000);
+        }
+      } catch (error) {
+        // Ignorer les erreurs de nettoyage
+      }
+    });
+    next();
+  });
+}
+
 // Servir les fichiers statiques (certificats et uploads)
 app.use('/certificates', express.static(path.join(__dirname, 'certificates')));
 // En production sur Vercel, les fichiers uploadés sont stockés dans /tmp et ne sont pas persistants.

@@ -44,14 +44,18 @@ if (isProduction) {
     },
   };
   
-  // Configuration spéciale pour Vercel + Supabase - Réduire drastiquement les connexions
+  // Configuration spéciale pour Vercel + Supabase - Pool ultra-conservateur
   dbConfig.pool = {
-    max: 1,
-    min: 0,
-    acquire: 30000,
-    idle: 5000,
-    evict: 1000,
+    max: 1,           // Une seule connexion max
+    min: 0,           // Aucune connexion minimum
+    acquire: 60000,   // Attendre 60s pour acquérir une connexion
+    idle: 1000,       // Fermer après 1s d'inactivité
+    evict: 500,       // Vérifier toutes les 500ms
   };
+  
+  // Forcer la fermeture des connexions inactives
+  dbConfig.dialectOptions.keepAlive = false;
+  dbConfig.dialectOptions.keepAliveInitialDelayMillis = 0;
 }
 
 const useDatabaseUrl = Boolean(process.env.DATABASE_URL);
@@ -64,5 +68,31 @@ const sequelize = useDatabaseUrl
       process.env.DB_PASSWORD,
       dbConfig
     );
+
+// Gestion des connexions pour Vercel serverless
+if (isProduction) {
+  // Fermer toutes les connexions à la fin de chaque requête
+  process.on('beforeExit', async () => {
+    try {
+      await sequelize.close();
+      console.log('🔌 [DB] Connexions fermées avant sortie');
+    } catch (error) {
+      console.error('❌ [DB] Erreur fermeture connexions:', error);
+    }
+  });
+
+  // Timeout de sécurité pour fermer les connexions inactives
+  setInterval(async () => {
+    try {
+      const pool = sequelize.connectionManager.pool;
+      if (pool && pool.numUsed() === 0 && pool.numFree() > 0) {
+        await pool.clear();
+        console.log('🧹 [DB] Pool nettoyé automatiquement');
+      }
+    } catch (error) {
+      // Ignorer les erreurs de nettoyage
+    }
+  }, 30000); // Toutes les 30 secondes
+}
 
 export { sequelize };
