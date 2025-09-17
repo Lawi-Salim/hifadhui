@@ -40,7 +40,23 @@ console.log('🟢 [BOOT] DATABASE_URL défini =', Boolean(process.env.DATABASE_U
 console.log('🟢 [BOOT] DB_HOST =', process.env.DB_HOST || '(non défini)');
 
 // Middlewares de sécurité
-app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+app.use(helmet({ 
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
+      fontSrc: ["'self'"],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      manifestSrc: ["'self'"],
+    },
+  }
+}));
 
 // Configuration CORS pour gérer les preflight requests
 app.use(cors({
