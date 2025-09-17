@@ -139,13 +139,12 @@ app.get('/share/:token', async (req, res) => {
   try {
     const { token } = req.params;
     
-    // Si c'est une requête avec le paramètre view=app, servir l'app React directement
+    // Si c'est une requête avec le paramètre view=app, rediriger vers l'app React
     if (req.query.view === 'app') {
-      if (process.env.NODE_ENV === 'production') {
-        return res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
-      } else {
-        return res.redirect(`http://localhost:3000/share/${token}`);
-      }
+      const frontendUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://hifadhui.vercel.app' 
+        : 'http://localhost:3000';
+      return res.redirect(`${frontendUrl}/share/${token}`);
     }
     
     // Importer les modèles nécessaires
