@@ -9,6 +9,7 @@ import './HomePage.css';
 const HomePage = () => {
   const { user } = useAuth();
 
+
   const features = [
     {
       icon: <FiShield />,

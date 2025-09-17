@@ -93,10 +93,19 @@ app.use('/api/v1/bulk-actions', bulkActionsRoutes);
 app.use('/api/v1/share', shareRoutes); // Route publique pour accéder aux fichiers partagés
 app.use('/api/v1/contact', contactRoutes);
 
-// Route spéciale pour les liens de partage avec métadonnées Open Graph
+// Route pour les partages publics avec métadonnées Open Graph
 app.get('/share/:token', async (req, res) => {
   try {
-    const token = req.params.token;
+    const { token } = req.params;
+    
+    // Si c'est une requête avec le paramètre view=app, servir l'app React directement
+    if (req.query.view === 'app') {
+      if (process.env.NODE_ENV === 'production') {
+        return res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+      } else {
+        return res.redirect(`http://localhost:3000/share/${token}`);
+      }
+    }
     
     // Importer les modèles nécessaires
     const { FileShare, File, Utilisateur } = await import('./models/index.js');
@@ -185,7 +194,7 @@ app.get('/share/:token', async (req, res) => {
         <link rel="icon" href="${baseUrl}/favicon.png" />
         
         <!-- Redirection meta refresh vers l'app React -->
-        <meta http-equiv="refresh" content="1;url=${process.env.NODE_ENV === 'production' ? `${baseUrl}/share/${token}` : `http://localhost:3000/share/${token}`}" />
+        <meta http-equiv="refresh" content="1;url=${process.env.NODE_ENV === 'production' ? `${baseUrl}/share/${token}?view=app` : `http://localhost:3000/share/${token}`}" />
       </head>
       <body>
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: Arial, sans-serif; background: #f8fafc;">
