@@ -1,11 +1,10 @@
 import React from 'react';
-import { useAuth } from '../../contexts/AuthContext';
 import PdfPreview from './PdfPreview';
-import '../Modal.css';
+import { buildCloudinaryUrl } from '../../config/cloudinary';
+import './FilePreviewModal.css';
 import '../Images/Images.css';
 
 const FilePreviewModal = ({ file, onClose }) => {
-  const { user } = useAuth();
   
   if (!file) {
     return null;
@@ -16,32 +15,7 @@ const FilePreviewModal = ({ file, onClose }) => {
 
   // Fonction pour construire l'URL complète des images
   const getImageUrl = (fileUrl) => {
-    if (!fileUrl) return '';
-    if (fileUrl.startsWith('http')) return fileUrl;
-    
-    // Format standardisé avec Hifadhwi/ uniquement
-    else if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl)) {
-      // Chemin Cloudinary relatif - utiliser le dev par défaut
-      const cloudName = 'drpbnhwh6'; // Cloud de développement
-      let fullFileUrl = `https://res.cloudinary.com/${cloudName}/image/upload/${fileUrl}`;
-      
-      // Nettoyer les doubles extensions
-      let cleanUrl = fileUrl;
-      if (cleanUrl.endsWith('.png.png')) {
-        cleanUrl = cleanUrl.replace('.png.png', '.png');
-      }
-      if (cleanUrl.endsWith('.jpg.jpg')) {
-        cleanUrl = cleanUrl.replace('.jpg.jpg', '.jpg');
-      }
-      if (cleanUrl.endsWith('.jpeg.jpeg')) {
-        cleanUrl = cleanUrl.replace('.jpeg.jpeg', '.jpeg');
-      }
-      
-      return `https://res.cloudinary.com/${cloudName}/image/upload/${cleanUrl}`;
-    } else {
-      // Chemin local - utiliser l'API backend
-      return `${process.env.REACT_APP_API_BASE_URL}${fileUrl}`;
-    }
+    return buildCloudinaryUrl(fileUrl, 'image');
   };
 
   const formatDate = (dateString) => {

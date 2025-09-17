@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { buildCloudinaryUrl } from '../config/cloudinary';
 import api from './api';
 
 /**
@@ -75,11 +76,11 @@ const downloadFileViaAPI = async (fileId, filename) => {
 };
 
 /**
- * Construit l'URL complète Cloudinary pour un fichier
- * @param {Object} item - L'objet fichier
+ * Construit l'URL complète Cloudinary pour un élément
+ * @param {Object} item - L'élément contenant file_url et mimetype
  * @returns {string} - URL complète du fichier
  */
-const buildCloudinaryUrl = (item) => {
+const getCloudinaryUrlForItem = (item) => {
   if (!item.file_url) return null;
   
   // Si c'est déjà une URL complète
@@ -87,22 +88,9 @@ const buildCloudinaryUrl = (item) => {
     return item.file_url;
   }
   
-  // Si c'est un chemin relatif Cloudinary (format standardisé)
-  const fileUrl = item.file_url;
-  let directUrl;
-  if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl)) {
-    // Chemin Cloudinary relatif
-    const cloudName = 'drpbnhwh6'; // Cloud de développement
-    directUrl = `https://res.cloudinary.com/${cloudName}/image/upload/${fileUrl}`;
-  } else {
-    // Cloud de développement
-    const cloudName = 'drpbnhwh6';
-    const baseUrl = `https://res.cloudinary.com/${cloudName}`;
-    const resourceType = item.mimetype.startsWith('image/') ? 'image' : 'raw';
-    directUrl = `${baseUrl}/${resourceType}/upload/${item.file_url}`;
-  }
-  return directUrl;
-  return null;
+  // Utiliser la fonction centralisée pour construire l'URL
+  const resourceType = item.mimetype.startsWith('image/') ? 'image' : 'raw';
+  return buildCloudinaryUrl(item.file_url, resourceType);
 };
 
 /**
@@ -137,7 +125,7 @@ export const downloadSelectedItemsAsZip = async (selectedItems, onProgress = nul
         let blob;
         
         // Essayer d'abord l'URL Cloudinary directe
-        const cloudinaryUrl = buildCloudinaryUrl(item);
+        const cloudinaryUrl = getCloudinaryUrlForItem(item);
         if (cloudinaryUrl) {
           try {
             blob = await downloadFileAsBlob(cloudinaryUrl, item.filename);

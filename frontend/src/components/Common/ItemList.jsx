@@ -1,18 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  FaFolder, 
-  FaEllipsisV, 
-  FaFilePdf, 
-  FaFileImage, 
-  FaFileAlt, 
-  FaUpload
-} from 'react-icons/fa';
-import { createSlug, fixEncoding } from '../../utils/textUtils';
+import { FaUpload, FaEye, FaDownload, FaShare, FaEdit, FaTrash, FaEllipsisV, FaFolder, FaImage, FaFilePdf, FaFileAlt } from 'react-icons/fa';
 import { FiFilePlus } from 'react-icons/fi';
-import PdfPreview from './PdfPreview';
-import ActionMenu from './ActionMenu';
 import FormattedText from './FormattedText';
+import ActionMenu from './ActionMenu';
+import PdfPreview from './PdfPreview';
+import { buildCloudinaryUrl } from '../../config/cloudinary';
+import { createSlug, fixEncoding } from '../../utils/textUtils';
+// import './ItemList.css'; // Fichier CSS manquant
 
 const ItemList = ({ 
   items = [], 
@@ -134,34 +129,7 @@ const ItemList = ({
 
 
   const getImageUrl = (fileUrl) => {
-    if (!fileUrl) return '';
-    if (fileUrl.startsWith('http')) return fileUrl;
-    
-    // Format standardisé avec Hifadhwi/ uniquement (support ancien 'upload' et nouveau 'uploads')
-    else if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl)) {
-      // Chemin Cloudinary relatif
-      const cloudName = 'drpbnhwh6'; // Cloud de développement
-      const fullFileUrl = `https://res.cloudinary.com/${cloudName}/image/upload/${fileUrl}`;
-      return fullFileUrl;
-    } else {
-      const cloudName = 'drpbnhwh6'; // Cloud de développement
-      
-      // Nettoyer les doubles extensions
-      let cleanUrl = fileUrl;
-      if (cleanUrl.endsWith('.png.png')) {
-        cleanUrl = cleanUrl.replace('.png.png', '.png');
-      }
-      if (cleanUrl.endsWith('.jpg.jpg')) {
-        cleanUrl = cleanUrl.replace('.jpg.jpg', '.jpg');
-      }
-      if (cleanUrl.endsWith('.jpeg.jpeg')) {
-        cleanUrl = cleanUrl.replace('.jpeg.jpeg', '.jpeg');
-      }
-      
-      return `https://res.cloudinary.com/${cloudName}/image/upload/${cleanUrl}`;
-    }
-    
-    return `${process.env.REACT_APP_API_BASE_URL}${fileUrl}`;
+    return buildCloudinaryUrl(fileUrl, 'image');
   };
 
   const formatDate = (dateString) => {
@@ -183,7 +151,7 @@ const ItemList = ({
     }
 
     if (imageExtensions.includes(extension)) {
-      return <FaFileImage className="dossier-icon file-icon image-icon" />;
+      return <FaImage className="dossier-icon file-icon image-icon" />;
     }
 
     return <FaFileAlt className="dossier-icon file-icon" />;

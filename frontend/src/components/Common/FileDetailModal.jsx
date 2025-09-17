@@ -1,7 +1,9 @@
 import React from 'react';
+import { FaTimes, FaDownload, FaEye, FaCalendar, FaFileAlt, FaImage, FaFilePdf } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import PdfPreview from './PdfPreview';
-import '../Modal.css';
+import { buildCloudinaryUrl } from '../../config/cloudinary';
+// import './FileDetailModal.css'; // Fichier CSS manquant
 import '../Images/Images.css';
 
 const FileDetailModal = ({ file, onClose, type = 'file', isOpen }) => {
@@ -17,17 +19,7 @@ const FileDetailModal = ({ file, onClose, type = 'file', isOpen }) => {
 
   // Fonction pour construire l'URL complète des images
   const getImageUrl = (fileUrl) => {
-    if (!fileUrl) return '';
-    if (fileUrl.startsWith('http')) return fileUrl;
-    
-    // Format standardisé avec Hifadhwi/ uniquement
-    else if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl)) {
-      // Chemin Cloudinary relatif
-      const cloudName = 'drpbnhwh6'; // Cloud de développement
-      return `https://res.cloudinary.com/${cloudName}/image/upload/${fileUrl}`;
-    } else {
-      return `${process.env.REACT_APP_API_BASE_URL}${fileUrl}`;
-    }
+    return buildCloudinaryUrl(fileUrl, 'image');
   };
 
   const formatDate = (dateString) => {

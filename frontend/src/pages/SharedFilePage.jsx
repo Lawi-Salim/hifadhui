@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiClock, FiUser, FiEye, FiShield, FiAlertCircle } from 'react-icons/fi';
-import { FaFilePdf, FaFileImage, FaFileAlt } from 'react-icons/fa';
+import { FaDownload, FaEye, FaFilePdf, FaImage, FaFileAlt } from 'react-icons/fa';
+import { FiAlertCircle, FiShield, FiUser, FiClock, FiEye } from 'react-icons/fi';
 import PdfPreview from '../components/Common/PdfPreview';
+import { buildCloudinaryUrl } from '../config/cloudinary';
 import api from '../services/api';
 import './SharedFilePage.css';
 
@@ -97,7 +98,7 @@ const SharedFilePage = () => {
     if (!filename) return <FaFileAlt className="file-icon" />;
     
     if (mimetype?.startsWith('image/')) {
-      return <FaFileImage className="file-icon image-icon" />;
+      return <FaImage className="file-icon image-icon" />;
     }
     
     if (filename.toLowerCase().endsWith('.pdf')) {
@@ -126,14 +127,8 @@ const SharedFilePage = () => {
     
     // Construire l'URL Cloudinary selon le type de fichier
     // Utiliser le cloud name depuis les variables d'environnement ou fallback
-    const cloudName = 'drpbnhwh6'; // Cloud de développement
-    const baseUrl = `https://res.cloudinary.com/${cloudName}`;
     const resourceType = isImage ? 'image' : 'raw';
-    
-    // Réencoder seulement les caractères nécessaires pour Cloudinary
-    const encodedUrl = cleanUrl.replace(/ /g, '%20');
-    
-    return `${baseUrl}/${resourceType}/upload/${encodedUrl}`;
+    return buildCloudinaryUrl(cleanUrl, resourceType);
   };
 
   const renderFilePreview = (file) => {
