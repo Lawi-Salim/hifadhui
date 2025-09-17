@@ -44,12 +44,12 @@ if (isProduction) {
     },
   };
   
-  // Configuration spéciale pour Vercel + Supabase
+  // Configuration spéciale pour Vercel + Supabase - Réduire drastiquement les connexions
   dbConfig.pool = {
-    max: 3,
+    max: 1,
     min: 0,
     acquire: 30000,
-    idle: 10000,
+    idle: 5000,
     evict: 1000,
   };
 }

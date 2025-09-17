@@ -15,12 +15,13 @@ const baseOptions = {
   dialectOptions: {
     ssl: isProduction ? { require: true, rejectUnauthorized: false } : false
   },
-  // Configuration pool minimale pour Vercel
+  // Configuration pool ultra-minimale pour Vercel
   pool: {
     max: 1,
     min: 0,
-    acquire: 30000,
-    idle: 10000
+    acquire: 15000,
+    idle: 3000,
+    evict: 1000
   }
 };
 
@@ -80,17 +81,32 @@ const Utilisateur = sequelize.define('Utilisateur', {
   }
 });
 
-async function connectWithRetry(maxRetries = 3, delayMs = 1500) {
+async function connectWithRetry(maxRetries = 5, delayMs = 2000) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(`⏳ [CREATE-ADMIN] Connexion DB (tentative ${attempt}/${maxRetries})...`);
+      
+      // Fermer toutes les connexions existantes avant de tenter une nouvelle connexion
+      if (attempt > 1) {
+        try {
+          await sequelize.close();
+          console.log('🔌 [CREATE-ADMIN] Connexions fermées avant nouvelle tentative');
+        } catch (closeErr) {
+          console.log('⚠️ [CREATE-ADMIN] Erreur lors de la fermeture:', closeErr.message);
+        }
+      }
+      
       await sequelize.authenticate();
       console.log('✅ [CREATE-ADMIN] Connexion DB OK');
       return;
     } catch (err) {
       console.error(`❌ [CREATE-ADMIN] Échec tentative ${attempt}:`, err.message);
       if (attempt === maxRetries) throw err;
-      await new Promise(r => setTimeout(r, delayMs));
+      
+      // Délai progressif : 2s, 4s, 6s, 8s, 10s
+      const delay = delayMs * attempt;
+      console.log(`⏳ [CREATE-ADMIN] Attente ${delay}ms avant nouvelle tentative...`);
+      await new Promise(r => setTimeout(r, delay));
     }
   }
 }
@@ -105,7 +121,7 @@ export async function createAdmin() {
     console.log('  - DB_HOST:', process.env.DB_HOST || '(non défini)');
     
     try {
-      await connectWithRetry(3, 1500);
+      await connectWithRetry(5, 2000);
       // Créer l'admin par défaut
       await createAdminDefault();
     } catch (error) {
