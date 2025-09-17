@@ -17,10 +17,8 @@ const isProduction = () => {
 export const getCloudinaryConfig = () => {
   const production = isProduction();
   
-  // IMPORTANT: Utiliser toujours le cloud de développement selon la mémoire utilisateur
-  // Le backend stocke les fichiers dans drpbnhwh6 même en production
   return {
-    cloudName: 'drpbnhwh6', // Toujours utiliser le cloud de dev
+    cloudName: production ? 'ddxypgvuh' : 'drpbnhwh6',
     environment: production ? 'production' : 'development'
   };
 };
