@@ -184,17 +184,8 @@ app.get('/share/:token', async (req, res) => {
         <!-- Favicon -->
         <link rel="icon" href="${baseUrl}/favicon.png" />
         
-        <!-- Redirection JavaScript vers l'app React -->
-        <script>
-          // Rediriger vers l'app React après que les métadonnées soient lues
-          setTimeout(function() {
-            if (window.location.hostname === 'localhost') {
-              window.location.href = 'http://localhost:3000/share/${token}';
-            } else {
-              window.location.href = '${baseUrl}/share/${token}';
-            }
-          }, 100);
-        </script>
+        <!-- Redirection meta refresh vers l'app React -->
+        <meta http-equiv="refresh" content="1;url=${process.env.NODE_ENV === 'production' ? `${baseUrl}/share/${token}` : `http://localhost:3000/share/${token}`}" />
       </head>
       <body>
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: Arial, sans-serif; background: #f8fafc;">
