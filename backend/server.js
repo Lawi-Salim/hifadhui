@@ -47,7 +47,7 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://hifadhui.site", "https://hifadhui.vercel.app"],
+      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://hifadhui.site"],
       fontSrc: ["'self'"],
       connectSrc: ["'self'"],
       frameSrc: ["'none'"],
@@ -62,7 +62,6 @@ app.use(helmet({
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'https://hifadhui.vercel.app',
     'https://hifadhui.site',
     'https://www.hifadhui.site',
     process.env.FRONTEND_URL
@@ -140,7 +139,7 @@ app.get('/share/:token', (req, res) => {
   
   // Rediriger directement vers l'application React
   const frontendUrl = process.env.NODE_ENV === 'production' 
-    ? 'https://hifadhui.vercel.app' 
+    ? 'https://hifadhui.site' 
     : 'http://localhost:3000';
   
   res.redirect(`${frontendUrl}/share/${token}`);
