@@ -233,8 +233,14 @@ app.get('/share/:token', async (req, res) => {
         <!-- Favicon -->
         <link rel="icon" href="${baseUrl}/favicon.png" />
         
-        <!-- Redirection meta refresh vers l'app React -->
-        <meta http-equiv="refresh" content="1;url=${process.env.NODE_ENV === 'production' ? `${baseUrl}/share/${token}?view=app` : `http://localhost:3000/share/${token}`}" />
+        <!-- Lien vers l'application -->
+        <script>
+          // Redirection JavaScript au lieu de meta refresh pour éviter les boucles
+          setTimeout(() => {
+            const appUrl = '${process.env.NODE_ENV === 'production' ? 'https://hifadhui.vercel.app' : 'http://localhost:3000'}/share/${token}';
+            window.location.href = appUrl;
+          }, 2000);
+        </script>
       </head>
       <body>
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: Arial, sans-serif; background: #f8fafc;">
