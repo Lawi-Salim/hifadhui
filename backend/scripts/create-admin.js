@@ -149,26 +149,26 @@ async function createAdminDefault() {
       console.log('⚠️  [CREATE-ADMIN] Un administrateur existe déjà:', existingAdmin.email);
       console.log('🔄 [CREATE-ADMIN] Mise à jour des informations de l\'admin existant...');
       await existingAdmin.update({
-        username: 'Hifadhui Mavuna',
-        email: 'mavuna@hifadhui.site',
-        password: 'Lawi@1616',
+        username: process.env.ADMIN_NAME || 'name',
+        email: process.env.ADMIN_MAIL || 'mail',
+        password: process.env.ADMIN_PASSWORD || 'TempPassword123!',
         role: 'admin'
       });
       console.log('✅ [CREATE-ADMIN] Administrateur mis à jour avec succès');
     } else {
       console.log('🔨 [CREATE-ADMIN] Création d\'un nouvel admin...');
       const admin = await Utilisateur.create({
-        username: 'Hifadhui Mavuna',
-        email: 'mavuna@hifadhui.site',
-        password: 'Lawi@1616',
+        username: process.env.ADMIN_NAME || 'name',
+        email: process.env.ADMIN_MAIL || 'mail',
+        password: process.env.ADMIN_PASSWORD || 'TempPassword123!',
         role: 'admin'
       });
       console.log('✅ [CREATE-ADMIN] Administrateur créé:', admin.id);
     }
 
     console.log('\n🔐 [CREATE-ADMIN] Connexions par défaut:');
-    console.log('Email: mavuna@hifadhui.site');
-    console.log('Mot de passe: Lawi@1616');
+    console.log('Email:', process.env.ADMIN_MAIL || 'mail');
+    console.log('Mot de passe:', process.env.ADMIN_PASSWORD || 'TempPassword123!');
     console.log('⚠️  [CREATE-ADMIN] Changez le mot de passe après la première connexion');
 
   } catch (error) {
