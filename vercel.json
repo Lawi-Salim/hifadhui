@@ -13,6 +13,25 @@
       "use": "@vercel/node"
     }
   ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self' 'unsafe-inline' 'unsafe-eval' *; script-src 'self' 'unsafe-inline' 'unsafe-eval' *; style-src 'self' 'unsafe-inline' *; img-src 'self' data: *; font-src 'self' *; connect-src 'self' *;"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "origin-when-cross-origin"
+        }
+      ]
+    }
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
@@ -20,6 +39,10 @@
     },
     {
       "src": "/static/(.*)",
+      "dest": "/frontend/static/$1"
+    },
+    {
+      "src": "/auth/static/(.*)",
       "dest": "/frontend/static/$1"
     },
     {
@@ -31,6 +54,10 @@
       "dest": "/frontend/$1"
     },
     {
+      "src": "/auth/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|json|txt|woff|woff2|ttf|eot))",
+      "dest": "/frontend/$1"
+    },
+    {
       "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|json|txt|woff|woff2|ttf|eot))",
       "dest": "/frontend/$1"
     },
@@ -39,11 +66,19 @@
       "dest": "/frontend/manifest.json"
     },
     {
+      "src": "/auth/manifest\\.json",
+      "dest": "/frontend/manifest.json"
+    },
+    {
       "src": "/og-image\\.png",
       "dest": "/frontend/og-image.png"
     },
     {
       "src": "/favicon\\.png",
+      "dest": "/frontend/favicon.png"
+    },
+    {
+      "src": "/auth/favicon\\.png",
       "dest": "/frontend/favicon.png"
     },
     {

@@ -493,9 +493,17 @@ router.get('/google/callback',
       // Générer le token JWT avec expiration de 7 jours
       const token = generateToken(user.id);
 
-      // Pour les comptes Google, toujours rediriger vers le dashboard après authentification
-      // Pas besoin de double authentification pour OAuth
-      const redirectUrl = `${frontendUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user.toJSON()))}&isNewAccount=${isNewAccount}&wasLinked=${wasLinked}`;
+      // Redirection directe vers le dashboard avec les données dans l'URL
+      // Évite les problèmes de ressources statiques sur /auth/callback
+      const userData = {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        provider: user.provider,
+        avatar_url: user.avatar_url
+      };
+      
+      const redirectUrl = `${frontendUrl}/dashboard?oauth_success=true&token=${token}&user=${encodeURIComponent(JSON.stringify(userData))}&isNewAccount=${isNewAccount}&wasLinked=${wasLinked}`;
       
       console.log(`✅ [GOOGLE CALLBACK] Redirection vers dashboard pour: ${user.email} (nouveau: ${isNewAccount}, lié: ${wasLinked})`);
       

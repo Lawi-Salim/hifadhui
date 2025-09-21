@@ -274,9 +274,6 @@ const Login = () => {
               Créer un compte
             </Link>
           </p>
-          <p style={{ fontSize: '0.875rem', color: '#666', marginTop: '0.5rem' }}>
-            💡 Nouveau sur Hifadhui ? Utilisez "Créer un compte" pour votre première connexion Google
-          </p>
         </div>
       </div>
     </div>

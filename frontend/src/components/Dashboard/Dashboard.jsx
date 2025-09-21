@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { FiFolder, FiFileText, FiLock, FiUpload, FiFile, FiBarChart2, FiMenu, FiImage } from 'react-icons/fi';
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const { } = useAuth();
+  const { loginWithToken } = useAuth();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalFiles: 0,
     totalImages: 0,
@@ -16,6 +18,61 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [welcomeMessage, setWelcomeMessage] = useState('');
+
+  // Gérer l'authentification OAuth depuis les paramètres URL
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      const oauthSuccess = searchParams.get('oauth_success');
+      const token = searchParams.get('token');
+      const userParam = searchParams.get('user');
+      const isNewAccount = searchParams.get('isNewAccount') === 'true';
+      const wasLinked = searchParams.get('wasLinked') === 'true';
+
+      if (oauthSuccess === 'true' && token && userParam) {
+        try {
+          const user = JSON.parse(decodeURIComponent(userParam));
+          
+          console.log('✅ [DASHBOARD] Traitement OAuth callback:', {
+            user: user.email,
+            isNewAccount,
+            wasLinked
+          });
+
+          // Authentifier l'utilisateur
+          const result = loginWithToken(user, token);
+          
+          if (result.success) {
+            // Générer le message de bienvenue
+            let message = '';
+            if (isNewAccount) {
+              message = `Bienvenue ${user.username || user.email} ! Votre compte Google a été créé avec succès.`;
+            } else if (wasLinked) {
+              message = `Compte Google lié avec succès ! Bienvenue ${user.username || user.email}.`;
+            } else {
+              message = `Bon retour ${user.username || user.email} !`;
+            }
+            
+            setWelcomeMessage(message);
+            
+            // Effacer le message après 5 secondes
+            const timer = setTimeout(() => {
+              setWelcomeMessage('');
+            }, 5000);
+            
+            // Nettoyer l'URL des paramètres OAuth
+            navigate('/dashboard', { replace: true });
+            
+            return () => clearTimeout(timer);
+          }
+        } catch (error) {
+          console.error('❌ [DASHBOARD] Erreur OAuth callback:', error);
+          navigate('/login?error=Erreur lors de l\'authentification', { replace: true });
+        }
+      }
+    };
+
+    handleOAuthCallback();
+  }, [searchParams, loginWithToken, navigate]);
 
   // Gérer les messages de bienvenue depuis la navigation
   useEffect(() => {
