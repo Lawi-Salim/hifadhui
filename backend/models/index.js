@@ -1,7 +1,6 @@
 import { sequelize } from '../config/database.js';
 import Utilisateur from './Utilisateur.js';
 import File from './File.js';
-import Certificate from './Certificate.js';
 import Dossier from './Dossier.js';
 import ActivityLog from './ActivityLog.js';
 import FileShare from './FileShare.js';
@@ -63,16 +62,6 @@ File.belongsTo(Dossier, {
   as: 'fileDossier'  // Le dossier contenant le fichier
 });
 
-File.hasMany(Certificate, {
-  foreignKey: 'root_file_id',
-  as: 'fileCertificates'  // Tous les certificats pour ce fichier
-});
-
-// 4. Relations Certificat
-Certificate.belongsTo(File, {
-  foreignKey: 'root_file_id',
-  as: 'certificateFile'  // Le fichier associé à ce certificat
-});
 
 // 5. Relations ActivityLog
 ActivityLog.belongsTo(Utilisateur, {
@@ -111,7 +100,6 @@ export {
   sequelize,
   Utilisateur,
   File,
-  Certificate,
   Dossier,
   ActivityLog,
   FileShare,

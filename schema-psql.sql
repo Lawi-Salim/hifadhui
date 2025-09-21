@@ -3,7 +3,7 @@
 -- ========================================
 -- L'ordre est important à cause des clés étrangères
 DROP TABLE IF EXISTS FileShares CASCADE;
-DROP TABLE IF EXISTS Certificate CASCADE;
+DROP TABLE IF EXISTS certificate CASCADE;
 DROP TABLE IF EXISTS File CASCADE;
 DROP TABLE IF EXISTS Dossier CASCADE;
 DROP TABLE IF EXISTS ActivityLogs CASCADE;
@@ -17,8 +17,18 @@ CREATE TABLE Utilisateur (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL, -- hashé
+    password VARCHAR(255), -- hashé, NULL pour utilisateurs OAuth
     role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+    -- Colonnes OAuth
+    google_id VARCHAR(255) UNIQUE,
+    provider VARCHAR(50) DEFAULT 'local' CHECK (provider IN ('local', 'google', 'facebook')),
+    avatar_url TEXT,
+    is_email_verified BOOLEAN DEFAULT FALSE,
+    -- Colonnes pour la période de grâce (soft delete)
+    deleted_at TIMESTAMP NULL, -- Date de demande de suppression
+    deletion_scheduled_at TIMESTAMP NULL, -- Date programmée de suppression définitive
+    recovery_token VARCHAR(255) UNIQUE, -- Token pour récupération du compte
+    recovery_token_expires_at TIMESTAMP NULL, -- Expiration du token de récupération
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -57,16 +67,6 @@ CREATE TABLE File (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ========================================
--- TABLE : Certificate
--- ========================================
-CREATE TABLE Certificate (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    root_file_id UUID NOT NULL REFERENCES File(id) ON DELETE CASCADE,
-    pdf_url TEXT NOT NULL,
-    date_generated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 -- ========================================
 -- TABLE : ActivityLogs
@@ -112,9 +112,11 @@ CREATE TABLE FileShares (
 -- INDEXES (performance)
 -- ========================================
 CREATE INDEX idx_file_owner_id ON File(owner_id);
-CREATE INDEX idx_certificate_root_file_id ON Certificate(root_file_id);
 CREATE INDEX idx_dossier_parent_id ON Dossier(parent_id);
 CREATE INDEX idx_utilisateur_role ON Utilisateur(role);
+CREATE INDEX idx_utilisateur_google_id ON Utilisateur(google_id);
+CREATE INDEX idx_utilisateur_provider ON Utilisateur(provider);
+CREATE INDEX idx_utilisateur_email_provider ON Utilisateur(email, provider);
 CREATE INDEX idx_activitylogs_user_id ON ActivityLogs(user_id);
 CREATE INDEX idx_activitylogs_action_type ON ActivityLogs(action_type);
 CREATE INDEX idx_fileshares_file_id ON FileShares(file_id);
@@ -124,6 +126,12 @@ CREATE INDEX idx_fileshares_created_by ON FileShares(created_by);
 CREATE INDEX idx_password_reset_tokens_token ON passwordresettokens(token);
 CREATE INDEX idx_password_reset_tokens_email ON passwordresettokens(email);
 CREATE INDEX idx_password_reset_tokens_expires_at ON passwordresettokens(expires_at);
+
+-- Index pour la période de grâce
+CREATE INDEX idx_utilisateur_deleted_at ON Utilisateur(deleted_at);
+CREATE INDEX idx_utilisateur_deletion_scheduled_at ON Utilisateur(deletion_scheduled_at);
+CREATE INDEX idx_utilisateur_recovery_token ON Utilisateur(recovery_token);
+CREATE INDEX idx_utilisateur_recovery_token_expires_at ON Utilisateur(recovery_token_expires_at);
 
 -- Unicité des noms de dossiers à la racine pour un utilisateur (exclut le dossier système)
 CREATE UNIQUE INDEX idx_dossier_racine_unique_nom ON Dossier(owner_id, name) WHERE parent_id IS NULL AND is_system_root = FALSE;
@@ -137,9 +145,6 @@ CREATE INDEX idx_dossier_system_root ON Dossier(is_system_root) WHERE is_system_
 -- ========================================
 -- TRIGGERS
 -- ========================================
-
--- Trigger de génération automatique de certificats supprimé
--- Les certificats sont maintenant générés manuellement via /api/v1/certificates/generate/:fileId
 
 -- Fonction générique pour mise à jour de updated_at
 CREATE OR REPLACE FUNCTION set_updated_at()
@@ -161,10 +166,6 @@ BEFORE UPDATE ON File
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 
-CREATE TRIGGER trg_certificate_updated
-BEFORE UPDATE ON Certificate
-FOR EACH ROW
-EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_dossier_updated
 BEFORE UPDATE ON Dossier
@@ -187,4 +188,4 @@ EXECUTE FUNCTION set_updated_at();
 
 -- Créer le dossier racine système unique
 INSERT INTO Dossier (name, name_original, owner_id, parent_id, is_system_root)
-VALUES ('Hifadhwi', 'Hifadhwi', NULL, NULL, TRUE);
+VALUES ('Hifadhui', 'Hifadhui', NULL, NULL, TRUE);

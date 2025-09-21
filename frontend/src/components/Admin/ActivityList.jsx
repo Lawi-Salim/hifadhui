@@ -4,7 +4,8 @@ import { getActivitySummary } from '../../services/adminService';
 import Modal from '../Modal';
 import UserActivityDetails from './UserActivityDetails';
 import Pagination from '../Pagination';
-import UserAvatar from '../Layout/UserAvatar';
+import SmartAvatar from '../Layout/SmartAvatar';
+import UserDisplayName from '../Layout/UserDisplayName';
 
 const ActivityList = () => {
   const [summary, setSummary] = useState([]);
@@ -61,9 +62,16 @@ const ActivityList = () => {
           {summary.length > 0 ? (
             summary.map(item => (
               <tr key={item.id} onClick={() => setSelectedUser(item.user)} style={{ cursor: 'pointer' }}>
-                <td><UserAvatar name={item.user?.username} size={32} /></td>
+                <td><SmartAvatar user={item.user} size={32} /></td>
                 <td>{new Date(item.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
-                <td>{item.user?.username || 'N/A'}</td>
+                <td>
+                  <div>
+                    <div>{item.user?.username || 'N/A'}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                      ID: <UserDisplayName user={item.user} fallback="N/A" />
+                    </div>
+                  </div>
+                </td>
                 <td>{item.user?.email || 'N/A'}</td>
                                 <td>{formatActionType(item.actionType)}</td>
                 <td>{item.totalUserActivities}</td>

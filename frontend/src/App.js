@@ -8,16 +8,21 @@ import Login from './components/Auth/Login.jsx';
 import Register from './components/Auth/Register.jsx';
 import ForgotPassword from './components/Auth/ForgotPassword.jsx';
 import ResetPassword from './components/Auth/ResetPassword.jsx';
+import AccountRecovery from './components/Auth/AccountRecovery.jsx';
+import AuthCallback from './components/Auth/AuthCallback.jsx';
 import HomePage from './pages/HomePage.jsx';
 import Contact from './pages/Contact.jsx';
+import PrivacyPolicy from './components/privacy/PrivacyPolicy.jsx';
+import TermsOfService from './components/privacy/TermsOfService.jsx';
 import Dashboard from './components/Dashboard/Dashboard.jsx';
 import FileUpload from './components/Files/FileUpload.jsx';
 import FilesPage from './components/Files/FilesPage.jsx';
 import Images from './components/Images.jsx';
-import CertificateList from './components/Certificates/CertificateList.jsx';
 import DossiersPage from './components/Dossiers/DossiersPage.jsx';
 import DossierDetailsPage from './components/Dossiers/DossierDetailsPage.jsx';
 import SharedFilePage from './pages/SharedFilePage.jsx';
+import SettingsPage from './components/Settings/SettingsPage.jsx';
+import DeleteAccountWizard from './components/Settings/DeleteAccount/DeleteAccountWizard.jsx';
 import ListeUtilisateurs from './components/Admin/ListeUtilisateurs.jsx';
 import AdminDashboard from './components/Admin/AdminDashboard.jsx';
 import AdminRoute from './components/routes/AdminRoute.jsx';
@@ -55,11 +60,8 @@ const PublicRoute = ({ children }) => {
     return <Navigate to="/dashboard" />;
   }
   
-  // Si pas connecté mais a déjà été connecté avant, rediriger vers login
-  const hasLoggedInBefore = localStorage.getItem('hasLoggedInBefore') === 'true';
-  if (hasLoggedInBefore && window.location.pathname === '/') {
-    return <Navigate to="/login" />;
-  }
+  // Permettre l'accès à la page d'accueil même si l'utilisateur a déjà été connecté
+  // La redirection automatique vers login est supprimée pour permettre le retour à l'accueil
   
   return children;
 };
@@ -90,9 +92,24 @@ function AppContent() {
               <ResetPassword />
             </PublicRoute>
           } />
+          <Route path="/account-recovery/:token" element={
+            <PublicRoute>
+              <AccountRecovery />
+            </PublicRoute>
+          } />
           <Route path="/contact" element={
             <PublicRoute>
               <Contact />
+            </PublicRoute>
+          } />
+          <Route path="/privacy" element={
+            <PublicRoute>
+              <PrivacyPolicy />
+            </PublicRoute>
+          } />
+          <Route path="/terms" element={
+            <PublicRoute>
+              <TermsOfService />
             </PublicRoute>
           } />
           <Route path="/register" element={
@@ -100,6 +117,7 @@ function AppContent() {
               <Register />
             </PublicRoute>
           } />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/dashboard" element={
             <PrivateRoute>
               <Dashboard />
@@ -120,11 +138,6 @@ function AppContent() {
               <Images />
             </PrivateRoute>
           } />
-          <Route path="/certificates" element={
-            <PrivateRoute>
-              <CertificateList />
-            </PrivateRoute>
-          } />
           <Route path="/dossiers" element={
             <PrivateRoute>
               <DossiersPage />
@@ -138,6 +151,16 @@ function AppContent() {
           <Route path="/dossiers/*" element={
             <PrivateRoute>
               <DossierDetailsPage />
+            </PrivateRoute>
+          } />
+          <Route path="/settings/delete-account/*" element={
+            <PrivateRoute>
+              <DeleteAccountWizard />
+            </PrivateRoute>
+          } />
+          <Route path="/settings" element={
+            <PrivateRoute>
+              <SettingsPage />
             </PrivateRoute>
           } />
           <Route element={<AdminRoute />}>

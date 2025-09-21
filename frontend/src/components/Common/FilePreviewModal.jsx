@@ -66,9 +66,7 @@ const FilePreviewModal = ({ file, onClose }) => {
               <dl className="details-list">
                 <dt>Nom:</dt><dd>{file.filename}</dd>
                 <dt>Type:</dt><dd>{file.mimetype}</dd>
-                <dt>Version:</dt><dd>{file.certificateFile ? file.certificateFile.version : (file.version || 1)}</dd>
                 <dt>Date d'upload:</dt><dd>{formatDate(file.date_upload)}</dd>
-                <dt>Certificat:</dt><dd>{file.fileCertificates?.length > 0 ? 'Disponible' : 'Disponible'}</dd>
               </dl>
             </div>
             <div className="detail-section">

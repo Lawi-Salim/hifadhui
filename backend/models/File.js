@@ -33,7 +33,7 @@ const File = sequelize.define('File', {
         const isCloudinaryUrl = /^https:\/\/res\.cloudinary\.com\//.test(value);
         const isRelativePath = /^\/uploads\//.test(value);
         const isHttpUrl = /^https?:\/\//.test(value);
-        const isCloudinaryPath = /^(v\d+\/)?Hifadhwi\//.test(value) || /^v\d+\/[^/]+\.(jpg|jpeg|png|pdf)$/i.test(value);
+        const isCloudinaryPath = /^(v\d+\/)?Hifadhui\//.test(value) || /^v\d+\/[^/]+\.(jpg|jpeg|png|pdf)$/i.test(value);
         
         if (!isCloudinaryUrl && !isRelativePath && !isHttpUrl && !isCloudinaryPath) {
           throw new Error('L\'URL du fichier doit être une URL Cloudinary valide, un chemin relatif /uploads/ ou un chemin Cloudinary relatif');

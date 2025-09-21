@@ -99,7 +99,7 @@ const Contact = () => {
         </Link>
 
         <div className="auth-header">
-          <div className="auth-logo"><FiLock /> Hifadhwi</div>
+          <div className="auth-logo"><FiLock /> Hifadhui</div>
           <h1 className="auth-title">Contactez-nous</h1>
           <p className="auth-subtitle">
             Une question, une suggestion ou besoin d'aide ? Nous sommes là pour vous accompagner.

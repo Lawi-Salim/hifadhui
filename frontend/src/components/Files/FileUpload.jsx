@@ -272,13 +272,6 @@ const FileUpload = () => {
                   </div>
                 </div>
                 
-                <div className="security-feature-item">
-                  <div className="text-primary text-6xl"><FiFileText /></div>
-                  <div>
-                    <div className="font-medium">Certificat PDF</div>
-                    <div className="text-sm text-secondary">Preuve de propriété</div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>

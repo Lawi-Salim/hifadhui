@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { FiEye, FiEyeOff, FiLock, FiCheck, FiX, FiArrowLeft } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { FiEye, FiEyeOff, FiCheck, FiX, FiArrowLeft } from 'react-icons/fi';
+import { FaGoogle, FaFacebook, FaGithub } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import './Auth.css';
 
@@ -27,6 +28,18 @@ const Register = () => {
   });
   const { register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Gérer les paramètres d'URL pour les messages d'erreur
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const error = urlParams.get('error');
+    const message = urlParams.get('message');
+
+    if (error && message) {
+      setErrors({ general: decodeURIComponent(message) });
+    }
+  }, [location.search]);
 
   // Fonction de validation de la force du mot de passe
   const validatePasswordStrength = (password) => {
@@ -189,6 +202,20 @@ const Register = () => {
     setLoading(false);
   };
 
+  const handleGoogleRegister = () => {
+    try {
+      // Rediriger vers l'endpoint Google OAuth du backend avec paramètre register
+      const backendUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+      const googleUrl = `${backendUrl}/api/v1/auth/google?action=register`;
+      
+      window.location.assign(googleUrl);
+      
+    } catch (error) {
+      console.error('❌ [GOOGLE REGISTER] Erreur lors de la redirection:', error);
+      setErrors({ general: 'Erreur lors de la redirection vers Google' });
+    }
+  };
+
   return (
     <div className="auth-page">
       <div className="auth-container">
@@ -196,10 +223,9 @@ const Register = () => {
           <FiArrowLeft /> Retour à l'accueil
         </Link>
         <div className="auth-header">
-          <div className="auth-logo"><FiLock /> Hifadhwi</div>
           <h1 className="auth-title">Créer un compte</h1>
           <p className="auth-subtitle">
-            Rejoignez Hifadhwi et sécurisez vos documents
+            Rejoignez Hifadhui et sécurisez vos documents
           </p>
         </div>
 
@@ -333,6 +359,41 @@ const Register = () => {
             </div>
             {/* Critères toujours visibles sur une ligne */}
             <PasswordCriteria criteria={passwordStrength.criteria} />
+          </div>
+
+          <div className="oauth-m">
+            <div className='label-oauth'>Ou s'inscrire avec</div>
+            <div className="oauth-s">
+              <button 
+                type="button"
+                className="btn-oauth"
+                onClick={handleGoogleRegister}
+                disabled={loading}
+              >
+                <FaGoogle size={18} />
+                Google
+              </button>
+
+              <button 
+                type="button"
+                className="btn-oauth"
+                disabled
+                title="Bientôt disponible"
+              >
+                <FaFacebook size={18} />
+                Facebook
+              </button>
+
+              <button
+                type="button"
+                className="btn-oauth"
+                disabled
+                title='Bientôt disponible'
+              >
+                <FaGithub size={18} />
+                Github
+              </button>
+            </div>
           </div>
 
           <button

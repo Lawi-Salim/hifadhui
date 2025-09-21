@@ -61,7 +61,6 @@ const Sidebar = () => {
     { path: '/files', label: 'PDFs', icon: FiFileText },
     { path: '/dossiers', label: 'Mes Dossiers', icon: FiFolder },
     { path: '/images', label: 'Images', icon: FiImage },
-    { path: '/certificates', label: 'Certificats', icon: FiFileText }
   ];
 
   if (user && user.role === 'admin') {
@@ -97,7 +96,7 @@ const Sidebar = () => {
       <div className="sidebar-brand">
         <Link to="/dashboard" className="brand-link">
           <span className="brand-icon"><FiLock /></span>
-          {(!isMobile || isExpanded) && <span className="brand-text">Hifadhwi</span>}
+          {(!isMobile || isExpanded) && <span className="brand-text">Hifadhui</span>}
         </Link>
       </div>
 

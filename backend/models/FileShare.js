@@ -11,7 +11,7 @@ const FileShare = sequelize.define('FileShare', {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'files',
+        model: 'file',
         key: 'id'
       },
       onDelete: 'CASCADE'
@@ -29,7 +29,7 @@ const FileShare = sequelize.define('FileShare', {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'app_users',
+        model: 'utilisateur',
         key: 'id'
       },
       onDelete: 'CASCADE'
@@ -52,7 +52,7 @@ const FileShare = sequelize.define('FileShare', {
       defaultValue: DataTypes.NOW
     }
   }, {
-    tableName: 'fileshares',
+    tableName: 'FileShares',
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at'

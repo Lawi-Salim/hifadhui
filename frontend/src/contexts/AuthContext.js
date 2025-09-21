@@ -115,6 +115,36 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Méthode pour les connexions OAuth (Google, etc.)
+  const loginWithToken = (user, token) => {
+    try {
+      console.log('🔐 [AUTH CONTEXT] Connexion OAuth avec token:', {
+        userId: user.id,
+        email: user.email,
+        provider: user.provider
+      });
+
+      // Stocker le token et l'utilisateur
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('loginTimestamp', Date.now().toString());
+      
+      // Marquer qu'un utilisateur s'est connecté
+      localStorage.setItem('hasLoggedInBefore', 'true');
+      
+      // Mettre à jour l'état
+      setUser(user);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('❌ [AUTH CONTEXT] Erreur connexion OAuth:', error);
+      return {
+        success: false,
+        message: 'Erreur lors de la connexion OAuth'
+      };
+    }
+  };
+
   const register = async (username, email, password) => {
     try {
       const response = await api.post('/auth/register', {
@@ -170,6 +200,7 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     login,
+    loginWithToken,
     register,
     logout,
     forceLogout,

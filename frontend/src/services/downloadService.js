@@ -26,16 +26,24 @@ const generateZipFileName = (selectedItems) => {
   if (uniqueTypes.length === 1) {
     switch (uniqueTypes[0]) {
       case 'image':
-        return 'Hifadhwi-images.zip';
+        return 'Hifadhui-images.zip';
       case 'pdf':
-        return 'Hifadhwi-pdfs.zip';
+        return 'Hifadhui-pdfs.zip';
       default:
-        return 'Hifadhwi-files.zip';
+        return 'Hifadhui-files.zip';
     }
   } else {
     // Fichiers mixtes
-    return 'Hifadhwi-files.zip';
+    return 'Hifadhui-files.zip';
   }
+};
+
+/**
+ * Génère le nom du fichier ZIP pour l'export complet des données utilisateur
+ * @returns {string} - Nom du fichier ZIP d'export
+ */
+const generateDataExportFileName = () => {
+  return 'Hifadhui-data.zip';
 };
 
 /**
@@ -174,9 +182,131 @@ export const downloadSelectedItemsAsZip = async (selectedItems, onProgress = nul
   }
 };
 
+/**
+ * Exporte toutes les données utilisateur dans un ZIP structuré
+ * @param {Array} userFiles - Tous les fichiers de l'utilisateur
+ * @param {Function} onProgress - Callback de progression
+ * @returns {Promise} - Promise de téléchargement
+ */
+const exportUserData = async (userFiles = [], onProgress = null) => {
+  const JSZip = (await import('jszip')).default;
+  const zip = new JSZip();
+  
+  console.log('🗂️ [DATA EXPORT] Début export données utilisateur');
+  console.log(`📁 Fichiers: ${userFiles.length}`);
+  
+  // Créer les dossiers principaux
+  const imagesFolder = zip.folder('Images');
+  const pdfsFolder = zip.folder('PDFs');
+  
+  let processedItems = 0;
+  const totalItems = userFiles.length;
+  
+  try {
+    // Traitement des fichiers
+    for (const file of userFiles) {
+      try {
+        if (onProgress) {
+          onProgress({
+            progress: Math.round((processedItems / totalItems) * 90), // 90% max pour les fichiers
+            currentItem: `Téléchargement: ${file.filename}`,
+            type: 'export'
+          });
+        }
+        
+        const fileType = getFileType(file.mimetype);
+        const cloudinaryUrl = getCloudinaryUrlForItem(file);
+        if (!cloudinaryUrl) {
+          console.error(`❌ URL manquante pour le fichier: ${file.filename}`);
+          continue;
+        }
+        const blob = await downloadFileAsBlob(cloudinaryUrl, file.filename);
+        
+        // Organiser par type dans les dossiers appropriés
+        switch (fileType) {
+          case 'image':
+            imagesFolder.file(file.filename, blob);
+            console.log(`📸 Image ajoutée: ${file.filename}`);
+            break;
+          case 'pdf':
+            pdfsFolder.file(file.filename, blob);
+            console.log(`📄 PDF ajouté: ${file.filename}`);
+            break;
+          default:
+            // Les autres fichiers vont dans le dossier PDFs par défaut
+            pdfsFolder.file(file.filename, blob);
+            console.log(`📎 Fichier ajouté: ${file.filename}`);
+            break;
+        }
+        
+        processedItems++;
+      } catch (error) {
+        console.error(`❌ Erreur téléchargement fichier ${file.filename}:`, error);
+        // Continuer avec les autres fichiers même si un échoue
+      }
+    }
+    
+    
+    // Finalisation du ZIP
+    if (onProgress) {
+      onProgress({
+        progress: 95,
+        currentItem: 'Création du fichier ZIP...',
+        type: 'export'
+      });
+    }
+    
+    console.log('📦 Génération du fichier ZIP...');
+    const zipBlob = await zip.generateAsync({ 
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 }
+    });
+    
+    // Téléchargement
+    const fileName = generateDataExportFileName();
+    const url = URL.createObjectURL(zipBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    if (onProgress) {
+      onProgress({
+        progress: 100,
+        currentItem: 'Export terminé !',
+        type: 'export',
+        completed: true
+      });
+    }
+    
+    console.log(`✅ [DATA EXPORT] Export terminé: ${fileName}`);
+    console.log(`📊 Statistiques: ${processedItems}/${totalItems} éléments traités`);
+    
+    return {
+      success: true,
+      fileName,
+      stats: {
+        totalFiles: userFiles.length,
+        processedItems,
+        totalItems
+      }
+    };
+    
+  } catch (error) {
+    console.error('❌ [DATA EXPORT] Erreur lors de la création du ZIP:', error);
+    throw new Error(`Erreur lors de l'export des données: ${error.message}`);
+  }
+};
+
 const downloadService = {
   downloadSelectedItemsAsZip,
   generateZipFileName,
+  generateDataExportFileName,
+  exportUserData,
   getFileType
 };
 

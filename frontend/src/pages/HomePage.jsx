@@ -14,7 +14,7 @@ const HomePage = () => {
     {
       icon: <FiShield />,
       title: "Sécurité Maximale",
-      description: "Vos documents sont protégés par un système de hachage SHA-256 et des certificats de propriété."
+      description: "Vos documents sont protégés par un système de hachage SHA-256 et des signatures numériques."
     },
     {
       icon: <FiUpload />,
@@ -75,7 +75,7 @@ const HomePage = () => {
         
         <div className="hero-visual">
           <div className="security-badge">
-            <img src="/hifadhwi-logo.svg" alt="Hifadhwi Logo" className="Hifadhwi-logo" />
+            <img src="/hifadhui-logo.svg" alt="Hifadhui Logo" className="hifadhui-logo" />
           </div>
         </div>
       </section>
@@ -83,7 +83,7 @@ const HomePage = () => {
       {/* Features Section */}
       <section className="features-section">
         <div className="container-home">
-          <h2 className="section-title">Pourquoi choisir Hifadhwi ?</h2>
+          <h2 className="section-title">Pourquoi choisir Hifadhui ?</h2>
           <div className="features-grid">
             {features.map((feature, index) => (
               <div key={index} className="feature-card">
@@ -121,7 +121,7 @@ const HomePage = () => {
           <div className="container-home">
             <div className="cta-content">
               <h2>Prêt à sécuriser vos documents ?</h2>
-              <p>Rejoignez Hifadhwi et bénéficiez d'un stockage sécurisé avec preuve de propriété.</p>
+              <p>Rejoignez Hifadhui et bénéficiez d'un stockage sécurisé avec preuve de propriété.</p>
               <Link to="/register" className="btn btn-primary">
                 Commencer gratuitement
               </Link>

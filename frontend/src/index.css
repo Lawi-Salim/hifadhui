@@ -522,31 +522,7 @@ h1, h2, h3, h4, h5, h6 {
   background-color: #f8fafc;
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.3s ease-out;
-}
-
-.modal {
-  background-color: var(--surface-color);
-  border-radius: 12px;
-  box-shadow: var(--shadow-lg);
-  max-width: 550px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: scaleUp 0.3s ease-out;
-}
+/* Styles de modal supprimés - maintenant dans Modal.css */
 
 .modal-header {
   padding: 1.25rem 1.5rem;

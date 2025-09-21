@@ -57,7 +57,7 @@ const ForgotPassword = () => {
       <div className="auth-page">
         <div className="auth-container">
           <div className="auth-header">
-            <div className="auth-logo"><FiKey /> Hifadhwi</div>
+            <div className="auth-logo"><FiKey /> Hifadhui</div>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <div style={{ 
                 width: '64px', 
@@ -98,7 +98,7 @@ const ForgotPassword = () => {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-header">
-          <div className="auth-logo"><FiKey /> Hifadhwi</div>
+          <div className="auth-logo"><FiKey /> Hifadhui</div>
           <h1 className="auth-title">Mot de passe oublié</h1>
           <p className="auth-subtitle">
             Entrez votre email pour recevoir un lien de réinitialisation.

@@ -23,13 +23,13 @@
 
 ## 🎯 Mission du Projet
 
-**Hifadhui** (ou **Hifadhwi** en comorien (shiKomori) qui signifie "préserver, protéger" comme en swahili) est un coffre-fort numérique personnel conçu pour les créateurs, artistes et développeurs. Il offre une solution robuste pour **stocker, gérer et prouver la propriété intellectuelle** de vos œuvres numériques (images, ebooks, documents, etc.).
+**Hifadhui** (ou **Hifadhui** en comorien (shiKomori) qui signifie "préserver, protéger" comme en swahili) est un coffre-fort numérique personnel conçu pour les créateurs, artistes et développeurs. Il offre une solution robuste pour **stocker, gérer et prouver la propriété intellectuelle** de vos œuvres numériques (images, ebooks, documents, etc.).
 
 Dans un monde où le contenu digital est facilement dupliqué, Hifadhui apporte une réponse claire en générant une **preuve d'antériorité infalsifiable** pour chaque fichier, vous donnant ainsi un avantage juridique en cas de litige sur les droits d'auteur.
 
-**Pourquoi “Hifadhui” et pas “Hifadhwi” ?**
+**Pourquoi "Hifadhui" ?**
 
-Le nom **“Hifadhui”** vient du swahili et signifie **“protéger, préserver”**. En shikomori, la langue parlée aux Comores, on dit **“Hifadhwi”** avec un son légèrement différent. Nous avons choisi **“Hifadhui”** pour sa portée régionale et sa familiarité, tout en honorant la richesse linguistique comorienne avec **“Hifadhwi”**. Les deux mots partagent la même racine et symbolisent la protection de vos créations numériques.
+Le nom **"Hifadhui"** vient du swahili et signifie **"protéger, préserver"**. Ce nom symbolise parfaitement notre mission : protéger vos créations numériques et préserver vos droits de propriété intellectuelle.
 
 **Quelques infos importantes**
   📧 *mavuna@hifadhui.site*
@@ -42,7 +42,6 @@ Le projet intègre déjà un ensemble de fonctionnalités puissantes, et d'autre
 
 - **✍️ Preuve d'Antériorité Infalsifiable** : Chaque fichier est immédiatement traité pour générer une preuve de propriété robuste :
   - **Hash SHA-256 & Signature** : Une empreinte numérique unique qui garantit l'intégrité du fichier et une signature pour la traçabilité.
-  - **Certificat de Propriété PDF** : Un document généré automatiquement qui formalise votre propriété. Il contient le nom du fichier, les informations du propriétaire, la date de dépôt et les signatures numériques, créant ainsi une preuve d'antériorité solide et vérifiable.
 
 - **☁️ Stockage Cloud Optimisé** : Intégration avec **Cloudinary** pour un stockage sécurisé, rapide et organisé. Les fichiers sont classés dans des dossiers spécifiques (`images`, `pdfs`) pour maintenir une architecture propre.
 
@@ -68,7 +67,7 @@ Le projet est construit sur une architecture full-stack moderne et découplée :
 
 - **Frontend** : Une Single Page Application (SPA) développée avec **React**, offrant une interface utilisateur réactive et dynamique.
 - **Backend** : Une API RESTful robuste construite avec **Node.js** et **Express**, gérant la logique métier, l'authentification et la communication avec les services tiers.
-- **Base de Données** : **PostgreSQL** pour sa fiabilité et ses fonctionnalités avancées, utilisée pour stocker les métadonnées des fichiers, les informations des utilisateurs et les certificats.
+- **Base de Données** : **PostgreSQL** pour sa fiabilité et ses fonctionnalités avancées, utilisée pour stocker les métadonnées des fichiers, les informations des utilisateurs.
 - **Stockage d'objets** : **Cloudinary** pour le stockage et la manipulation à la volée des fichiers médias (images, PDFs).
 
 ## 🚀 Démarrage Rapide

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { FiKey, FiArrowLeft, FiLock, FiEye, FiEyeOff, FiCheck, FiAlertCircle } from 'react-icons/fi';
+import { FiKey, FiArrowLeft, FiLock, FiEye, FiEyeOff, FiCheck, FiAlertCircle, FiX } from 'react-icons/fi';
 import './Auth.css';
 
 const ResetPassword = () => {
@@ -16,6 +16,7 @@ const ResetPassword = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [tokenValid, setTokenValid] = useState(false);
+  const [passwordMismatch, setPasswordMismatch] = useState(false);
 
   // Critères de validation du mot de passe
   const [passwordCriteria, setPasswordCriteria] = useState({
@@ -65,6 +66,43 @@ const ResetPassword = () => {
       special: /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)
     });
   }, [password]);
+
+  // Vérifier l'égalité des mots de passe
+  useEffect(() => {
+    if (confirmPassword && password) {
+      setPasswordMismatch(password !== confirmPassword);
+    } else {
+      setPasswordMismatch(false);
+    }
+  }, [password, confirmPassword]);
+
+  // Composant d'affichage des critères (version compacte)
+  const PasswordCriteria = ({ criteria }) => {
+    const criteriaList = [
+      { key: 'length', label: '8+ car.', fullLabel: 'Au moins 8 caractères' },
+      { key: 'uppercase', label: 'A-Z', fullLabel: 'Au moins 1 majuscule' },
+      { key: 'lowercase', label: 'a-z', fullLabel: 'Au moins 1 minuscule' },
+      { key: 'number', label: '0-9', fullLabel: 'Au moins 1 chiffre' },
+      { key: 'special', label: '!@#', fullLabel: 'Au moins 1 caractère spécial' }
+    ];
+
+    return (
+      <div className="password-criteria-compact">
+        {criteriaList.map(({ key, label, fullLabel }) => (
+          <div 
+            key={key} 
+            className={`criteria-badge ${criteria[key] ? 'valid' : 'invalid'}`}
+            title={fullLabel}
+          >
+            <span className="criteria-icon">
+              {criteria[key] ? <FiCheck /> : <FiX />}
+            </span>
+            <span className="criteria-text">{label}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -130,7 +168,7 @@ const ResetPassword = () => {
       <div className="auth-page">
         <div className="auth-container">
           <div className="auth-header">
-            <div className="auth-logo"><FiKey /> Hifadhwi</div>
+            <div className="auth-logo"><FiKey /> Hifadhui</div>
             <h1 className="auth-title">Vérification...</h1>
             <p className="auth-subtitle">
               Vérification de la validité du lien de réinitialisation.
@@ -147,7 +185,7 @@ const ResetPassword = () => {
       <div className="auth-page">
         <div className="auth-container">
           <div className="auth-header">
-            <div className="auth-logo"><FiKey /> Hifadhwi</div>
+            <div className="auth-logo"><FiKey /> Hifadhui</div>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <div style={{ 
                 width: '64px', 
@@ -193,7 +231,7 @@ const ResetPassword = () => {
       <div className="auth-page">
         <div className="auth-container">
           <div className="auth-header">
-            <div className="auth-logo"><FiKey /> Hifadhwi</div>
+            <div className="auth-logo"><FiKey /> Hifadhui</div>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <div style={{ 
                 width: '64px', 
@@ -233,7 +271,7 @@ const ResetPassword = () => {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-header">
-          <div className="auth-logo"><FiKey /> Hifadhwi</div>
+          <div className="auth-logo"><FiKey /> Hifadhui</div>
           <h1 className="auth-title">Nouveau mot de passe</h1>
           <p className="auth-subtitle">
             Choisissez un mot de passe fort pour sécuriser votre compte.
@@ -302,7 +340,7 @@ const ResetPassword = () => {
                 type={showConfirmPassword ? 'text' : 'password'}
                 id="confirmPassword"
                 name="confirmPassword"
-                className="form-input"
+                className={`form-input ${passwordMismatch ? 'error password-mismatch' : ''}`}
                 placeholder="Confirmez votre mot de passe"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -327,63 +365,26 @@ const ResetPassword = () => {
                 {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
               </button>
             </div>
+            {passwordMismatch && (
+              <div className="password-mismatch-message">Mot de passe différent</div>
+            )}
           </div>
 
           {/* Critères de validation du mot de passe */}
           {password && (
-            <div style={{ 
-              backgroundColor: '#f8fafc', 
-              border: '1px solid #e2e8f0', 
-              borderRadius: '0.5rem', 
-              padding: '0.75rem', 
-              marginBottom: '1rem',
-              fontSize: '0.875rem'
-            }}>
-              <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600', color: '#374151' }}>
-                Critères requis :
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.25rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ color: passwordCriteria.length ? '#10b981' : '#6b7280' }}>
-                    {passwordCriteria.length ? '✓' : '○'}
-                  </span>
-                  <span style={{ color: passwordCriteria.length ? '#10b981' : '#6b7280' }}>
-                    8 caractères min
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ color: passwordCriteria.uppercase ? '#10b981' : '#6b7280' }}>
-                    {passwordCriteria.uppercase ? '✓' : '○'}
-                  </span>
-                  <span style={{ color: passwordCriteria.uppercase ? '#10b981' : '#6b7280' }}>
-                    1 majuscule
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ color: passwordCriteria.lowercase ? '#10b981' : '#6b7280' }}>
-                    {passwordCriteria.lowercase ? '✓' : '○'}
-                  </span>
-                  <span style={{ color: passwordCriteria.lowercase ? '#10b981' : '#6b7280' }}>
-                    1 minuscule
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ color: passwordCriteria.number ? '#10b981' : '#6b7280' }}>
-                    {passwordCriteria.number ? '✓' : '○'}
-                  </span>
-                  <span style={{ color: passwordCriteria.number ? '#10b981' : '#6b7280' }}>
-                    1 chiffre
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', gridColumn: '1 / -1' }}>
-                  <span style={{ color: passwordCriteria.special ? '#10b981' : '#6b7280' }}>
-                    {passwordCriteria.special ? '✓' : '○'}
-                  </span>
-                  <span style={{ color: passwordCriteria.special ? '#10b981' : '#6b7280' }}>
-                    1 caractère spécial (!@#$%^&*...)
-                  </span>
-                </div>
+            <div className="password-strength-full-width">
+              <div className="strength-header">
+                <span className="strength-label">Critères requis :</span>
+                <span 
+                  className="strength-text" 
+                  style={{ 
+                    color: Object.values(passwordCriteria).every(Boolean) ? '#10b981' : '#f59e0b'
+                  }}
+                >
+                  {Object.values(passwordCriteria).every(Boolean) ? 'Très fort' : 'Incomplet'}
+                </span>
               </div>
+              <PasswordCriteria criteria={passwordCriteria} />
             </div>
           )}
 
@@ -391,7 +392,7 @@ const ResetPassword = () => {
             type="submit"
             className="btn btn-primary"
             style={{ width: '100%' }}
-            disabled={loading || !Object.values(passwordCriteria).every(Boolean)}
+            disabled={loading || !Object.values(passwordCriteria).every(Boolean) || passwordMismatch || !confirmPassword}
           >
             {loading ? 'Réinitialisation...' : 'Réinitialiser le mot de passe'}
           </button>

@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './Modal.css';
 
-const Modal = ({ isOpen, onClose, children, className, style }) => {
+const Modal = ({ isOpen, onClose, children, className, style, title }) => {
   if (!isOpen) {
     return null;
   }
@@ -21,6 +21,11 @@ const Modal = ({ isOpen, onClose, children, className, style }) => {
         <button onClick={onClose} className="modal-close-button">
           &times;
         </button>
+        {title && (
+          <div className="modal-header">
+            <h2>{title}</h2>
+          </div>
+        )}
         {children}
       </div>
     </div>,

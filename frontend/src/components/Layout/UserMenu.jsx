@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Profil from './Profil';
 import { useAuth } from '../../contexts/AuthContext';
-import UserAvatar from './UserAvatar';
+import SmartAvatar from './SmartAvatar';
+import UserDisplayName from './UserDisplayName';
 import { FiLogOut, FiUser, FiSettings, FiGrid } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import './UserMenu.css';
@@ -11,6 +12,7 @@ const UserMenu = ({ isExpanded }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfilModalOpen, setProfilModalOpen] = useState(false);
   const menuRef = useRef(null);
+
 
   const handleLogout = () => {
     logout();
@@ -35,8 +37,12 @@ const UserMenu = ({ isExpanded }) => {
       <div className="user-menu-container" ref={menuRef}>
       <div className="user-drop">
         <button className="user-menu-trigger" onClick={toggleMenu}>
-          <UserAvatar name={user?.username} size={36} />
-          {(isExpanded === undefined || isExpanded) && <p className="dropdown-user-email">{user?.email}</p>}
+          <SmartAvatar user={user} size={36} />
+          {(isExpanded === undefined || isExpanded) && (
+            <p className="dropdown-user-email">
+              <UserDisplayName user={user} />
+            </p>
+          )}
           {(isExpanded === undefined || isExpanded) && <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`user-menu-chevron ${isOpen ? 'open' : ''}`}>
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>}
@@ -46,20 +52,22 @@ const UserMenu = ({ isExpanded }) => {
       {isOpen && (
         <div className="user-menu-dropdown">
           <div className="dropdown-header">
-            <p className="dropdown-user-name">{user?.username}</p>
+            <p className="dropdown-user-name">
+              <UserDisplayName user={user} />
+            </p>
             <p className="dropdown-user-email">{user?.email}</p>
           </div>
-                    <button onClick={() => setProfilModalOpen(true)} className="dropdown-item">
+          <button onClick={() => setProfilModalOpen(true)} className="dropdown-item">
             <FiUser /> Mon profil
           </button>
-                    {user?.role === 'admin' && (
+          {user?.role === 'admin' && (
             <Link to="/admin" className="dropdown-item">
               <FiGrid /> Administration
             </Link>
           )}
-          <a href="/settings" className="dropdown-item">
+          <Link to="/settings" className="dropdown-item" onClick={() => setIsOpen(false)}>
             <FiSettings /> Paramètres
-          </a>
+          </Link>
           <div className="dropdown-divider"></div>
           <button onClick={handleLogout} className="dropdown-item logout">
             <FiLogOut /> Se déconnecter

@@ -1,5 +1,6 @@
 import React from 'react';
-import { FiUpload, FiDownload, FiTrash2, FiClock, FiCheck, FiX } from 'react-icons/fi';
+import { FiUpload, FiDownload, FiTrash2, FiClock, FiX, FiCheck } from 'react-icons/fi';
+import AnimatedProgressBar from './AnimatedProgressBar';
 import './ProgressBar.css';
 
 /**
@@ -39,6 +40,7 @@ const ProgressBar = ({
       defaultTitle: 'Upload en cours...',
       defaultMessage: 'Téléversement de vos fichiers',
       color: 'var(--primary-color)',
+      colorName: 'primary',
       completedMessage: '✅ Upload terminé avec succès !'
     },
     download: {
@@ -46,6 +48,7 @@ const ProgressBar = ({
       defaultTitle: 'Téléchargement en cours...',
       defaultMessage: 'Préparation du fichier ZIP',
       color: 'var(--success-color)',
+      colorName: 'success',
       completedMessage: '✅ Téléchargement terminé ! Le fichier ZIP va se télécharger automatiquement.'
     },
     delete: {
@@ -53,6 +56,7 @@ const ProgressBar = ({
       defaultTitle: 'Suppression en cours...',
       defaultMessage: 'Suppression des éléments sélectionnés',
       color: 'var(--error-color)',
+      colorName: 'danger',
       completedMessage: '✅ Suppression terminée avec succès !'
     },
     extract: {
@@ -60,6 +64,7 @@ const ProgressBar = ({
       defaultTitle: 'Extraction en cours...',
       defaultMessage: 'Extraction des fichiers en cours',
       color: 'var(--warning-color)',
+      colorName: 'warning',
       completedMessage: '✅ Extraction terminée avec succès !'
     },
     process: {
@@ -67,6 +72,7 @@ const ProgressBar = ({
       defaultTitle: 'Traitement en cours...',
       defaultMessage: 'Traitement de votre demande',
       color: 'var(--primary-color)',
+      colorName: 'primary',
       completedMessage: '✅ Traitement terminé avec succès !'
     }
   };
@@ -114,16 +120,13 @@ const ProgressBar = ({
             </div>
           </div>
 
-          {/* Barre de progression visuelle */}
-          <div className="progress-track">
-            <div 
-              className="progress-fill"
-              style={{ 
-                width: `${Math.min(progress, 100)}%`,
-                backgroundColor: config.color
-              }}
-            />
-          </div>
+          {/* Barre de progression visuelle avec animation améliorée */}
+          <AnimatedProgressBar 
+            progress={Math.min(progress, 100)}
+            color={config.colorName || 'primary'}
+            animated={!completed}
+            animationDuration={1.5}
+          />
 
           {/* Message de completion */}
           {completed && (

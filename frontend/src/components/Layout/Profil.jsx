@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import UserAvatar from './UserAvatar';
+import SmartAvatar from './SmartAvatar';
+import UserDisplayName from './UserDisplayName';
 import './Profil.css';
 
 const Profil = ({ isOpen, onClose }) => {
@@ -18,12 +19,16 @@ const Profil = ({ isOpen, onClose }) => {
           <button onClick={onClose} className="profil-modal-close-btn">&times;</button>
         </div>
                 <div className="profil-avatar-container">
-          <UserAvatar name={user?.username} size={80} />
+          <SmartAvatar user={user} size={80} />
         </div>
         <div className="profil-modal-body">
           <div className="info-group">
-            <label>Nom</label>
+            <label>Nom d'utilisateur</label>
             <p>{user?.username || 'Non défini'}</p>
+          </div>
+          <div className="info-group">
+            <label>Nom d'identifiant</label>
+            <p><UserDisplayName user={user} fallback="Non défini" /></p>
           </div>
           <div className="info-group">
             <label>Email</label>

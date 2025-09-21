@@ -42,8 +42,8 @@ export const buildCloudinaryUrl = (fileUrl, resourceType) => {
     // Pas de cas par défaut - soit image soit PDF uniquement
   }
   
-  // Format standardisé avec Hifadhwi/ uniquement
-  if (fileUrl.startsWith('Hifadhwi/') || /^v\d+\/Hifadhwi\//.test(fileUrl)) {
+  // Format standardisé avec Hifadhui/ uniquement
+  if (fileUrl.startsWith('Hifadhui/') || /^v\d+\/Hifadhui\//.test(fileUrl)) {
     return `https://res.cloudinary.com/${cloudName}/${finalResourceType}/upload/${fileUrl}`;
   } else {
     // Nettoyer les doubles extensions

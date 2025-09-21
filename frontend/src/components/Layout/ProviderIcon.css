@@ -1,0 +1,98 @@
+/* Styles de base pour le badge provider */
+.provider-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  width: fit-content;
+}
+
+/* Tailles des icônes */
+.provider-icon-small .provider-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.provider-icon-medium .provider-icon {
+  width: 25px;
+  height: 25px;
+}
+
+.provider-icon-large .provider-icon {
+  width: 32px;
+  height: 32px;
+}
+
+/* Styles spécifiques par provider */
+.provider-google {
+  color: #4285f4;
+}
+
+.provider-facebook {
+  color: #1877f2;
+}
+
+.provider-github {
+  color: #333;
+}
+
+.provider-local {
+  color: #3b82f6;
+}
+
+/* Icônes SVG */
+.google-svg,
+.hifadhui-svg {
+  border-radius: 50%;
+}
+
+/* Icônes React Icons */
+.facebook-icon,
+.github-icon {
+  font-size: inherit;
+}
+
+/* Label du provider */
+.provider-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Variantes avec background (optionnel) */
+.provider-badge.with-background {
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.provider-badge.with-background.provider-google {
+  background: rgba(66, 133, 244, 0.1);
+  border: 1px solid rgba(66, 133, 244, 0.2);
+}
+
+.provider-badge.with-background.provider-facebook {
+  background: rgba(24, 119, 242, 0.1);
+  border: 1px solid rgba(24, 119, 242, 0.2);
+}
+
+.provider-badge.with-background.provider-github {
+  background: rgba(51, 51, 51, 0.1);
+  border: 1px solid rgba(51, 51, 51, 0.2);
+}
+
+.provider-badge.with-background.provider-local {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+/* Mode sombre */
+@media (prefers-color-scheme: dark) {
+  .provider-github {
+    color: #f0f6fc;
+  }
+  
+  .provider-badge.with-background.provider-github {
+    background: rgba(240, 246, 252, 0.1);
+    border: 1px solid rgba(240, 246, 252, 0.2);
+  }
+}

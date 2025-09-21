@@ -1,12 +1,11 @@
 import express from 'express';
 import { Op } from 'sequelize';
-import { File, Dossier, Certificate, ActivityLog, Utilisateur } from '../models/index.js';
+import { File, Dossier, ActivityLog, Utilisateur } from '../models/index.js';
 import { sequelize } from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { upload, handleUploadError } from '../middleware/upload.js';
 import uploadLocal from '../middleware/upload-local.js';
 import crypto from 'crypto';
-import { generateCertificate } from '../utils/pdfGenerator.js';
 import { deleteCloudinaryFile } from '../utils/cloudinaryStructure.js';
 import { body, validationResult } from 'express-validator';
 import { v2 as cloudinary } from 'cloudinary';
@@ -95,7 +94,7 @@ const createSlug = (text) => {
     .replace(/^-+|-+$/g, ''); // Supprimer tirets en début/fin
 };
 
-// Fonction pour traiter un fichier unique (création en BDD, certificat, etc.)
+// Fonction pour traiter un fichier unique (création en BDD)
 const processSingleFile = async (fileData, user, req, dossierId = null, options = { logActivity: true }) => {
   const { originalname, path: filePath, size, mimetype } = fileData;
   
@@ -137,24 +136,6 @@ const processSingleFile = async (fileData, user, req, dossierId = null, options 
     version: 1
   });
 
-  // Génération automatique du certificat sur Cloudinary
-  try {
-    const response = await fetch(`${req.protocol}://${req.get('host')}/api/v1/certificates/generate/${file.id}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': req.headers.authorization,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (response.ok) {
-      console.log(`✅ Certificat généré automatiquement pour ${originalname}`);
-    } else {
-      console.log(`⚠️ Erreur génération certificat pour ${originalname}:`, await response.text());
-    }
-  } catch (certError) {
-    console.error(`❌ Erreur certificat pour ${originalname}:`, certError.message);
-  }
 
   let action_type = 'FILE_UPLOAD';
   if (file.mimetype.startsWith('image/')) {
@@ -185,16 +166,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
       where: { owner_id: req.user.id, is_latest: true },
     });
 
-    const totalCertificates = await Certificate.count({
-        include: [{
-            model: File,
-            as: 'certificateFile',
-            required: true,
-            where: { owner_id: req.user.id }
-        }]
-    });
-
-    res.json({ totalFiles, totalCertificates });
+    res.json({ totalFiles });
   } catch (err) {
     console.error('Erreur lors de la récupération des statistiques:', err.message);
     res.status(500).send('Erreur du serveur');
@@ -445,15 +417,30 @@ router.use(handleUploadError);
 // Route pour lister les fichiers de l'utilisateur
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { page = 1, limit = 10, type, dossier_id } = req.query;
+    // Gérer les paramètres de pagination avec différents formats
+    let page = req.query.page || req.query['page[page]'] || 1;
+    let limit = req.query.limit || req.query['page[limit]'] || 10;
+    const { type, dossier_id } = req.query;
+    
+    // Convertir en nombres et valider
+    page = parseInt(page, 10);
+    limit = parseInt(limit, 10);
+    
+    // Valeurs par défaut si conversion échoue
+    if (isNaN(page) || page < 1) page = 1;
+    if (isNaN(limit) || limit < 1) limit = 10;
+    if (limit > 100) limit = 100; // Limiter pour éviter les surcharges
+    
     const offset = (page - 1) * limit;
-
+    
     const whereClause = { owner_id: req.user.id, is_latest: true };
 
     if (type === 'image') {
       whereClause.mimetype = { [Op.like]: 'image/%' };
-    } else {
-      // Par défaut, exclure les images si un type n'est pas spécifié
+    } else if (type === 'pdf') {
+      whereClause.mimetype = 'application/pdf';
+    } else if (!type) {
+      // Par défaut, exclure les images si aucun type n'est spécifié
       whereClause.mimetype = { [Op.notLike]: 'image/%' };
     }
 
@@ -464,11 +451,6 @@ router.get('/', authenticateToken, async (req, res) => {
       } else if (dossier_id === 'system_root') {
         // Récupérer les fichiers du dossier système racine
         const systemRoot = await Dossier.getSystemRoot();
-        const formData = new FormData();
-        formData.append('document', file);
-        if (dossierId) {
-          formData.append('dossier_id', dossierId);
-        }
         whereClause.dossier_id = systemRoot.id;
       } else {
         whereClause.dossier_id = dossier_id;
@@ -483,19 +465,13 @@ router.get('/', authenticateToken, async (req, res) => {
         required: false
       }],
       order: [['date_upload', 'DESC']],
-      limit: parseInt(limit),
-      offset: parseInt(offset)
+      limit: limit,
+      offset: offset
     });
 
-    // Pour chaque fichier, récupérer son certificat et le chemin complet du dossier
-    const filesWithCertificates = await Promise.all(
+    // Pour chaque fichier, calculer le chemin complet du dossier
+    const filesWithPaths = await Promise.all(
       files.map(async (file) => {
-        const rootFileId = file.parent_file_id || file.id;
-        const certificate = await Certificate.findOne({
-          where: { root_file_id: rootFileId },
-          attributes: ['id', 'pdf_url', 'date_generated']
-        });
-        
         // Calculer le chemin complet du dossier
         let fullPath = 'Racine';
         if (file.fileDossier) {
@@ -508,14 +484,13 @@ router.get('/', authenticateToken, async (req, res) => {
           dossier: fileData.fileDossier ? {
             ...fileData.fileDossier,
             fullPath: fullPath
-          } : null,
-          fileCertificates: certificate ? [certificate] : []
+          } : null
         };
       })
     );
 
     res.json({
-      files: filesWithCertificates,
+      files: filesWithPaths,
       pagination: {
         total: count,
         page: parseInt(page),
@@ -553,13 +528,6 @@ router.get('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    // Récupérer le certificat basé sur root_file_id
-    const rootFileId = file.parent_file_id || file.id;
-    const certificate = await Certificate.findOne({
-      where: { root_file_id: rootFileId },
-      attributes: ['id', 'pdf_url', 'date_generated']
-    });
-
     // Calculer le chemin complet du dossier
     let fullPath = 'Racine';
     if (file.fileDossier) {
@@ -573,8 +541,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
         dossier: fileData.fileDossier ? {
           ...fileData.fileDossier,
           fullPath: fullPath
-        } : null,
-        fileCertificates: certificate ? [certificate] : []
+        } : null
       }
     });
 
@@ -757,38 +724,10 @@ router.delete('/batch-delete', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Aucun fichier trouvé ou vous n\'avez pas la permission.' });
     }
 
-    // Collecter tous les root_file_id pour traiter TOUS les certificats
+    // Collecter tous les root_file_id pour traitement
     const rootFileIds = filesToDelete.map(file => file.parent_file_id || file.id);
     console.log(`🗑️ [BATCH DELETE] Root file IDs: ${rootFileIds.join(', ')}`);
 
-    // Supprimer TOUS les certificats associés (BDD + Cloudinary) AVANT de supprimer les fichiers
-    console.log(`🔍 [CERTIFICATE SEARCH] Recherche certificats pour ${rootFileIds.length} fichier(s)`);
-    const certificates = await Certificate.findAll({ 
-      where: { root_file_id: rootFileIds }, 
-      transaction: t 
-    });
-    console.log(`🔍 [CERTIFICATE SEARCH] ${certificates.length} certificat(s) trouvé(s)`);
-    
-    // Supprimer chaque certificat de Cloudinary
-    for (const certificate of certificates) {
-      if (certificate && certificate.pdf_url) {
-        console.log(`🗑️ [CERTIFICATE DELETE] Suppression certificat: ${certificate.pdf_url}`);
-        
-        try {
-          const certDeleteResult = await deleteCloudinaryFile(certificate.pdf_url, 'application/pdf');
-          console.log(`✅ [CERTIFICATE DELETE] Certificat supprimé de Cloudinary:`, certDeleteResult);
-        } catch (cloudinaryError) {
-          console.error(`❌ [CERTIFICATE DELETE] Erreur suppression certificat Cloudinary:`, cloudinaryError);
-        }
-      }
-    }
-    
-    // Supprimer tous les certificats de la BDD
-    const deletedCerts = await Certificate.destroy({ 
-      where: { root_file_id: rootFileIds }, 
-      transaction: t 
-    });
-    console.log(`✅ [CERTIFICATE DELETE] ${deletedCerts} certificat(s) supprimé(s) de la BDD`);
 
     for (const file of filesToDelete) {
       console.log(`🗑️ [FILE DELETE] Début suppression fichier ${file.id} (${file.filename})`);
@@ -876,32 +815,6 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     const rootFileId = file.parent_file_id || file.id;
     console.log(`🗑️ [FILE DELETE] Root file ID: ${rootFileId}`);
 
-    // Supprimer le certificat associé AVANT de supprimer les fichiers (BDD + Cloudinary)
-    console.log(`🔍 [CERTIFICATE SEARCH] Recherche certificat pour root_file_id: ${rootFileId}`);
-    const certificate = await Certificate.findOne({ 
-      where: { root_file_id: rootFileId }, 
-      transaction 
-    });
-    console.log(`🔍 [CERTIFICATE SEARCH] Certificat trouvé:`, certificate ? 'OUI' : 'NON');
-    
-    if (certificate && certificate.pdf_url) {
-      console.log(`🗑️ [CERTIFICATE DELETE] Suppression certificat: ${certificate.pdf_url}`);
-      try {
-        const certDeleteResult = await deleteCloudinaryFile(certificate.pdf_url, 'application/pdf');
-        console.log(`✅ [CERTIFICATE DELETE] Certificat supprimé de Cloudinary:`, certDeleteResult);
-      } catch (cloudinaryError) {
-        console.error(`❌ [CERTIFICATE DELETE] Erreur suppression certificat Cloudinary:`, cloudinaryError);
-      }
-    } else {
-      console.log(`ℹ️ [CERTIFICATE DELETE] Aucun certificat trouvé pour le fichier ${rootFileId}`);
-    }
-    
-    // Supprimer le certificat de la BDD
-    const deletedCerts = await Certificate.destroy({ 
-      where: { root_file_id: rootFileId }, 
-      transaction 
-    });
-    console.log(`✅ [CERTIFICATE DELETE] ${deletedCerts} certificat(s) supprimé(s) de la BDD`);
 
     // Supprimer toutes les versions du fichier
     await File.destroy({

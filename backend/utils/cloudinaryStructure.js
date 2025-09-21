@@ -16,7 +16,7 @@ async function deleteCloudinaryFile(fileUrl, mimetype = '') {
     
     // 1. Si c'est une URL Cloudinary complète
     if (fileUrl.includes('res.cloudinary.com')) {
-      // Exemple: https://res.cloudinary.com/{cloud_name}/raw/upload/v1756555848/Hifadhwi/upload/user/file.pdf
+      // Exemple: https://res.cloudinary.com/{cloud_name}/raw/upload/v1756555848/Hifadhui/upload/user/file.pdf
       // ou: https://res.cloudinary.com/{cloud_name}/image/upload/...
       const urlParts = fileUrl.split('/');
       const uploadIndex = urlParts.findIndex(part => part === 'upload');
@@ -29,27 +29,22 @@ async function deleteCloudinaryFile(fileUrl, mimetype = '') {
         publicId = publicId.replace(/^v\d+\//, '');
       }
     } 
-    // 2. Si c'est un chemin avec version (v123456/Hifadhwi/...)
-    else if (fileUrl.startsWith('v') && fileUrl.includes('/Hifadhwi/')) {
+    // 2. Si c'est un chemin avec version (v123456/Hifadhui/...)
+    else if (fileUrl.startsWith('v') && fileUrl.includes('/Hifadhui/')) {
       publicId = fileUrl.replace(/^v\d+\//, '');
     }
-    // 3. Si c'est déjà un chemin Hifadhwi/...
-    else if (fileUrl.startsWith('Hifadhwi/')) {
+    // 3. Si c'est déjà un chemin Hifadhui/...
+    else if (fileUrl.startsWith('Hifadhui/')) {
       publicId = fileUrl;
     }
 
     // Décoder les caractères encodés (comme %20 pour les espaces)
     publicId = decodeURIComponent(publicId);
     
-    // Gestion spéciale pour les certificats et fichiers raw
-    const isCertificate = publicId.includes('/certificats/') || publicId.includes('certificate_');
+    // Gestion spéciale pour les fichiers raw
     const isRawFile = mimetype === 'application/pdf';
     
-    if (isCertificate) {
-      console.log(`🔍 [CERTIFICATE DELETE] Détecté comme certificat: ${publicId}`);
-      // Les certificats sont stockés AVEC l'extension .pdf sur Cloudinary
-      // Ne pas supprimer l'extension
-    } else if (isRawFile) {
+    if (isRawFile) {
       console.log(`🔍 [RAW FILE DELETE] Détecté comme fichier raw (PDF): ${publicId}`);
       // Les PDFs sont stockés AVEC l'extension .pdf sur Cloudinary
       // Ne pas supprimer l'extension
@@ -59,7 +54,7 @@ async function deleteCloudinaryFile(fileUrl, mimetype = '') {
     }
 
     // Déterminer le type de ressource
-    let resource_type = 'raw'; // Par défaut raw pour PDFs et certificats
+    let resource_type = 'raw'; // Par défaut raw pour PDFs
     if (mimetype.startsWith('image/')) {
       resource_type = 'image';
     }
@@ -69,7 +64,6 @@ async function deleteCloudinaryFile(fileUrl, mimetype = '') {
     console.log(`   - Public ID: ${publicId}`);
     console.log(`   - Resource type: ${resource_type}`);
     console.log(`   - MIME type: ${mimetype}`);
-    console.log(`   - Is Certificate: ${isCertificate}`);
     console.log(`   - Is Raw File: ${isRawFile}`);
     
     // Essayer d'abord avec le public_id tel quel
@@ -94,7 +88,7 @@ async function deleteCloudinaryFile(fileUrl, mimetype = '') {
       console.log(`🔍 [CLOUDINARY DELETE] Deuxième essai - Résultat: ${result.result}`);
       
       // Essai 2: Si toujours pas trouvé, essayer avec l'extension pour les PDFs
-      if (result.result === 'not found' && (isRawFile || isCertificate)) {
+      if (result.result === 'not found' && isRawFile) {
         const publicIdWithExt = `${publicId}.pdf`;
         console.log(`🔄 [CLOUDINARY DELETE] Essai avec extension .pdf: ${publicIdWithExt}`);
         
@@ -136,11 +130,11 @@ async function deleteCloudinaryFile(fileUrl, mimetype = '') {
 /**
  * Génère le chemin de dossier pour les fichiers utilisateur
  * @param {Object} user - L'objet utilisateur
- * @param {string} fileType - Le type de fichier ('images', 'pdfs', 'certificats')
+ * @param {string} fileType - Le type de fichier ('images', 'pdfs')
  * @returns {string} Le chemin du dossier
  */
 function getUserFileFolder(user, fileType = null) {
-  const userFolder = `Hifadhwi/upload/${user.username || user.id}`;
+  const userFolder = `Hifadhui/upload/${user.username || user.id}`;
   
   if (!fileType) {
     return userFolder;
@@ -191,14 +185,6 @@ function getUserFilePath(user, file) {
   return getUserFileFolder(user, fileType);
 }
 
-/**
- * Génère le chemin pour les certificats d'un utilisateur
- * @param {Object} user - L'objet utilisateur
- * @returns {string} Le chemin du dossier certificats
- */
-function getCertificateFolder(user) {
-  return `Hifadhwi/upload/${user.username || user.id}/certificats`;
-}
 
 /**
  * Génère un nom de fichier unique avec timestamp
@@ -218,21 +204,11 @@ function generateUniqueFileName(originalName, prefix = '') {
     return `${baseName}_${timestamp}.${extension}`;
   }
   
-  // Pour les images, pas d'extension (Cloudinary l'ajoute automatiquement)
-  return `${baseName}_${timestamp}`;
+  // Pour les images, ajouter l'extension
+  return `${baseName}_${timestamp}.${extension}`;
 }
 
-/**
- * Génère un nom de certificat basé sur le nom du fichier original
- * @param {string} originalFileName - Le nom original du fichier
- * @param {number} timestamp - Timestamp optionnel (utilise Date.now() si non fourni)
- * @returns {string} Le nom du certificat
- */
-function generateCertificateName(originalFileName, timestamp = null) {
-  const ts = timestamp || Date.now();
-  const nameWithoutExt = originalFileName.replace(/\.[^/.]+$/, '');
-  return `certificate_${nameWithoutExt}_${ts}.pdf`;
-}
+
 
 /**
  * Configuration Cloudinary pour les fichiers utilisateur
@@ -260,25 +236,6 @@ function getUserFileConfig(user, file) {
   return config;
 }
 
-/**
- * Configuration Cloudinary pour les certificats
- * @param {Object} user - L'objet utilisateur
- * @param {string} originalFileName - Le nom original du fichier
- * @param {number} timestamp - Timestamp optionnel
- * @returns {Object} Configuration Cloudinary
- */
-function getCertificateConfig(user, originalFileName, timestamp = null) {
-  const certificateName = generateCertificateName(originalFileName, timestamp);
-  // Supprimer l'extension .pdf pour le public_id (Cloudinary l'ajoute automatiquement pour raw)
-  const publicId = certificateName.replace(/\.pdf$/, '');
-  
-  return {
-    resource_type: 'raw',
-    folder: getCertificateFolder(user),
-    public_id: publicId,
-    format: 'pdf'
-  };
-}
 
 /**
  * Génère un chemin Cloudinary pour un fichier
@@ -295,11 +252,8 @@ function generateCloudinaryPath(filename, username, fileType) {
 export {
   getFileType,
   getUserFileFolder,
-  getCertificateFolder,
   generateUniqueFileName,
-  generateCertificateName,
   getUserFileConfig,
-  getCertificateConfig,
   deleteCloudinaryFile,
   generateCloudinaryPath
 };

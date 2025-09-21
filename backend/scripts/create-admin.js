@@ -149,26 +149,26 @@ async function createAdminDefault() {
       console.log('⚠️  [CREATE-ADMIN] Un administrateur existe déjà:', existingAdmin.email);
       console.log('🔄 [CREATE-ADMIN] Mise à jour des informations de l\'admin existant...');
       await existingAdmin.update({
-        username: 'Lawi Salim',
-        email: 'lawi@gmail.com',
-        password: '123456',
+        username: 'Hifadhui Mavuna',
+        email: 'mavuna@hifadhui.site',
+        password: 'Lawi@1616',
         role: 'admin'
       });
       console.log('✅ [CREATE-ADMIN] Administrateur mis à jour avec succès');
     } else {
       console.log('🔨 [CREATE-ADMIN] Création d\'un nouvel admin...');
       const admin = await Utilisateur.create({
-        username: 'Lawi Salim',
-        email: 'lawi@gmail.com',
-        password: '123456',
+        username: 'Hifadhui Mavuna',
+        email: 'mavuna@hifadhui.site',
+        password: 'Lawi@1616',
         role: 'admin'
       });
       console.log('✅ [CREATE-ADMIN] Administrateur créé:', admin.id);
     }
 
     console.log('\n🔐 [CREATE-ADMIN] Connexions par défaut:');
-    console.log('Email: lawi@gmail.com');
-    console.log('Mot de passe: 123456');
+    console.log('Email: mavuna@hifadhui.site');
+    console.log('Mot de passe: Lawi@1616');
     console.log('⚠️  [CREATE-ADMIN] Changez le mot de passe après la première connexion');
 
   } catch (error) {

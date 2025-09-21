@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiEye, FiEyeOff, FiLock, FiArrowLeft } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiArrowLeft } from 'react-icons/fi';
+import { FaGoogle, FaFacebook, FaGithub } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLocation } from 'react-router-dom';
 import './Auth.css';
 
 const Login = () => {
+  // Composant de connexion utilisateur
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -14,10 +16,24 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const registrationSuccessMessage = location.state?.message;
+
+  // Gérer les paramètres d'URL pour les messages
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const registered = urlParams.get('registered');
+    const message = urlParams.get('message');
+    const error = urlParams.get('error');
+
+    if (registered === 'true' && message) {
+      setSuccessMessage(decodeURIComponent(message));
+    } else if (error && message) {
+      setErrors({ general: decodeURIComponent(message) });
+    }
+  }, [location.search]);
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
@@ -68,35 +84,45 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const newErrors = validateForm();
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    setLoading(true);
     setErrors({});
+    setLoading(true);
 
-    const result = await login(formData.email, formData.password, rememberMe);
-
-    if (result.success) {
-      if (rememberMe) {
-        localStorage.setItem('rememberedEmail', formData.email);
-        localStorage.setItem('rememberMe', 'true');
+    try {
+      const result = await login(formData.email, formData.password, rememberMe);
+      if (result.success) {
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', formData.email);
+          localStorage.setItem('rememberMe', 'true');
+        } else {
+          localStorage.removeItem('rememberedEmail');
+          localStorage.removeItem('rememberMe');
+        }
+        
+        // Rediriger vers la page précédente ou le tableau de bord
+        const from = location.state?.from || '/dashboard';
+        navigate(from, { replace: true });
       } else {
-        localStorage.removeItem('rememberedEmail');
-        localStorage.removeItem('rememberMe');
+        setErrors({ general: result.message || 'Échec de la connexion' });
       }
-      
-      // Rediriger vers la page précédente ou le tableau de bord
-      const from = location.state?.from || '/dashboard';
-      navigate(from, { replace: true });
-    } else {
-      setErrors({ general: result.message || 'Échec de la connexion' });
+    } catch (error) {
+      setErrors({ general: error.message || 'Erreur lors de la connexion' });
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
+  };
+
+  const handleGoogleLogin = () => {
+    try {
+      // Rediriger vers l'endpoint Google OAuth du backend avec paramètre login
+      const backendUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+      const googleUrl = `${backendUrl}/api/v1/auth/google?action=login`;
+      
+      window.location.href = googleUrl;
+      
+    } catch (error) {
+      console.error('❌ [GOOGLE LOGIN] Erreur lors de la redirection:', error);
+      setErrors({ general: 'Erreur lors de la redirection vers Google' });
+    }
   };
 
 
@@ -107,16 +133,15 @@ const Login = () => {
           <FiArrowLeft /> Retour à l'accueil
         </Link>
         <div className="auth-header">
-          <div className="auth-logo"><FiLock /> Hifadhwi</div>
           <h1 className="auth-title">Connexion</h1>
           <p className="auth-subtitle">
             Accédez à votre coffre-fort numérique
           </p>
         </div>
 
-        {registrationSuccessMessage && (
+        {successMessage && (
           <div className="alert alert-success">
-            {registrationSuccessMessage}
+            {successMessage}
           </div>
         )}
 
@@ -190,6 +215,41 @@ const Login = () => {
             </Link>
           </div>
 
+          <div className="oauth-m">
+            <div className='label-oauth'>Ou se connecter avec</div>
+            <div className="oauth-s">
+              <button 
+                type="button"
+                className="btn-oauth"
+                onClick={handleGoogleLogin}
+                disabled={loading}
+              >
+                <FaGoogle size={18} />
+                Google
+              </button>
+
+              <button 
+                type="button"
+                className="btn-oauth"
+                disabled
+                title="Bientôt disponible"
+              >
+                <FaFacebook size={18} />
+                Facebook
+              </button>
+
+              <button
+                type="button"
+                className="btn-oauth"
+                disabled
+                title='Bientôt disponible'
+              >
+                <FaGithub size={18} />
+                Github
+              </button>
+            </div>
+          </div>  
+
           <button
             type="submit"
             className="btn btn-primary"
@@ -213,6 +273,9 @@ const Login = () => {
             <Link to="/register" className="auth-link">
               Créer un compte
             </Link>
+          </p>
+          <p style={{ fontSize: '0.875rem', color: '#666', marginTop: '0.5rem' }}>
+            💡 Nouveau sur Hifadhui ? Utilisez "Créer un compte" pour votre première connexion Google
           </p>
         </div>
       </div>

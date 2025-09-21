@@ -15,7 +15,6 @@ const FileDetailModal = ({ file, onClose, type = 'file', isOpen }) => {
 
   const isImage = file.mimetype && file.mimetype.startsWith('image/');
   const isPdf = file.mimetype === 'application/pdf';
-  const isCertificate = type === 'certificate';
 
   // Fonction pour construire l'URL complète des images
   const getImageUrl = (fileUrl) => {
@@ -41,23 +40,12 @@ const FileDetailModal = ({ file, onClose, type = 'file', isOpen }) => {
 
   // Déterminer les données à afficher selon le type
   const getDisplayData = () => {
-    if (isCertificate && file.certificateFile) {
-      return {
-        filename: file.certificateFile.filename,
-        version: file.certificateFile.version,
-        date_upload: file.certificateFile.date_upload,
-        hash: file.certificateFile.hash,
-        signature: file.certificateFile.signature,
-        file_url: file.pdf_url, // Pour les certificats, utiliser pdf_url
-        mimetype: 'application/pdf'
-      };
-    }
     return file;
   };
 
   const displayData = getDisplayData();
 
-  const title = isCertificate ? 'Détails du certificat' : isImage ? 'Détails de l\'image' : 'Détails du fichier';
+  const title = isImage ? 'Détails de l\'image' : 'Détails du fichier';
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -100,7 +88,6 @@ const FileDetailModal = ({ file, onClose, type = 'file', isOpen }) => {
                 <dt>Date d'upload:</dt><dd>{formatDate(displayData.date_upload)}</dd>
                 <dt>Taille:</dt><dd>{displayData.size ? `${(displayData.size / 1024).toFixed(2)} KB` : 'Non disponible'}</dd>
                 <dt>Emplacement:</dt><dd>{displayData.dossier?.fullPath || displayData.dossier?.name_original || displayData.dossier?.name || 'Racine'}</dd>
-                <dt>Certificat:</dt><dd>{isCertificate ? 'Disponible' : (file.fileCertificates?.length > 0 ? 'Disponible' : 'En attente')}</dd>
               </dl>
             </div>
             <div className="detail-section">

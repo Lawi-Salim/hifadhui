@@ -1,12 +1,13 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { Utilisateur } from '../models/index.js';
-import { generateToken, authenticateToken } from '../middleware/auth.js';
-import PasswordResetToken from '../models/PasswordResetToken.js';
+import { Utilisateur, File, PasswordResetToken, sequelize } from '../models/index.js';
+import { authenticateToken, generateToken } from '../middleware/auth.js';
 import emailService from '../services/emailService.js';
+import passport from 'passport';
 import { v4 as uuidv4 } from 'uuid';
 import rateLimit from 'express-rate-limit';
 import { Op } from 'sequelize';
+import { deleteCloudinaryFile } from '../utils/cloudinaryStructure.js';
 
 const router = express.Router();
 
@@ -142,6 +143,18 @@ router.post('/login', loginValidation, async (req, res) => {
     if (!isValidPassword) {
       return res.status(401).json({
         error: 'Email ou mot de passe incorrect'
+      });
+    }
+
+    // Vérifier si le compte est marqué pour suppression
+    if (user.isMarkedForDeletion()) {
+      const daysRemaining = user.getDaysUntilDeletion();
+      return res.status(403).json({
+        error: 'Compte en période de grâce',
+        message: `Votre compte est marqué pour suppression dans ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''}. Utilisez le lien de récupération dans votre email pour réactiver votre compte.`,
+        daysRemaining,
+        deletionScheduledAt: user.deletion_scheduled_at,
+        isMarkedForDeletion: true
       });
     }
 
@@ -390,6 +403,453 @@ router.get('/verify-reset-token/:token', async (req, res) => {
     res.status(500).json({
       error: 'Erreur lors de la vérification du token',
       valid: false
+    });
+  }
+});
+
+// ========================================
+// ROUTES OAUTH GOOGLE
+// ========================================
+
+// Middleware pour désactiver CSP sur les routes OAuth
+const disableCSP = (req, res, next) => {
+  res.removeHeader('Content-Security-Policy');
+  res.removeHeader('Content-Security-Policy-Report-Only');
+  next();
+};
+
+// Route pour initier l'authentification Google
+router.get('/google', 
+  (req, res, next) => {
+    // Stocker l'action (login/register) dans la session pour le callback
+    req.session = req.session || {};
+    req.session.oauthAction = req.query.action || 'login';
+    console.log('🔍 [GOOGLE AUTH] Action demandée:', req.session.oauthAction);
+    next();
+  },
+  disableCSP,
+  passport.authenticate('google', { 
+    scope: ['profile', 'email'],
+    prompt: 'select_account consent',  // Force sélection compte ET consentement
+    accessType: 'offline'             // Force l'écran de consentement
+  })
+);
+
+// Route de callback Google
+router.get('/google/callback', 
+  disableCSP,
+  passport.authenticate('google', { 
+    session: false,
+    failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_auth_failed`
+  }),
+  async (req, res) => {
+    try {
+      // L'utilisateur est disponible dans req.user grâce à Passport
+      const user = req.user;
+      const action = req.session?.oauthAction || 'login';
+      const { isNewAccount, wasLinked, accountNotFound, accountMarkedForDeletion, daysRemaining, deletionScheduledAt } = user.oauthMetadata || {};
+      
+      console.log('✅ [GOOGLE CALLBACK] Utilisateur authentifié:', {
+        id: user.id,
+        email: user.email,
+        provider: user.provider,
+        action: action,
+        isNewAccount,
+        wasLinked,
+        accountNotFound
+      });
+
+      // Cas spécial : compte marqué pour suppression
+      if (accountMarkedForDeletion) {
+        console.log(`❌ [GOOGLE CALLBACK] Compte marqué pour suppression: ${user.email} (${daysRemaining} jours restants)`);
+        const message = `Votre compte est marqué pour suppression dans ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''}. Utilisez le lien de récupération dans votre email pour réactiver votre compte.`;
+        const redirectUrl = `${process.env.FRONTEND_URL}/login?error=account_marked_for_deletion&message=${encodeURIComponent(message)}&daysRemaining=${daysRemaining}`;
+        
+        // Nettoyer la session
+        if (req.session) {
+          delete req.session.oauthAction;
+        }
+        
+        return res.redirect(redirectUrl);
+      }
+
+      // Cas spécial : compte non trouvé lors d'une tentative de connexion
+      if (accountNotFound) {
+        const message = 'Ce compte Google n\'existe pas. Veuillez vous inscrire d\'abord.';
+        const redirectUrl = `${process.env.FRONTEND_URL}/register?error=account_not_found&message=${encodeURIComponent(message)}`;
+        
+        // Nettoyer la session
+        if (req.session) {
+          delete req.session.oauthAction;
+        }
+        
+        return res.redirect(redirectUrl);
+      }
+
+      // Générer le token JWT avec expiration de 7 jours
+      const token = generateToken(user.id);
+
+      // Pour les comptes Google, toujours rediriger vers le dashboard après authentification
+      // Pas besoin de double authentification pour OAuth
+      const redirectUrl = `${process.env.FRONTEND_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user.toJSON()))}&isNewAccount=${isNewAccount}&wasLinked=${wasLinked}`;
+      
+      console.log(`✅ [GOOGLE CALLBACK] Redirection vers dashboard pour: ${user.email} (nouveau: ${isNewAccount}, lié: ${wasLinked})`);
+      
+      // Nettoyer la session
+      if (req.session) {
+        delete req.session.oauthAction;
+      }
+      
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('❌ [GOOGLE CALLBACK] Erreur:', error);
+      res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_callback_failed`);
+    }
+  }
+);
+
+// Route pour l'authentification Google mobile/SPA (optionnelle)
+router.post('/google/token', async (req, res) => {
+  try {
+    const { googleToken } = req.body;
+    
+    if (!googleToken) {
+      return res.status(400).json({
+        error: 'Token Google requis'
+      });
+    }
+
+    // Ici vous pourriez vérifier le token Google côté serveur
+    // Pour l'instant, on suppose que le frontend a déjà vérifié le token
+    
+    res.status(501).json({
+      error: 'Authentification mobile Google non implémentée. Utilisez la route /google'
+    });
+    
+  } catch (error) {
+    console.error('❌ [GOOGLE TOKEN] Erreur:', error);
+    res.status(500).json({
+      error: 'Erreur lors de l\'authentification Google'
+    });
+  }
+});
+
+// @route   GET /auth/export-data
+// @desc    Récupérer toutes les données utilisateur pour export
+// @access  Private
+router.get('/export-data', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    console.log(`📦 [DATA EXPORT] Récupération données utilisateur: ${userId}`);
+    
+    // Test simple d'abord - juste les fichiers
+    const userFiles = await File.findAll({
+      where: { owner_id: userId },
+      attributes: ['id', 'filename', 'mimetype', 'file_url', 'size', 'date_upload']
+    });
+    
+    console.log(`📁 [DATA EXPORT] Fichiers trouvés: ${userFiles.length}`);
+    
+    console.log(`✅ [DATA EXPORT] Données récupérées: ${userFiles.length} fichiers`);
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        files: userFiles,
+        user: {
+          id: req.user.id,
+          username: req.user.username,
+          email: req.user.email,
+          provider: req.user.provider || 'local',
+          created_at: req.user.createdAt || req.user.created_at
+        }
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ [DATA EXPORT] Erreur complète:', error);
+    console.error('❌ [DATA EXPORT] Stack:', error.stack);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération des données',
+      details: error.message
+    });
+  }
+});
+
+// @route   DELETE /auth/delete-account
+// @desc    Marquer le compte pour suppression avec période de grâce (14 jours)
+// @access  Private
+router.delete('/delete-account', authenticateToken, async (req, res) => {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const userId = req.user.id;
+    const { password } = req.body;
+    
+    console.log(`⏰ [ACCOUNT DELETE] Début période de grâce pour: ${userId}`);
+    
+    // Récupérer l'utilisateur
+    const user = await Utilisateur.findByPk(userId, { transaction });
+    if (!user) {
+      await transaction.rollback();
+      return res.status(404).json({
+        error: 'Utilisateur non trouvé'
+      });
+    }
+
+    // Vérifier si le compte est déjà marqué pour suppression
+    if (user.isMarkedForDeletion()) {
+      const daysRemaining = user.getDaysUntilDeletion();
+      console.log(`⚠️ [ACCOUNT DELETE] Compte déjà marqué pour suppression, régénération du token`);
+      
+      // Régénérer un nouveau token au lieu de refuser
+      const gracePeriodDays = 14;
+      const deletionInfo = await user.markForDeletion(gracePeriodDays);
+      
+      // Valider la transaction
+      await transaction.commit();
+      
+      // Envoyer le nouvel email avec le nouveau token
+      try {
+        await emailService.sendAccountDeletionGraceEmail(
+          user.email,
+          user.username,
+          deletionInfo.deletionScheduledAt,
+          deletionInfo.recoveryToken,
+          gracePeriodDays
+        );
+        console.log(`📧 [EMAIL] Nouveau email de période de grâce envoyé à: ${user.email}`);
+      } catch (emailError) {
+        console.error('❌ [EMAIL] Erreur envoi nouveau email période de grâce:', emailError);
+      }
+      
+      return res.status(200).json({
+        message: 'Nouveau lien de récupération généré et envoyé par email',
+        gracePeriod: {
+          days: gracePeriodDays,
+          deletionScheduledAt: deletionInfo.deletionScheduledAt,
+          recoveryToken: deletionInfo.recoveryToken
+        },
+        accountData: {
+          filesCount: await File.count({ where: { owner_id: user.id } }),
+          email: user.email,
+          username: user.username
+        },
+        wasAlreadyMarked: true
+      });
+    }
+    
+    // Vérifier le mot de passe pour les comptes locaux
+    if (user.provider === 'local') {
+      if (!password) {
+        await transaction.rollback();
+        return res.status(400).json({
+          error: 'Mot de passe requis pour la suppression'
+        });
+      }
+      
+      const isValidPassword = await user.validatePassword(password);
+      if (!isValidPassword) {
+        await transaction.rollback();
+        return res.status(401).json({
+          error: 'Mot de passe incorrect'
+        });
+      }
+    }
+    
+    console.log(`✅ [ACCOUNT DELETE] Authentification validée pour: ${user.email}`);
+    
+    // Compter les fichiers de l'utilisateur pour les statistiques
+    const filesCount = await File.count({
+      where: { owner_id: userId },
+      transaction
+    });
+    
+    console.log(`📁 [ACCOUNT DELETE] ${filesCount} fichier(s) trouvé(s)`);
+    
+    // Marquer le compte pour suppression avec période de grâce de 14 jours
+    const gracePeriodDays = 14;
+    const deletionInfo = await user.markForDeletion(gracePeriodDays);
+    
+    console.log(`⏰ [GRACE PERIOD] Compte marqué pour suppression dans ${gracePeriodDays} jours`);
+    console.log(`📅 [GRACE PERIOD] Suppression programmée le: ${deletionInfo.deletionScheduledAt}`);
+    
+    // Valider la transaction
+    await transaction.commit();
+    
+    // Envoyer l'email de période de grâce
+    try {
+      await emailService.sendAccountDeletionGraceEmail(
+        user.email,
+        user.username,
+        deletionInfo.deletionScheduledAt,
+        deletionInfo.recoveryToken,
+        gracePeriodDays
+      );
+      console.log(`📧 [EMAIL] Email de période de grâce envoyé à: ${user.email}`);
+    } catch (emailError) {
+      console.error('❌ [EMAIL] Erreur envoi email période de grâce:', emailError);
+      // Ne pas faire échouer la demande si l'email échoue
+    }
+    
+    res.status(200).json({
+      message: 'Compte marqué pour suppression avec période de grâce',
+      gracePeriod: {
+        days: gracePeriodDays,
+        deletionScheduledAt: deletionInfo.deletionScheduledAt,
+        recoveryToken: deletionInfo.recoveryToken
+      },
+      accountData: {
+        filesCount,
+        email: user.email,
+        username: user.username
+      }
+    });
+    
+  } catch (error) {
+    await transaction.rollback();
+    console.error('❌ [ACCOUNT DELETE] Erreur:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la suppression du compte',
+      details: error.message
+    });
+  }
+});
+
+// @route   GET /auth/account-recovery/:token
+// @desc    Vérifier la validité d'un token de récupération de compte
+// @access  Public
+router.get('/account-recovery/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    
+    console.log(`🔍 [ACCOUNT RECOVERY] Vérification token: ${token.substring(0, 8)}...`);
+    
+    // Chercher l'utilisateur par token de récupération
+    const user = await Utilisateur.findByRecoveryToken(token);
+    
+    if (!user) {
+      console.log(`❌ [ACCOUNT RECOVERY] Token invalide ou expiré: ${token.substring(0, 8)}...`);
+      return res.status(404).json({
+        error: 'Token de récupération invalide ou expiré',
+        details: 'Ce lien de récupération n\'est plus valide. Il a peut-être expiré ou un nouveau lien a été généré. Vérifiez votre email le plus récent.',
+        valid: false
+      });
+    }
+    
+    const daysRemaining = user.getDaysUntilDeletion();
+    
+    console.log(`✅ [ACCOUNT RECOVERY] Token valide pour: ${user.email}`);
+    console.log(`⏰ [ACCOUNT RECOVERY] Jours restants: ${daysRemaining}`);
+    
+    res.status(200).json({
+      valid: true,
+      user: {
+        email: user.email,
+        username: user.username,
+        deletedAt: user.deleted_at,
+        deletionScheduledAt: user.deletion_scheduled_at,
+        daysRemaining
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ [ACCOUNT RECOVERY] Erreur vérification token:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la vérification du token',
+      details: error.message
+    });
+  }
+});
+
+// @route   POST /auth/account-recovery/:token
+// @desc    Récupérer un compte marqué pour suppression
+// @access  Public
+router.post('/account-recovery/:token', async (req, res) => {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const { token } = req.params;
+    
+    console.log(`🔄 [ACCOUNT RECOVERY] Tentative récupération avec token: ${token.substring(0, 8)}...`);
+    
+    // Chercher l'utilisateur par token de récupération
+    const user = await Utilisateur.findByRecoveryToken(token);
+    
+    if (!user) {
+      await transaction.rollback();
+      console.log(`❌ [ACCOUNT RECOVERY] Token invalide ou expiré: ${token.substring(0, 8)}...`);
+      return res.status(404).json({
+        error: 'Token de récupération invalide ou expiré',
+        details: 'Ce lien de récupération n\'est plus valide. Il a peut-être expiré, été déjà utilisé, ou un nouveau lien a été généré. Vérifiez votre email le plus récent.'
+      });
+    }
+    
+    // Récupérer le compte
+    await user.recoverAccount();
+    
+    console.log(`✅ [ACCOUNT RECOVERY] Compte récupéré avec succès: ${user.email}`);
+    
+    // Valider la transaction
+    await transaction.commit();
+    
+    // Optionnel : Envoyer un email de confirmation de récupération
+    try {
+      const mailOptions = {
+        from: {
+          name: 'Hifadhui',
+          address: process.env.SMTP_FROM || process.env.SMTP_USER
+        },
+        to: user.email,
+        subject: 'Compte récupéré avec succès - Hifadhui',
+        text: `Bonjour ${user.username},
+
+Votre compte Hifadhui a été récupéré avec succès !
+
+Votre demande de suppression a été annulée et votre compte est maintenant pleinement actif.
+
+Vous pouvez vous reconnecter normalement à votre compte.
+
+Cordialement,
+L'équipe Hifadhui`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #10b981;">✅ Compte récupéré avec succès !</h2>
+            <p>Bonjour <strong>${user.username}</strong>,</p>
+            <p>Votre compte Hifadhui a été récupéré avec succès !</p>
+            <div style="background: #f0f9ff; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+              <p><strong>✅ Votre demande de suppression a été annulée</strong></p>
+              <p><strong>✅ Votre compte est maintenant pleinement actif</strong></p>
+              <p><strong>✅ Vous pouvez vous reconnecter normalement</strong></p>
+            </div>
+            <p>Cordialement,<br><strong>L'équipe Hifadhui</strong></p>
+          </div>
+        `
+      };
+
+      const result = await emailService.transporter.sendMail(mailOptions);
+      console.log(`📧 [EMAIL] Email de confirmation de récupération envoyé à: ${user.email}`);
+    } catch (emailError) {
+      console.error('❌ [EMAIL] Erreur envoi email confirmation récupération:', emailError);
+      // Ne pas faire échouer la récupération si l'email échoue
+    }
+    
+    res.status(200).json({
+      message: 'Compte récupéré avec succès',
+      user: {
+        email: user.email,
+        username: user.username,
+        recoveredAt: new Date()
+      }
+    });
+    
+  } catch (error) {
+    await transaction.rollback();
+    console.error('❌ [ACCOUNT RECOVERY] Erreur récupération:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération du compte',
+      details: error.message
     });
   }
 });

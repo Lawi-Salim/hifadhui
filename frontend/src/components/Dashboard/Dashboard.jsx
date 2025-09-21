@@ -1,31 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
-import { FiFolder, FiFileText, FiLock, FiUpload, FiFile, FiBarChart2, FiMenu } from 'react-icons/fi';
+import { FiFolder, FiFileText, FiLock, FiUpload, FiFile, FiBarChart2, FiMenu, FiImage } from 'react-icons/fi';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const { } = useAuth();
+  const location = useLocation();
   const [stats, setStats] = useState({
     totalFiles: 0,
-    totalCertificates: 0,
+    totalImages: 0,
+    totalPdfs: 0,
     recentFiles: []
   });
   const [loading, setLoading] = useState(true);
+  const [welcomeMessage, setWelcomeMessage] = useState('');
+
+  // Gérer les messages de bienvenue depuis la navigation
+  useEffect(() => {
+    if (location.state?.welcomeMessage) {
+      setWelcomeMessage(location.state.welcomeMessage);
+      // Effacer le message après 5 secondes
+      const timer = setTimeout(() => {
+        setWelcomeMessage('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Appel pour les statistiques globales (total fichiers et certificats)
+        // Appel pour les statistiques globales (total fichiers)
         const statsResponse = await api.get('/files/stats');
+        
+        // Appel pour les statistiques des images
+        const imagesResponse = await api.get('/files?type=image&limit=1');
+        
+        // Appel pour les statistiques des PDFs
+        const pdfsResponse = await api.get('/files?type=pdf&limit=1');
         
         // Appel pour récupérer les fichiers récents (hors images)
         const recentFilesResponse = await api.get('/files?limit=5');
 
         setStats({
           totalFiles: statsResponse.data.totalFiles || 0,
-          totalCertificates: statsResponse.data.totalCertificates || 0,
+          totalImages: imagesResponse.data.pagination?.total || 0,
+          totalPdfs: pdfsResponse.data.pagination?.total || 0,
           recentFiles: recentFilesResponse.data.files || []
         });
       } catch (error) {
@@ -79,6 +101,13 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Message de bienvenue */}
+        {welcomeMessage && (
+          <div className="welcome-message mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-700 font-medium">{welcomeMessage}</p>
+          </div>
+        )}
+
         <div className="stats-grid">
           <div className="stat-card">
             <div className="stat-header">
@@ -93,12 +122,23 @@ const Dashboard = () => {
 
           <div className="stat-card">
             <div className="stat-header">
-              <div className="stat-title">Certificats générés</div>
-              <div className="stat-icon success"><FiFileText /></div>
+              <div className="stat-title">Images</div>
+              <div className="stat-icon success"><FiImage /></div>
             </div>
-            <div className="stat-value">{stats.totalCertificates}</div>
+            <div className="stat-value">{stats.totalImages}</div>
             <div className="stat-change positive">
-              Preuves de propriété
+              Photos et illustrations
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-header">
+              <div className="stat-title">Documents PDF</div>
+              <div className="stat-icon info"><FiFileText /></div>
+            </div>
+            <div className="stat-value">{stats.totalPdfs}</div>
+            <div className="stat-change positive">
+              Documents et rapports
             </div>
           </div>
 
@@ -126,9 +166,6 @@ const Dashboard = () => {
                 </Link>
                 <Link to="/files" className="btn btn-secondary">
                   <FiFolder /> Voir mes fichiers
-                </Link>
-                <Link to="/certificates" className="btn btn-secondary">
-                  <FiFileText /> Mes certificats
                 </Link>
               </div>
             </div>

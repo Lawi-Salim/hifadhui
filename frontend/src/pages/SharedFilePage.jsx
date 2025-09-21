@@ -303,22 +303,6 @@ const SharedFilePage = () => {
               </div>
             </div>
 
-            {file.certificates && file.certificates.length > 0 && (
-              <div className="certificates-section">
-                <h4>Certificats de propriété</h4>
-                <div className="certificates-list">
-                  {file.certificates.map((cert, index) => (
-                    <div key={cert.id} className="certificate-item">
-                      <FaFilePdf className="cert-icon" />
-                      <div className="cert-info">
-                        <span>Certificat #{index + 1}</span>
-                        <small>Généré le {formatDate(cert.date_generated)}</small>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 

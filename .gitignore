@@ -4,7 +4,6 @@ Features.md
 README-DEPLOYMENT.md
 *deployment*.md
 !schema-psql.sql
-remove-certificate-trigger.sql
 
 # Roadmap
 Roadmap-features
@@ -28,6 +27,10 @@ frontend/.env
 frontend/.env.*
 /frontend/.env.example
 
+backend/services/template-mails/README.md
+backend/tasks/README.md
+frontend/src/components/Layout/ProviderIcon.md
+
 # Dossier de build de production
 /frontend/build
 
@@ -39,7 +42,6 @@ yarn-debug.log*
 yarn-error.log*
 
 # Dossiers temporaires et générés
-/backend/certificates
 /backend/uploads
 
 # Scripts utils en développement
@@ -64,4 +66,5 @@ Thumbs.db
 *.sln
 *.sw?
 *copy.*
+*copy*.*
 *test.*

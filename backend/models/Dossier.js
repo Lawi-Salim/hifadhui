@@ -57,8 +57,8 @@ Dossier.getSystemRoot = async function() {
   if (!systemRoot) {
     // Créer le dossier système s'il n'existe pas
     systemRoot = await Dossier.create({
-      name: 'Hifadhwi',
-      name_original: 'Hifadhwi',
+      name: 'Hifadhui',
+      name_original: 'Hifadhui',
       owner_id: null,
       parent_id: null,
       is_system_root: true

@@ -1,0 +1,416 @@
+/* ========================================
+   PAGES LÉGALES - STYLES GÉNÉRAUX
+   ======================================== */
+
+.legal-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  padding: var(--spacing-xl) var(--spacing-md);
+  font-family: var(--font-family);
+}
+
+.legal-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: var(--surface-color);
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 10px 10px -5px rgb(0 0 0 / 0.3);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+/* ========================================
+   HEADER
+   ======================================== */
+
+.legal-header {
+  background: var(--bg-tertiary);
+  color: var(--white-color);
+  padding: var(--spacing-xl);
+  position: relative;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-bottom: var(--spacing-md);
+  transition: color 0.2s ease;
+}
+
+.back-link:hover {
+  color: var(--white-color);
+}
+
+.legal-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.legal-icon {
+  font-size: 2.5rem;
+  opacity: 0.9;
+}
+
+.legal-title h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-family: var(--font-family);
+}
+
+.legal-subtitle {
+  font-size: 1rem;
+  opacity: 0.8;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* ========================================
+   CONTENU PRINCIPAL
+   ======================================== */
+
+.legal-content {
+  padding: var(--spacing-xl) var(--spacing-xl);
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.legal-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.legal-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.section-icon {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+
+.legal-section h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-md) 0;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: var(--spacing-sm);
+  font-family: var(--font-family);
+}
+
+.legal-section h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: var(--spacing-lg) 0 var(--spacing-sm) 0;
+  font-family: var(--font-family);
+}
+
+.legal-section p {
+  margin-bottom: var(--spacing-md);
+  text-align: justify;
+  color: var(--text-secondary);
+}
+
+.legal-section ul {
+  margin: var(--spacing-md) 0;
+  padding-left: 1.5rem;
+}
+
+.legal-section li {
+  margin-bottom: var(--spacing-sm);
+  position: relative;
+  color: var(--text-secondary);
+}
+
+.legal-section li strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ========================================
+   ÉLÉMENTS SPÉCIAUX
+   ======================================== */
+
+.prohibited-content {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--error-color);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  margin: var(--spacing-md) 0;
+}
+
+.prohibited-content p {
+  color: var(--error-color);
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
+}
+
+.prohibited-content ul {
+  margin: 0;
+}
+
+.prohibited-content li {
+  color: var(--text-secondary);
+}
+
+.rights-actions {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--primary-color);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  margin: var(--spacing-md) 0;
+}
+
+.rights-actions h3 {
+  color: var(--primary-color);
+  margin-top: 0;
+}
+
+.contact-info {
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  margin: var(--spacing-md) 0;
+}
+
+.contact-item {
+  margin-bottom: var(--spacing-sm);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.contact-item:last-child {
+  margin-bottom: 0;
+}
+
+.contact-item strong {
+  color: var(--text-primary);
+  min-width: 120px;
+}
+
+.contact-item a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.contact-item a:hover {
+  text-decoration: underline;
+}
+
+/* ========================================
+   FOOTER
+   ======================================== */
+
+.legal-footer {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  padding: var(--spacing-xl);
+  text-align: center;
+}
+
+.legal-footer p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.legal-links {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-xl);
+  flex-wrap: wrap;
+}
+
+.legal-links a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+}
+
+.legal-links a:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 768px) {
+  .legal-page {
+    padding: var(--spacing-md) var(--spacing-sm);
+  }
+
+  .legal-header {
+    padding: var(--spacing-lg);
+  }
+
+  .legal-title h1 {
+    font-size: 2rem;
+  }
+
+  .legal-icon {
+    font-size: 2rem;
+  }
+
+  .legal-content {
+    padding: var(--spacing-xl) var(--spacing-lg);
+  }
+
+  .legal-section h2 {
+    font-size: 1.5rem;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .contact-item {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .contact-item strong {
+    min-width: auto;
+  }
+
+  .legal-links {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .legal-page {
+    padding: var(--spacing-sm);
+  }
+
+  .legal-container {
+    border-radius: var(--border-radius);
+  }
+
+  .legal-header {
+    padding: var(--spacing-md);
+  }
+
+  .legal-title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .legal-title h1 {
+    font-size: 1.75rem;
+  }
+
+  .legal-content {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+
+  .legal-section {
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .prohibited-content,
+  .rights-actions,
+  .contact-info {
+    padding: var(--spacing-md);
+  }
+
+  .legal-footer {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+}
+
+/* ========================================
+   ANIMATIONS ET TRANSITIONS
+   ======================================== */
+
+.legal-container {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.legal-section {
+  animation: fadeIn 0.8s ease-out;
+  animation-fill-mode: both;
+}
+
+.legal-section:nth-child(1) { animation-delay: 0.1s; }
+.legal-section:nth-child(2) { animation-delay: 0.2s; }
+.legal-section:nth-child(3) { animation-delay: 0.3s; }
+.legal-section:nth-child(4) { animation-delay: 0.4s; }
+.legal-section:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================
+   ACCESSIBILITÉ
+   ======================================== */
+
+.legal-page a:focus,
+.back-link:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.legal-section h2:focus,
+.legal-section h3:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Amélioration de la lisibilité */
+.legal-content {
+  font-size: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .legal-container,
+  .legal-section {
+    animation: none;
+  }
+}
+
+/* Styles déjà adaptés au thème sombre via les variables CSS */

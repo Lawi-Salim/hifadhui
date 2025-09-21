@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getUsers } from '../../services/adminService';
-import UserAvatar from '../Layout/UserAvatar';
+import SmartAvatar from '../Layout/SmartAvatar';
+import UserDisplayName from '../Layout/UserDisplayName';
+import ProviderIcon from '../Layout/ProviderIcon';
 import Pagination from '../Pagination';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -49,6 +51,7 @@ const ListeUtilisateurs = () => {
               <th>Avatar</th>
               <th>Nom d'utilisateur</th>
               <th>Email</th>
+              <th>Provider</th>
               <th>Rôle</th>
               <th>Date d'inscription</th>
             </tr>
@@ -57,10 +60,20 @@ const ListeUtilisateurs = () => {
             {users.map((u) => (
               <tr key={u.id}>
                 <td>
-                  <UserAvatar name={u.username} size={32} />
+                  <SmartAvatar user={u} size={32} />
                 </td>
-                <td>{u.username}</td>
+                <td>
+                  <div>
+                    <div>{u.username}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                      ID: <UserDisplayName user={u} />
+                    </div>
+                  </div>
+                </td>
                 <td>{u.email}</td>
+                <td>
+                  <ProviderIcon user={u} />
+                </td>
                 <td>
                   <span className={`role-badge role-${u.role}`}>{u.role}</span>
                 </td>

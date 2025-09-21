@@ -1,0 +1,105 @@
+/* Conteneur principal de la barre de progression */
+.animated-progress-container {
+  width: 100%;
+  margin: 0.5rem 0;
+}
+
+/* Track de la barre de progression */
+.animated-progress-track {
+  width: 100%;
+  height: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--border-color);
+}
+
+/* Barre de progression remplie */
+.animated-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  position: relative;
+  overflow: hidden; /* Empêche l'animation de dépasser */
+}
+
+/* Couleurs de la barre */
+.animated-progress-fill.primary {
+  background: linear-gradient(90deg, var(--primary-color), #3b82f6);
+}
+
+.animated-progress-fill.success {
+  background: linear-gradient(90deg, var(--success-color), #34d399);
+}
+
+.animated-progress-fill.warning {
+  background: linear-gradient(90deg, var(--warning-color), #fbbf24);
+}
+
+.animated-progress-fill.danger {
+  background: linear-gradient(90deg, var(--danger-color), #f87171);
+}
+
+.animated-progress-fill.info {
+  background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+}
+
+/* Animation shimmer avec aller-retour fluide */
+.progress-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  animation: shimmer-bounce var(--animation-duration, 1s) ease-in-out infinite;
+}
+
+/* Animation aller-retour fluide */
+@keyframes shimmer-bounce {
+  0% { 
+    transform: translateX(-100%); 
+  }
+  50% { 
+    transform: translateX(100%); 
+  }
+  100% { 
+    transform: translateX(-100%); 
+  }
+}
+
+/* Variante pour animation plus rapide */
+.animated-progress-fill.fast .progress-shimmer {
+  animation-duration: 1s;
+}
+
+/* Variante pour animation plus lente */
+.animated-progress-fill.slow .progress-shimmer {
+  animation-duration: 3s;
+}
+
+/* Désactiver l'animation si nécessaire */
+.animated-progress-fill:not(.animated) .progress-shimmer {
+  display: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .animated-progress-track {
+    height: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .animated-progress-track {
+    height: 4px;
+  }
+}

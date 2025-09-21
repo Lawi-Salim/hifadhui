@@ -1,16 +1,20 @@
 .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background-color: rgba(0, 0, 0, 0.6) !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 10000 !important;
     backdrop-filter: blur(5px);
     animation: fadeIn 0.3s ease-out;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   
   .modal-content {
@@ -53,6 +57,12 @@
     padding: 5px;
   }
   
+  /* Assurer que modal-root n'a pas de contraintes */
+  #modal-root {
+    position: relative !important;
+    z-index: 10000 !important;
+  }
+
   /* Animations */
   @keyframes fadeIn {
     from { opacity: 0; }
@@ -162,23 +172,55 @@
 
   /* Modal compact pour suppression */
   .modal-overlay.delete-modal .modal-content {
-    max-width: 420px;
-    padding: 1.5rem;
+    max-width: 550px;
+    padding: 2rem;
+    min-height: auto;
   }
 
   .modal-overlay.delete-modal p {
     margin-bottom: 1.5rem;
     color: var(--text-primary);
-    line-height: 1.5;
+    line-height: 1.6;
+    font-size: 0.95rem;
+  }
+
+  .modal-overlay.delete-modal .delete-step {
+    margin-bottom: 1rem;
+  }
+
+  .modal-overlay.delete-modal ul {
+    margin: 1.5rem 0;
+    padding-left: 0;
+  }
+
+  .modal-overlay.delete-modal li {
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
   }
 
   .modal-overlay.delete-modal .modal-actions {
     display: flex;
-    gap: 0.75rem;
+    gap: 1rem;
     justify-content: flex-end;
-    margin-top: 1.5rem;
-    padding-top: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
     border-top: 1px solid var(--border-color);
+    flex-wrap: wrap;
+  }
+
+  /* Styles pour les boutons multiples dans l'étape d'export */
+  .modal-overlay.delete-modal .modal-actions button {
+    min-width: 140px;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
   }
   
   .modal-overlay.copy-modal .modal-actions {
@@ -219,6 +261,18 @@
     background-color: #dc2626;
   }
 
+  .modal-overlay.delete-modal .btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+  }
+
+  .modal-overlay.delete-modal .btn-primary:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
   .modal-overlay.delete-modal .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -229,6 +283,27 @@
     font-size: 0.85rem;
     margin-top: 0.5rem;
     margin-bottom: 0;
+  }
+
+  /* Styles pour les boîtes d'information */
+  .modal-overlay.delete-modal .warning-box,
+  .modal-overlay.delete-modal div[style*="background"] {
+    border-radius: 10px;
+    margin: 1.5rem 0;
+  }
+
+  /* Amélioration des inputs */
+  .modal-overlay.delete-modal input {
+    font-size: 0.95rem;
+    padding: 0.875rem;
+    border-radius: 8px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .modal-overlay.delete-modal input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
   /* Modal compact pour création de dossier */

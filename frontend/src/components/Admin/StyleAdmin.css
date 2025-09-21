@@ -46,22 +46,27 @@
 }
 
 .role-badge {
-  padding: 0.25rem 0.6rem;
+  padding: 4px 8px;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 500;
-  text-transform: capitalize;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .role-admin {
-  background-color: #e0f2fe; /* light-blue-100 */
-  color: #0c4a6e; /* light-blue-800 */
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .role-user {
-  background-color: #e0e7ff; /* indigo-100 */
-  color: #3730a3; /* indigo-800 */
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.2);
 }
+
+/* Les styles de provider sont maintenant dans ProviderIcon.css */
 
 .error-message {
   color: var(--danger-color, #ef4444);

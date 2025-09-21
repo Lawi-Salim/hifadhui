@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import session from 'express-session';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
@@ -16,7 +17,6 @@ import { sequelize } from './config/database.js';
 import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
 import fileRoutes from './routes/files.js';
-import certificateRoutes from './routes/certificates.js';
 import dossierRoutes from './routes/dossiers.js';
 import shareRoutes from './routes/shares.js';
 import bulkActionsRoutes from './routes/bulkActions.js';
@@ -24,6 +24,7 @@ import contactRoutes from './routes/contact.js';
 
 // Importation des modèles et associations depuis l'index des modèles
 import { Utilisateur } from './models/index.js';
+import passport from './config/passport.js';
 
 
 const app = express();
@@ -33,29 +34,17 @@ const PORT = process.env.PORT || 5000;
 app.set('trust proxy', 1);
 
 // Logs de démarrage (diagnostic)
-console.log('🟢 [BOOT] Démarrage du serveur Hifadhwi');
+console.log('🟢 [BOOT] Démarrage du serveur Hifadhui');
 console.log('🟢 [BOOT] NODE_ENV =', process.env.NODE_ENV);
 console.log('🟢 [BOOT] VERCEL =', process.env.VERCEL ? '1' : '0');
 console.log('🟢 [BOOT] DATABASE_URL défini =', Boolean(process.env.DATABASE_URL));
 console.log('🟢 [BOOT] DB_HOST =', process.env.DB_HOST || '(non défini)');
 
 // Middlewares de sécurité
+console.log('🔧 [SECURITY] Configuration Helmet avec CSP désactivée temporairement pour OAuth');
 app.use(helmet({ 
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://hifadhui.site"],
-      fontSrc: ["'self'"],
-      connectSrc: ["'self'"],
-      frameSrc: ["'none'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      manifestSrc: ["'self'"],
-    },
-  }
+  contentSecurityPolicy: false // Désactivé temporairement pour déboguer OAuth
 }));
 
 // Configuration CORS pour gérer les preflight requests
@@ -84,6 +73,21 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Configuration des sessions (nécessaire pour OAuth)
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'hifadhui-oauth-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 10 * 60 * 1000 // 10 minutes (juste pour OAuth)
+  }
+}));
+
+// Initialisation Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Middleware de gestion des connexions DB pour Vercel
 if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
   app.use((req, res, next) => {
@@ -109,8 +113,7 @@ if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
   });
 }
 
-// Servir les fichiers statiques (certificats et uploads)
-app.use('/certificates', express.static(path.join(__dirname, 'certificates')));
+// Servir les fichiers statiques (uploads)
 // En production sur Vercel, les fichiers uploadés sont stockés dans /tmp et ne sont pas persistants.
 // Éviter de servir un dossier inexistant dans /var/task
 if (process.env.NODE_ENV !== 'production') {
@@ -127,7 +130,6 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/files', fileRoutes);
 app.use('/api/v1/files', shareRoutes); // Routes de partage sous /files
-app.use('/api/v1/certificates', certificateRoutes);
 app.use('/api/v1/dossiers', dossierRoutes);
 app.use('/api/v1/bulk-actions', bulkActionsRoutes);
 app.use('/api/v1/share', shareRoutes); // Route publique pour accéder aux fichiers partagés
@@ -163,7 +165,7 @@ app.get('/api/health', (req, res) => {
   
   res.json({ 
     status: 'OK', 
-    message: 'Hifadhwi API est opérationnelle',
+    message: 'Hifadhui API est opérationnelle',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
     database: 'Connected',

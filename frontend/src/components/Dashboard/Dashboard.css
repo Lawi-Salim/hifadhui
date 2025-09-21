@@ -72,7 +72,7 @@
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
@@ -114,6 +114,7 @@
   align-items: center;
   justify-content: center;
   font-size: 1.25rem;
+  margin: 0 !important;
 }
 
 .stat-icon.primary {
@@ -131,11 +132,20 @@
   color: var(--warning-color);
 }
 
+.stat-icon.info {
+  background: #f0f9ff;
+  color: #0ea5e9;
+}
+
 .stat-value {
   font-size: 2rem;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 0.25rem;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .stat-change {

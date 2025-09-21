@@ -2,7 +2,7 @@ import express from 'express';
 import crypto from 'crypto';
 import { body, validationResult } from 'express-validator';
 import { Op } from 'sequelize';
-import { File, FileShare, Utilisateur, Certificate, ActivityLog } from '../models/index.js';
+import { File, FileShare, Utilisateur, ActivityLog } from '../models/index.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -116,11 +116,6 @@ router.get('/:token', async (req, res) => {
               as: 'fileUser',
               attributes: ['username']
             },
-            {
-              model: Certificate,
-              as: 'fileCertificates',
-              attributes: ['id', 'pdf_url', 'date_generated']
-            }
           ]
         },
         {
@@ -158,7 +153,6 @@ router.get('/:token', async (req, res) => {
         date_upload: fileShare.file.date_upload,
         version: fileShare.file.version,
         owner: fileShare.file.fileUser.username,
-        certificates: fileShare.file.fileCertificates,
         file_url: fileShare.file.file_url
       },
       share: {

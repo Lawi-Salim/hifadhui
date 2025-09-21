@@ -1,7 +1,7 @@
 {
-  "name": "ifadhwi-frontend",
+  "name": "hifadhui-frontend",
   "version": "1.0.0",
-  "description": "Frontend pour le coffre-fort numérique Hifadhwi",
+  "description": "Frontend pour le coffre-fort numérique Hifadhui",
   "private": true,
   "dependencies": {
     "@dicebear/core": "^9.2.4",

@@ -23,6 +23,18 @@ const authenticateToken = (req, res, next) => {
         });
       }
 
+      // Vérifier si le compte est marqué pour suppression
+      if (user.isMarkedForDeletion()) {
+        const daysRemaining = user.getDaysUntilDeletion();
+        return res.status(403).json({ 
+          error: 'Compte en période de grâce',
+          message: `Votre compte est marqué pour suppression dans ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''}. Utilisez le lien de récupération dans votre email pour réactiver votre compte.`,
+          daysRemaining,
+          deletionScheduledAt: user.deletion_scheduled_at,
+          isMarkedForDeletion: true
+        });
+      }
+
       req.user = user;
       next();
     } catch (error) {
@@ -36,9 +48,12 @@ const authenticateToken = (req, res, next) => {
 
 const generateToken = (userId) => {
   return jwt.sign(
-    { userId },
+    { 
+      userId,
+      iat: Math.floor(Date.now() / 1000) // Timestamp de création pour tracking
+    },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '90d' }
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } // Session de 7 jours
   );
 };
 

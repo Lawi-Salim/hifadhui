@@ -1,9 +1,12 @@
 import nodemailer from 'nodemailer';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import dotenv from 'dotenv';
+import { 
+  getPasswordResetTemplate, 
+  getContactTemplate, 
+  getAccountDeletionTemplate,
+  getAccountDeletionGraceTemplate,
+  getAccountDeletionReminderTemplate
+} from './template-mails/index.js';
 
 class EmailService {
   constructor() {
@@ -55,18 +58,20 @@ class EmailService {
    * Envoie un email de réinitialisation de mot de passe
    */
   async sendPasswordResetEmail(email, username, resetToken) {
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    const frontendUrl = process.env.FRONTEND_URL || 
+                       (process.env.VERCEL ? 'https://hifadhui.site' : 'http://localhost:3000');
+    const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
     
     const htmlTemplate = this.getPasswordResetTemplate(username, resetUrl);
     const textTemplate = this.getPasswordResetTextTemplate(username, resetUrl);
 
     const mailOptions = {
       from: {
-        name: 'Hifadhwi',
+        name: 'Hifadhui',
         address: process.env.SMTP_FROM || process.env.SMTP_USER
       },
       to: email,
-      subject: '🔐 Réinitialisation de votre mot de passe - Hifadhwi',
+      subject: '🔐 Réinitialisation de votre mot de passe - Hifadhui',
       text: textTemplate,
       html: htmlTemplate
     };
@@ -99,10 +104,10 @@ class EmailService {
       from: `"Hifadhui" <${process.env.SMTP_FROM}>`,
       to: process.env.SMTP_FROM, // Envoyer à nous-mêmes
       replyTo: email, // Permettre de répondre directement au client
-      subject: `[Contact Hifadhwi] ${subject}`,
+      subject: `[Contact Hifadhui] ${subject}`,
       html: this.getContactTemplate(name, email, subject, message),
       text: `
-        Nouveau message de contact - Hifadhwi
+        Nouveau message de contact - Hifadhui
 
         De: ${name} (${email})
         Sujet: ${subject}
@@ -136,129 +141,10 @@ class EmailService {
 
   /**
    * Template HTML pour l'email de réinitialisation
+   * Utilise le template externe pour une meilleure maintenabilité
    */
   getPasswordResetTemplate(username, resetUrl) {
-    return `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Réinitialisation de mot de passe - Hifadhwi</title>
-        <style>
-            body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                max-width: 600px;
-                margin: 0 auto;
-                padding: 20px;
-                background-color: #f8fafc;
-            }
-            .container {
-                background: white;
-                border-radius: 12px;
-                padding: 40px;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            }
-            .header {
-                text-align: center;
-                margin-bottom: 30px;
-            }
-            .logo {
-                font-size: 28px;
-                font-weight: bold;
-                color: #1e293b;
-                margin-bottom: 10px;
-            }
-            .title {
-                color: #1e293b;
-                font-size: 24px;
-                margin-bottom: 20px;
-            }
-            .content {
-                margin-bottom: 30px;
-            }
-            .btn-reset {
-                display: inline-block;
-                background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
-                color: white !important;
-                padding: 16px 32px;
-                text-decoration: none;
-                border-radius: 12px;
-                font-weight: 700;
-                font-size: 16px;
-                margin: 24px 0;
-                box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
-                text-align: center;
-                min-width: 250px;
-                transition: all 0.3s ease;
-            }
-            .btn-reset:hover {
-                background: linear-gradient(135deg, #3730A3 0%, #6B21A8 100%);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
-            }
-            .warning {
-                background: #fef3c7;
-                border: 1px solid #f59e0b;
-                border-radius: 8px;
-                padding: 16px;
-                margin: 20px 0;
-            }
-            .footer {
-                text-align: center;
-                color: #6b7280;
-                font-size: 14px;
-                margin-top: 30px;
-                padding-top: 20px;
-                border-top: 1px solid #e5e7eb;
-            }
-            .link {
-                color: #3b82f6;
-                word-break: break-all;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <div class="logo">🔒 Hifadhwi</div>
-                <h1 class="title">Réinitialisation de mot de passe</h1>
-            </div>
-            
-            <div class="content">
-                <p>Bonjour <strong>${username}</strong>,</p>
-                
-                <p>Vous avez demandé la réinitialisation de votre mot de passe pour votre compte Hifadhwi.</p>
-                
-                <p>Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe :</p>
-                
-                <div style="text-align: center;">
-                    <a href="${resetUrl}" class="btn-reset">🔐 Créer un nouveau mot de passe</a>
-                </div>
-                
-                <div class="warning">
-                    <strong>⚠️ Important :</strong>
-                    <ul>
-                        <li>Ce lien est valide pendant <strong>15 minutes</strong> seulement</li>
-                        <li>Il ne peut être utilisé qu'une seule fois</li>
-                        <li>Si vous n'avez pas demandé cette réinitialisation, ignorez cet email</li>
-                    </ul>
-                </div>
-                
-                <p>Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur :</p>
-                <p><a href="${resetUrl}" class="link">${resetUrl}</a></p>
-            </div>
-            
-            <div class="footer">
-                <p>Cet email a été envoyé par Hifadhwi - Votre coffre-fort numérique sécurisé</p>
-                <p>Si vous avez des questions, contactez notre support.</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    `;
+    return getPasswordResetTemplate(username, resetUrl);
   }
 
   /**
@@ -266,22 +152,22 @@ class EmailService {
    */
   getPasswordResetTextTemplate(username, resetUrl) {
     return `
-Bonjour ${username},
+      Bonjour ${username},
 
-Vous avez demandé la réinitialisation de votre mot de passe pour votre compte Hifadhwi.
+      Vous avez demandé la réinitialisation de votre mot de passe pour votre compte Hifadhui.
 
-Pour créer un nouveau mot de passe, cliquez sur ce lien :
-${resetUrl}
+      Pour créer un nouveau mot de passe, cliquez sur ce lien :
+      ${resetUrl}
 
-IMPORTANT :
-- Ce lien est valide pendant 15 minutes seulement
-- Il ne peut être utilisé qu'une seule fois
-- Si vous n'avez pas demandé cette réinitialisation, ignorez cet email
+      IMPORTANT :
+      - Ce lien est valide pendant 15 minutes seulement
+      - Il ne peut être utilisé qu'une seule fois
+      - Si vous n'avez pas demandé cette réinitialisation, ignorez cet email
 
-Si vous avez des questions, contactez notre support.
+      Si vous avez des questions, contactez notre support.
 
----
-Hifadhwi - Votre coffre-fort numérique sécurisé
+      ---
+      Hifadhui - Votre coffre-fort numérique sécurisé
     `;
   }
 
@@ -312,109 +198,135 @@ Hifadhwi - Votre coffre-fort numérique sécurisé
 
   /**
    * Template HTML pour l'email de contact
+   * Utilise le template externe pour une meilleure maintenabilité
    */
   getContactTemplate(name, email, subject, message) {
-    return `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Nouveau message de contact - Hifadhwi</title>
-        <style>
-            body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                max-width: 600px;
-                margin: 0 auto;
-                padding: 20px;
-                background-color: #f8fafc;
-            }
-            .container {
-                background: white;
-                border-radius: 12px;
-                padding: 40px;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            }
-            .header {
-                text-align: center;
-                margin-bottom: 30px;
-            }
-            .logo {
-                font-size: 28px;
-                font-weight: bold;
-                color: #1e293b;
-                margin-bottom: 10px;
-            }
-            .title {
-                color: #1e293b;
-                font-size: 24px;
-                margin-bottom: 20px;
-            }
-            .contact-info {
-                background: #f1f5f9;
-                border-radius: 8px;
-                padding: 20px;
-                margin-bottom: 20px;
-            }
-            .contact-field {
-                margin-bottom: 10px;
-            }
-            .contact-field strong {
-                color: #2563eb;
-                display: inline-block;
-                width: 80px;
-            }
-            .message-content {
-                background: #fefefe;
-                border-left: 4px solid #2563eb;
-                padding: 20px;
-                margin: 20px 0;
-                border-radius: 0 8px 8px 0;
-            }
-            .footer {
-                text-align: center;
-                color: #6b7280;
-                font-size: 14px;
-                margin-top: 30px;
-                padding-top: 20px;
-                border-top: 1px solid #e5e7eb;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <div class="logo">🔐 Hifadhwi</div>
-                <h1 class="title">Nouveau message de contact</h1>
-            </div>
-            
-            <div class="contact-info">
-                <div class="contact-field">
-                    <strong>De :</strong> ${name}
-                </div>
-                <div class="contact-field">
-                    <strong>Email :</strong> ${email}
-                </div>
-                <div class="contact-field">
-                    <strong>Sujet :</strong> ${subject}
-                </div>
-            </div>
-            
-            <div class="message-content">
-                <h3 style="margin-top: 0; color: #1e293b;">Message :</h3>
-                <p style="margin: 0; white-space: pre-wrap;">${message}</p>
-            </div>
-            
-            <div class="footer">
-                <p>Message reçu via le formulaire de contact de Hifadhwi</p>
-                <p>Vous pouvez répondre directement à cet email pour contacter ${name}.</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    `;
+    return getContactTemplate(name, email, subject, message);
+  }
+
+  /**
+   * Envoie un email de confirmation de suppression de compte
+   * @param {string} email - Email de l'utilisateur
+   * @param {Object} userData - Données de l'utilisateur supprimé
+   */
+  async sendAccountDeletionConfirmation(email, userData) {
+    const { username, deletedAt, filesCount } = userData;
+    
+    const mailOptions = {
+      from: `"Hifadhui" <${process.env.SMTP_USER || 'mavuna@hifadhui.site'}>`,
+      to: email,
+      subject: 'Confirmation de suppression de compte - Hifadhui',
+      html: this.getAccountDeletionTemplate(username, deletedAt, filesCount)
+    };
+
+    try {
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log('✅ [EMAIL] Email de suppression envoyé:', info.messageId);
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔗 [EMAIL] Aperçu:', nodemailer.getTestMessageUrl(info));
+      }
+      
+      return { success: true, messageId: info.messageId };
+    } catch (error) {
+      console.error('❌ [EMAIL] Erreur envoi email suppression:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Template HTML pour l'email de confirmation de suppression
+   * Utilise le template externe pour une meilleure maintenabilité
+   */
+  getAccountDeletionTemplate(username, deletedAt, filesCount) {
+    return getAccountDeletionTemplate(username, deletedAt, filesCount);
+  }
+
+  /**
+   * Envoie un email de période de grâce pour la suppression de compte
+   */
+  async sendAccountDeletionGraceEmail(email, username, deletionScheduledAt, recoveryToken, gracePeriodDays = 14) {
+    const frontendUrl = process.env.FRONTEND_URL || 
+                       (process.env.VERCEL ? 'https://hifadhui.site' : 'http://localhost:3000');
+    const recoveryUrl = `${frontendUrl}/account-recovery/${recoveryToken}`;
+    
+    const htmlTemplate = getAccountDeletionGraceTemplate(username, deletionScheduledAt, recoveryUrl, gracePeriodDays);
+
+    const mailOptions = {
+      from: {
+        name: 'Hifadhui',
+        address: process.env.SMTP_FROM || process.env.SMTP_USER
+      },
+      to: email,
+      subject: `⏰ Période de grâce - Votre compte sera supprimé dans ${gracePeriodDays} jours`,
+      html: htmlTemplate,
+      text: `Bonjour ${username},
+
+      Votre demande de suppression de compte Hifadhui a été prise en compte.
+
+      PÉRIODE DE GRÂCE : ${gracePeriodDays} jours
+      Suppression programmée le : ${new Date(deletionScheduledAt).toLocaleDateString('fr-FR')}
+
+      Vous pouvez encore récupérer votre compte en utilisant ce lien :
+      ${recoveryUrl}
+
+      Attention : Passé ce délai, votre compte et toutes vos données seront définitivement supprimés.
+
+      Cordialement,
+      L'équipe Hifadhui`
+    };
+
+    try {
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('✅ Email de période de grâce envoyé:', result.messageId);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error('❌ Erreur envoi email période de grâce:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Envoie un email de rappel avant suppression définitive
+   */
+  async sendAccountDeletionReminderEmail(email, username, deletionScheduledAt, recoveryToken, daysRemaining) {
+    const frontendUrl = process.env.FRONTEND_URL || 
+                       (process.env.VERCEL ? 'https://hifadhui.site' : 'http://localhost:3000');
+    const recoveryUrl = `${frontendUrl}/account-recovery/${recoveryToken}`;
+    
+    const htmlTemplate = getAccountDeletionReminderTemplate(username, deletionScheduledAt, recoveryUrl, daysRemaining);
+
+    const mailOptions = {
+      from: {
+        name: 'Hifadhui',
+        address: process.env.SMTP_FROM || process.env.SMTP_USER
+      },
+      to: email,
+      subject: `🚨 RAPPEL URGENT - Suppression de votre compte dans ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''}`,
+      html: htmlTemplate,
+      text: `RAPPEL URGENT - Bonjour ${username},
+
+      Votre compte Hifadhui sera définitivement supprimé dans ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''}.
+
+      Suppression programmée le : ${new Date(deletionScheduledAt).toLocaleDateString('fr-FR')}
+
+      DERNIÈRE CHANCE pour récupérer votre compte :
+      ${recoveryUrl}
+
+      Après cette date, il sera impossible de récupérer vos données.
+
+      Cordialement,
+      L'équipe Hifadhui`
+    };
+
+    try {
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('✅ Email de rappel suppression envoyé:', result.messageId);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error('❌ Erreur envoi email rappel suppression:', error);
+      throw error;
+    }
   }
 }
 
