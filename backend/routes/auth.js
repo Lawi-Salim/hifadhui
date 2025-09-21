@@ -440,7 +440,7 @@ router.get('/google/callback',
   disableCSP,
   passport.authenticate('google', { 
     session: false,
-    failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_auth_failed`
+    failureRedirect: `${process.env.FRONTEND_URL || (process.env.VERCEL ? 'https://hifadhui.site' : 'http://localhost:3000')}/login?error=google_auth_failed`
   }),
   async (req, res) => {
     try {
@@ -459,11 +459,15 @@ router.get('/google/callback',
         accountNotFound
       });
 
+      // Déterminer l'URL frontend avec fallback pour production
+      const frontendUrl = process.env.FRONTEND_URL || 
+                         (process.env.VERCEL ? 'https://hifadhui.site' : 'http://localhost:3000');
+
       // Cas spécial : compte marqué pour suppression
       if (accountMarkedForDeletion) {
         console.log(`❌ [GOOGLE CALLBACK] Compte marqué pour suppression: ${user.email} (${daysRemaining} jours restants)`);
         const message = `Votre compte est marqué pour suppression dans ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''}. Utilisez le lien de récupération dans votre email pour réactiver votre compte.`;
-        const redirectUrl = `${process.env.FRONTEND_URL}/login?error=account_marked_for_deletion&message=${encodeURIComponent(message)}&daysRemaining=${daysRemaining}`;
+        const redirectUrl = `${frontendUrl}/login?error=account_marked_for_deletion&message=${encodeURIComponent(message)}&daysRemaining=${daysRemaining}`;
         
         // Nettoyer la session
         if (req.session) {
@@ -476,7 +480,7 @@ router.get('/google/callback',
       // Cas spécial : compte non trouvé lors d'une tentative de connexion
       if (accountNotFound) {
         const message = 'Ce compte Google n\'existe pas. Veuillez vous inscrire d\'abord.';
-        const redirectUrl = `${process.env.FRONTEND_URL}/register?error=account_not_found&message=${encodeURIComponent(message)}`;
+        const redirectUrl = `${frontendUrl}/register?error=account_not_found&message=${encodeURIComponent(message)}`;
         
         // Nettoyer la session
         if (req.session) {
@@ -491,7 +495,7 @@ router.get('/google/callback',
 
       // Pour les comptes Google, toujours rediriger vers le dashboard après authentification
       // Pas besoin de double authentification pour OAuth
-      const redirectUrl = `${process.env.FRONTEND_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user.toJSON()))}&isNewAccount=${isNewAccount}&wasLinked=${wasLinked}`;
+      const redirectUrl = `${frontendUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user.toJSON()))}&isNewAccount=${isNewAccount}&wasLinked=${wasLinked}`;
       
       console.log(`✅ [GOOGLE CALLBACK] Redirection vers dashboard pour: ${user.email} (nouveau: ${isNewAccount}, lié: ${wasLinked})`);
       
@@ -503,7 +507,9 @@ router.get('/google/callback',
       res.redirect(redirectUrl);
     } catch (error) {
       console.error('❌ [GOOGLE CALLBACK] Erreur:', error);
-      res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_callback_failed`);
+      const frontendUrl = process.env.FRONTEND_URL || 
+                         (process.env.VERCEL ? 'https://hifadhui.site' : 'http://localhost:3000');
+      res.redirect(`${frontendUrl}/login?error=auth_callback_failed`);
     }
   }
 );
