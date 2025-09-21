@@ -43,14 +43,8 @@ console.log('🟢 [BOOT] DB_HOST =', process.env.DB_HOST || '(non défini)');
 // Middlewares de sécurité
 console.log('🔧 [SECURITY] Configuration Helmet avec CSP désactivée temporairement pour OAuth');
 
-// Middleware pour désactiver complètement CSP et autres restrictions
+// Middleware pour ajouter des headers permissifs pour OAuth
 app.use((req, res, next) => {
-  // Supprimer tous les headers CSP potentiels
-  res.removeHeader('Content-Security-Policy');
-  res.removeHeader('Content-Security-Policy-Report-Only');
-  res.removeHeader('X-Content-Security-Policy');
-  res.removeHeader('X-WebKit-CSP');
-  
   // Ajouter des headers permissifs pour OAuth
   res.setHeader('Content-Security-Policy', "default-src 'self' 'unsafe-inline' 'unsafe-eval' *; script-src 'self' 'unsafe-inline' 'unsafe-eval' *; style-src 'self' 'unsafe-inline' *; img-src 'self' data: *; font-src 'self' *; connect-src 'self' *;");
   
