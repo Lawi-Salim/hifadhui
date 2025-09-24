@@ -67,6 +67,10 @@
       "dest": "/frontend/favicon.png"
     },
     {
+      "src": "/hifadhui-400x400\\.png",
+      "dest": "/frontend/public/hifadhui-400x400.png"
+    },
+    {
       "src": "/auth/favicon\\.png",
       "dest": "/frontend/favicon.png"
     },
