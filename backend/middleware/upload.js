@@ -29,6 +29,7 @@ const upload = multer({
     const allowedTypes = [
       'image/jpeg',
       'image/png',
+      'image/svg+xml',
       'application/pdf'
     ];
 
@@ -68,7 +69,7 @@ const handleUploadError = (error, req, res, next) => {
   if (error.message === 'Type de fichier non autorisé') {
     return res.status(400).json({
       error: 'Type de fichier non autorisé',
-      message: 'Formats acceptés : JPG, PNG, PDF'
+      message: 'Formats acceptés : JPG, JPEG, PNG, SVG, PDF'
     });
   }
 

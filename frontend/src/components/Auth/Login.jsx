@@ -17,7 +17,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -98,8 +98,9 @@ const Login = () => {
           localStorage.removeItem('rememberMe');
         }
         
-        // Rediriger vers la page précédente ou le tableau de bord
-        const from = location.state?.from || '/dashboard';
+        // Rediriger vers la page précédente ou le bon dashboard selon le rôle
+        const defaultPath = result.user?.role === 'admin' ? '/admin/dashboard' : '/dashboard';
+        const from = location.state?.from || defaultPath;
         navigate(from, { replace: true });
       } else {
         setErrors({ general: result.message || 'Échec de la connexion' });
@@ -201,14 +202,15 @@ const Login = () => {
           </div>
 
           <div className="form-options">
-            <label className="checkbox-label">
+            <label className="checkbox-container">
               <input
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
                 disabled={loading}
               />
-              <span>Se souvenir de moi</span>
+              <span className="checkmark"></span>
+              <span className="checkbox-text">Se souvenir de moi</span>
             </label>
             <Link to="/forgot-password" className="auth-link">
               Mot de passe oublié ?

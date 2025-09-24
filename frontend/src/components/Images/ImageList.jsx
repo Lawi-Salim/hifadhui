@@ -14,6 +14,7 @@ import { useDownloadZip, DownloadProgressIndicator } from '../Common/DownloadZip
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import { Link } from 'react-router-dom';
 import './Images.css';
+import LoadingSpinner from '../Common/LoadingSpinner';
 
 const ImageList = () => {
   const [viewMode, setViewMode] = useState('grid');
@@ -197,7 +198,7 @@ const ImageList = () => {
   };
 
   if (loading && images.length === 0) {
-    return <div className="loading-container"><div className="loading"></div></div>;
+    return <LoadingSpinner message="Chargement des images..." />;
   }
 
   return (

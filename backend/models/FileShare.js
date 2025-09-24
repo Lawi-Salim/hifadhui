@@ -52,7 +52,8 @@ const FileShare = sequelize.define('FileShare', {
       defaultValue: DataTypes.NOW
     }
   }, {
-    tableName: 'FileShares',
+    modelName: 'FileShare',
+    tableName: 'fileshares',
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at'

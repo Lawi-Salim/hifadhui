@@ -111,7 +111,7 @@ const UserActivityDetails = ({ userId }) => {
               {details.recentActivities.map(activity => (
                 <tr key={activity.id}>
                   <td style={{ fontSize: '0.95rem' }}>
-                    {new Date(activity.createdAt)
+                    {new Date(activity.created_at || activity.createdAt)
                       .toLocaleString('fr-FR', {
                         day: 'numeric',
                         month: 'long',

@@ -4,6 +4,7 @@ Features.md
 README-DEPLOYMENT.md
 *deployment*.md
 !schema-psql.sql
+*.sql
 
 # Roadmap
 Roadmap-features

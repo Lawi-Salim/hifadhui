@@ -12,6 +12,7 @@ const Register = () => {
     password: '',
     confirmPassword: ''
   });
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -129,6 +130,10 @@ const Register = () => {
       newErrors.confirmPassword = 'Veuillez confirmer le mot de passe';
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
+    }
+
+    if (!acceptTerms) {
+      newErrors.acceptTerms = 'Vous devez accepter les conditions d\'utilisation et la politique de confidentialité';
     }
 
     return newErrors;
@@ -396,11 +401,48 @@ const Register = () => {
             </div>
           </div>
 
+          {/* Checkbox pour accepter les conditions */}
+          <div className="form-group terms-checkbox">
+            <label className="checkbox-container">
+              <input
+                type="checkbox"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                disabled={loading}
+                className={errors.acceptTerms ? 'error' : ''}
+              />
+              <span className="checkmark"></span>
+              <span className="checkbox-text">
+                J'accepte les{' '}
+                <Link 
+                  to="/terms" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="terms-link"
+                >
+                  conditions d'utilisation
+                </Link>
+                {' '}et la{' '}
+                <Link 
+                  to="/privacy" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="terms-link"
+                >
+                  politique de confidentialité
+                </Link>
+              </span>
+            </label>
+            {errors.acceptTerms && (
+              <div className="form-error">{errors.acceptTerms}</div>
+            )}
+          </div>
+
           <button
             type="submit"
             className="btn btn-primary"
             style={{ width: '100%' }}
-            disabled={loading}
+            disabled={loading || !acceptTerms}
           >
             {loading ? (
               <>

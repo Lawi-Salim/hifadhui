@@ -4,6 +4,7 @@ import SmartAvatar from '../Layout/SmartAvatar';
 import UserDisplayName from '../Layout/UserDisplayName';
 import ProviderIcon from '../Layout/ProviderIcon';
 import Pagination from '../Pagination';
+import LoadingSpinner from '../Common/LoadingSpinner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import './StyleAdmin.css';
@@ -34,7 +35,11 @@ const ListeUtilisateurs = () => {
   }, [currentPage]);
 
   if (loading) {
-    return <div className="admin-container">Chargement de la liste des utilisateurs...</div>;
+    return (
+      <div className="admin-container">
+        <LoadingSpinner message="Chargement de la liste des utilisateurs..." />
+      </div>
+    );
   }
 
   if (error) {
@@ -77,7 +82,7 @@ const ListeUtilisateurs = () => {
                 <td>
                   <span className={`role-badge role-${u.role}`}>{u.role}</span>
                 </td>
-                <td>{format(new Date(u.createdAt), 'd MMMM yyyy', { locale: fr })}</td>
+                <td>{format(new Date(u.created_at), 'd MMMM yyyy', { locale: fr })}</td>
               </tr>
             ))}
           </tbody>

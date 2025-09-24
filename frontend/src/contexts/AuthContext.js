@@ -106,7 +106,7 @@ export const AuthProvider = ({ children }) => {
       // Le service api gère automatiquement les tokens
       
       setUser(user);
-      return { success: true };
+      return { success: true, user };
     } catch (error) {
       return {
         success: false,

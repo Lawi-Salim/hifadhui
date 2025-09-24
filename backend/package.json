@@ -1,6 +1,6 @@
 {
   "name": "hifadhui-backend",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Backend pour le coffre-fort numérique Hifadhui",
   "main": "server.js",
   "type": "module",
@@ -26,6 +26,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "multer-storage-cloudinary": "^4.0.0",
+    "node-cron": "^4.2.1",
     "nodemailer": "^7.0.6",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
@@ -35,7 +36,8 @@
     "pg-hstore": "^2.3.4",
     "qrcode": "^1.5.4",
     "sequelize": "^6.37.7",
-    "streamifier": "^0.1.1"
+    "streamifier": "^0.1.1",
+    "ua-parser-js": "^2.0.5"
   },
   "devDependencies": {
     "nodemon": "^3.0.1",

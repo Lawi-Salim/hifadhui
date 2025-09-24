@@ -79,8 +79,10 @@ const AuthCallback = () => {
           welcomeMessage = `Bon retour ${user.username || user.email} !`;
         }
         
-        console.log(`✅ [AUTH CALLBACK] Redirection vers dashboard: ${welcomeMessage}`);
-        navigate('/dashboard', { 
+        // Redirection vers le bon dashboard selon le rôle
+        const dashboardPath = user.role === 'admin' ? '/admin/dashboard' : '/dashboard';
+        console.log(`✅ [AUTH CALLBACK] Redirection vers ${dashboardPath}: ${welcomeMessage}`);
+        navigate(dashboardPath, { 
           replace: true,
           state: { 
             welcomeMessage,

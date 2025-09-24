@@ -15,6 +15,7 @@ import BulkActionsManager from '../Common/BulkActionsManager';
 import { useDownloadZip, DownloadProgressIndicator } from '../Common/DownloadZip';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import './FileList.css';
+import LoadingSpinner from '../Common/LoadingSpinner';
 
 const FilesPage = () => {
   const [viewMode, setViewMode] = useState('grid');
@@ -222,7 +223,7 @@ const FilesPage = () => {
     }
   };
 
-  if (loading && files.length === 0) return <div className="files-loading">Chargement...</div>;
+  if (loading && files.length === 0) return <LoadingSpinner message="Chargement des PDFs..." />;
   if (error) return <div className="files-error">{error}</div>;
 
   return (

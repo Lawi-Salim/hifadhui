@@ -15,6 +15,8 @@ const __dirname = path.dirname(__filename);
 
 import { sequelize } from './config/database.js';
 import authRoutes from './routes/auth.js';
+import { createAdmin } from './scripts/create-admin.js';
+import { startAutomaticCleanup } from './utils/dataCleanup.js';
 import adminRoutes from './routes/admin.js';
 import fileRoutes from './routes/files.js';
 import dossierRoutes from './routes/dossiers.js';
@@ -23,7 +25,6 @@ import bulkActionsRoutes from './routes/bulkActions.js';
 import contactRoutes from './routes/contact.js';
 
 // Importation des modèles et associations depuis l'index des modèles
-import { Utilisateur } from './models/index.js';
 import passport from './config/passport.js';
 
 
@@ -138,11 +139,12 @@ if (process.env.NODE_ENV !== 'production') {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/files', fileRoutes);
-app.use('/api/v1/files', shareRoutes); // Routes de partage sous /files
+app.use('/api/v1/files', shareRoutes); // Routes de partage sous /files (publiques)
 app.use('/api/v1/dossiers', dossierRoutes);
 app.use('/api/v1/bulk-actions', bulkActionsRoutes);
 app.use('/api/v1/share', shareRoutes); // Route publique pour accéder aux fichiers partagés
 app.use('/api/v1/contact', contactRoutes);
+
 
 // Route pour les partages publics - servir l'app React directement
 app.get('/share/:token', (req, res) => {
@@ -201,45 +203,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Fonction pour créer l'admin par défaut
-const createDefaultAdmin = async () => {
-  try {
-    console.log('🔍 [INIT] Vérification de l\'existence d\'un admin...');
-    const { default: bcrypt } = await import('bcryptjs');
-    
-    // Vérifier si un admin existe déjà
-    const existingAdmin = await Utilisateur.findOne({
-      where: { role: 'admin' }
-    });
-    
-    if (existingAdmin) {
-      console.log('✅ [INIT] Admin par défaut existe déjà - ID:', existingAdmin.id);
-      console.log('📧 [INIT] Email admin existant:', existingAdmin.email);
-      return;
-    }
-    
-    console.log('🔨 [INIT] Création de l\'admin par défaut...');
-    // Créer l'admin par défaut
-    const hashedPassword = await bcrypt.hash('123456', 10);
-    
-    const newAdmin = await Utilisateur.create({
-      username: 'Admin System',
-      email: 'lawi@gmail.com',
-      password: hashedPassword,
-      role: 'admin'
-    });
-    
-    console.log('🎉 [INIT] Admin par défaut créé avec succès!');
-    console.log('🆔 [INIT] ID admin créé:', newAdmin.id);
-    console.log('📧 [INIT] Email: lawi@gmail.com');
-    console.log('🔑 [INIT] Mot de passe: 123456');
-    console.log('⚠️  [INIT] Changez le mot de passe après la première connexion');
-    
-  } catch (error) {
-    console.error('❌ [INIT] Erreur lors de la création de l\'admin:', error.message);
-    console.error('🔍 [INIT] Stack trace:', error.stack);
-  }
-};
 
 // Pour Vercel, initialiser la base de données sans app.listen()
 const initializeDatabase = async () => {
@@ -247,7 +210,7 @@ const initializeDatabase = async () => {
     console.log('⏳ [INIT] Tentative de connexion DB...');
     await sequelize.authenticate();
     console.log('✅ [INIT] Connexion à la base de données réussie');
-    await createDefaultAdmin();
+    await createAdmin();
     console.log('✅ [INIT] Vérification/Création admin terminée');
   } catch (error) {
     console.error('❌ [INIT] Erreur d\'initialisation:', error.message);
@@ -264,10 +227,13 @@ if (process.env.VERCEL) {
     try {
       await sequelize.authenticate();
       console.log('✅ Connexion à la base de données réussie');
-      await createDefaultAdmin();
+      await createAdmin();
       
       app.listen(PORT, () => {
         console.log(`🚀 Serveur démarré sur le port ${PORT}`);
+        
+        // Démarrer le nettoyage automatique des données
+        startAutomaticCleanup();
       });
     } catch (error) {
       console.error('❌ Erreur de démarrage:', error.message);

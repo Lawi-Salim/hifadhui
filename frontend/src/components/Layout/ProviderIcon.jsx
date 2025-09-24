@@ -10,8 +10,17 @@ import './ProviderIcon.css';
  * @param {string} className - Classes CSS additionnelles
  */
 const ProviderIcon = ({ user, size = 'medium', showLabel = false, className = '' }) => {
+  // Si pas d'utilisateur, ne rien afficher
+  if (!user) {
+    return null;
+  }
   // Déterminer le provider de l'utilisateur
   const getProvider = (user) => {
+    // Vérifier que user existe
+    if (!user) {
+      return 'local';
+    }
+    
     if (user.google_id || user.googleId || user.provider === 'google') {
       return 'google';
     }

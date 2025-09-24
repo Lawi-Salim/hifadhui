@@ -2,8 +2,8 @@
 -- SUPPRESSION DES TABLES (POUR LE DÉVELOPPEMENT)
 -- ========================================
 -- L'ordre est important à cause des clés étrangères
+DROP TABLE IF EXISTS UserSessions CASCADE;
 DROP TABLE IF EXISTS FileShares CASCADE;
-DROP TABLE IF EXISTS certificate CASCADE;
 DROP TABLE IF EXISTS File CASCADE;
 DROP TABLE IF EXISTS Dossier CASCADE;
 DROP TABLE IF EXISTS ActivityLogs CASCADE;
@@ -109,6 +109,33 @@ CREATE TABLE FileShares (
 );
 
 -- ========================================
+-- TABLE : UserSessions (Sessions utilisateur avec données techniques)
+-- ========================================
+CREATE TABLE UserSessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE,
+    ip_address INET NOT NULL,
+    user_agent TEXT,
+    browser VARCHAR(100),
+    browser_version VARCHAR(50),
+    os VARCHAR(100),
+    device VARCHAR(100),
+    country VARCHAR(100),
+    country_code VARCHAR(2),
+    city VARCHAR(100),
+    region VARCHAR(100),
+    timezone VARCHAR(50),
+    isp VARCHAR(200),
+    session_start TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    session_end TIMESTAMP NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    is_suspicious BOOLEAN DEFAULT FALSE,
+    suspicious_reason TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========================================
 -- INDEXES (performance)
 -- ========================================
 CREATE INDEX idx_file_owner_id ON File(owner_id);
@@ -132,6 +159,13 @@ CREATE INDEX idx_utilisateur_deleted_at ON Utilisateur(deleted_at);
 CREATE INDEX idx_utilisateur_deletion_scheduled_at ON Utilisateur(deletion_scheduled_at);
 CREATE INDEX idx_utilisateur_recovery_token ON Utilisateur(recovery_token);
 CREATE INDEX idx_utilisateur_recovery_token_expires_at ON Utilisateur(recovery_token_expires_at);
+
+-- Index pour améliorer les performances
+CREATE INDEX idx_usersessions_user_id ON UserSessions(user_id);
+CREATE INDEX idx_usersessions_ip_address ON UserSessions(ip_address);
+CREATE INDEX idx_usersessions_session_start ON UserSessions(session_start);
+CREATE INDEX idx_usersessions_is_active ON UserSessions(is_active);
+CREATE INDEX idx_usersessions_is_suspicious ON UserSessions(is_suspicious);
 
 -- Unicité des noms de dossiers à la racine pour un utilisateur (exclut le dossier système)
 CREATE UNIQUE INDEX idx_dossier_racine_unique_nom ON Dossier(owner_id, name) WHERE parent_id IS NULL AND is_system_root = FALSE;
@@ -179,6 +213,11 @@ EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_password_reset_tokens_updated
 BEFORE UPDATE ON passwordresettokens
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_usersessions_updated
+BEFORE UPDATE ON UserSessions
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 

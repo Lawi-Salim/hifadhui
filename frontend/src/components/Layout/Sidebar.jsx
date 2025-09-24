@@ -1,7 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FiBarChart2, FiUpload, FiFolder, FiFileText, FiLock, FiImage, FiUser } from 'react-icons/fi';
+import { 
+  FiHome, 
+  FiUpload, 
+  FiFileText, 
+  FiFolder, 
+  FiImage, 
+  FiBarChart2, 
+  FiUser, 
+  FiActivity, 
+  FiServer, 
+  FiPieChart,
+  FiShield,
+  FiLock,
+  FiClock,
+  FiMonitor,
+  FiSettings,
+  FiLogOut,
+  FiChevronLeft,
+  FiChevronRight,
+  FiAlertTriangle
+} from 'react-icons/fi';
 import UserMenu from './UserMenu';
 import './Sidebar.css';
 
@@ -55,25 +75,38 @@ const Sidebar = () => {
   }, [isMobile]);
 
 
-  const menuItems = [
-    { path: '/dashboard', label: 'Tableau de bord', icon: FiBarChart2 },
-    { path: '/upload', label: 'Uploader', icon: FiUpload },
-    { path: '/files', label: 'PDFs', icon: FiFileText },
-    { path: '/dossiers', label: 'Mes Dossiers', icon: FiFolder },
-    { path: '/images', label: 'Images', icon: FiImage },
-  ];
+  let menuItems;
 
   if (user && user.role === 'admin') {
-    // Ajoute le lien vers la page des utilisateurs pour les admins
-    const adminMenuItem = { path: '/admin/users', label: 'Utilisateurs', icon: FiUser };
-    // Insère l'élément à la deuxième position dans le menu
-    menuItems.splice(1, 0, adminMenuItem);
+    // Menu admin pur - supervision uniquement
+    menuItems = [
+      { path: '/admin/dashboard', label: 'Dashboard Admin', icon: FiBarChart2 },
+      { path: '/admin/users', label: 'Utilisateurs', icon: FiUser },
+      { path: '/admin/files', label: 'Tous les PDFs', icon: FiFileText },
+      { path: '/admin/images', label: 'Toutes les Images', icon: FiImage },
+      { path: '/admin/activity', label: 'Logs d\'activité', icon: FiActivity },
+      { path: '/admin/system', label: 'Système', icon: FiServer },
+      { path: '/admin/analytics', label: 'Analytics', icon: FiPieChart },
+      { path: '/admin/reports', label: 'Signalements', icon: FiAlertTriangle },
+      { path: '/admin/technical', label: 'Données techniques', icon: FiMonitor }
+    ];
+  } else {
+    // Menu utilisateur standard
+    menuItems = [
+      { path: '/dashboard', label: 'Tableau de bord', icon: FiBarChart2 },
+      { path: '/upload', label: 'Uploader', icon: FiUpload },
+      { path: '/files', label: 'PDFs', icon: FiFileText },
+      { path: '/dossiers', label: 'Mes Dossiers', icon: FiFolder },
+      { path: '/images', label: 'Images', icon: FiImage },
+    ];
   }
 
   const handleNavClick = (item, e) => {
     if (!isMobile) return; // Pas de logique spéciale sur desktop
     
-    const isCurrentPage = location.pathname === item.path || (item.path === '/dossiers' && location.pathname.startsWith('/dossiers/'));
+    const isCurrentPage = location.pathname === item.path || 
+                          (item.path === '/dossiers' && location.pathname.startsWith('/dossiers/')) ||
+                          (item.path === '/admin' && location.pathname.startsWith('/admin'));
     
     if (isCurrentPage) {
       // Si on clique sur l'icône de la page active, on toggle l'expansion
@@ -103,7 +136,9 @@ const Sidebar = () => {
       <div className="sidebar-menu">
         <div className="sidebar-nav">
           {menuItems.map((item) => {
-            const isActive = location.pathname === item.path || (item.path === '/dossiers' && location.pathname.startsWith('/dossiers/'));
+            const isActive = location.pathname === item.path || 
+                            (item.path === '/dossiers' && location.pathname.startsWith('/dossiers/')) ||
+                            (item.path.startsWith('/admin') && location.pathname.startsWith(item.path));
             return (
               <Link
                 key={item.path}

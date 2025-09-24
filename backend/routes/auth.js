@@ -1,8 +1,9 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { Utilisateur, File, PasswordResetToken, sequelize } from '../models/index.js';
+import { Utilisateur, ActivityLog, UserSession } from '../models/index.js';
 import { authenticateToken, generateToken } from '../middleware/auth.js';
 import emailService from '../services/emailService.js';
+import { captureUserSession } from '../utils/sessionCapture.js';
 import passport from 'passport';
 import { v4 as uuidv4 } from 'uuid';
 import rateLimit from 'express-rate-limit';
@@ -157,6 +158,9 @@ router.post('/login', loginValidation, async (req, res) => {
         isMarkedForDeletion: true
       });
     }
+
+    // Capturer la session utilisateur lors de la connexion
+    await captureUserSession(req, user);
 
     // Générer le token
     const token = generateToken(user.id);
@@ -458,6 +462,9 @@ router.get('/google/callback',
         wasLinked,
         accountNotFound
       });
+
+      // Capturer la session utilisateur lors de la connexion
+      await captureUserSession(req, user);
 
       // Déterminer l'URL frontend avec fallback pour production
       const frontendUrl = process.env.FRONTEND_URL || 

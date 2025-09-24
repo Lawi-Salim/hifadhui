@@ -145,30 +145,54 @@ async function createAdminDefault() {
       where: { role: 'admin' }
     });
 
+    // Identifiants souhaités depuis les variables d'environnement
+    const desiredUsername = process.env.ADMIN_NAME || 'name';
+    const desiredEmail = process.env.ADMIN_MAIL || 'mail';
+    const desiredPassword = process.env.ADMIN_PASSWORD || 'TempPassword123!';
+
     if (existingAdmin) {
-      console.log('⚠️  [CREATE-ADMIN] Un administrateur existe déjà:', existingAdmin.email);
-      console.log('🔄 [CREATE-ADMIN] Mise à jour des informations de l\'admin existant...');
-      await existingAdmin.update({
-        username: process.env.ADMIN_NAME || 'name',
-        email: process.env.ADMIN_MAIL || 'mail',
-        password: process.env.ADMIN_PASSWORD || 'TempPassword123!',
-        role: 'admin'
-      });
-      console.log('✅ [CREATE-ADMIN] Administrateur mis à jour avec succès');
+      console.log('👤 [CREATE-ADMIN] Un administrateur existe déjà:', existingAdmin.email);
+      
+      // Vérifier si les identifiants sont identiques
+      const passwordMatches = await bcrypt.compare(desiredPassword, existingAdmin.password);
+      const usernameMatches = existingAdmin.username === desiredUsername;
+      const emailMatches = existingAdmin.email === desiredEmail;
+      
+      if (usernameMatches && emailMatches && passwordMatches) {
+        console.log('✅ [CREATE-ADMIN] Les identifiants sont identiques - Aucune mise à jour nécessaire');
+        console.log('📋 [CREATE-ADMIN] Admin actuel:');
+        console.log('  - Username:', existingAdmin.username);
+        console.log('  - Email:', existingAdmin.email);
+        console.log('  - Mot de passe: [identique]');
+      } else {
+        console.log('🔄 [CREATE-ADMIN] Identifiants différents détectés - Mise à jour nécessaire');
+        console.log('📋 [CREATE-ADMIN] Différences:');
+        if (!usernameMatches) console.log(`  - Username: "${existingAdmin.username}" → "${desiredUsername}"`);
+        if (!emailMatches) console.log(`  - Email: "${existingAdmin.email}" → "${desiredEmail}"`);
+        if (!passwordMatches) console.log('  - Mot de passe: [différent] → [nouveau]');
+        
+        await existingAdmin.update({
+          username: desiredUsername,
+          email: desiredEmail,
+          password: desiredPassword,
+          role: 'admin'
+        });
+        console.log('✅ [CREATE-ADMIN] Administrateur mis à jour avec succès');
+      }
     } else {
-      console.log('🔨 [CREATE-ADMIN] Création d\'un nouvel admin...');
+      console.log('🔨 [CREATE-ADMIN] Aucun admin trouvé - Création d\'un nouvel administrateur...');
       const admin = await Utilisateur.create({
-        username: process.env.ADMIN_NAME || 'name',
-        email: process.env.ADMIN_MAIL || 'mail',
-        password: process.env.ADMIN_PASSWORD || 'TempPassword123!',
+        username: desiredUsername,
+        email: desiredEmail,
+        password: desiredPassword,
         role: 'admin'
       });
-      console.log('✅ [CREATE-ADMIN] Administrateur créé:', admin.id);
+      console.log('✅ [CREATE-ADMIN] Administrateur créé avec l\'ID:', admin.id);
     }
 
-    console.log('\n🔐 [CREATE-ADMIN] Connexions par défaut:');
-    console.log('Email:', process.env.ADMIN_MAIL || 'mail');
-    console.log('Mot de passe:', process.env.ADMIN_PASSWORD || 'TempPassword123!');
+    console.log('\n🔐 [CREATE-ADMIN] Identifiants de connexion:');
+    console.log('Email:', desiredEmail);
+    console.log('Mot de passe:', desiredPassword);
     console.log('⚠️  [CREATE-ADMIN] Changez le mot de passe après la première connexion');
 
   } catch (error) {

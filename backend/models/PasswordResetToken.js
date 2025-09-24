@@ -47,6 +47,7 @@ const PasswordResetToken = sequelize.define('PasswordResetToken', {
     onDelete: 'CASCADE'
   }
 }, {
+  modelName: 'PasswordResetToken',
   tableName: 'passwordresettokens',
   timestamps: true,
   underscored: true,

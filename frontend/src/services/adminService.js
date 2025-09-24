@@ -17,11 +17,17 @@ export const getUserActivityDetails = (userId) => {
   return api.get(`/admin/activities/user/${userId}`);
 };
 
+export const getAdminFiles = async (params) => {
+  const response = await api.get('/admin/files', { params });
+  return response;
+};
+
 const adminService = {
   getUsers,
   getActivities,
   getActivitySummary,
   getUserActivityDetails,
+  getAdminFiles,
 };
 
 export default adminService;

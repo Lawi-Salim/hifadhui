@@ -93,6 +93,16 @@ code {
 
   /* Couleur pour les placeholders */
   --placeholder-color: #757575;
+  
+  /* Variables pour les inputs et cartes en mode sombre */
+  --input-bg: #374151;
+  --input-bg-dark: #374151;
+  --card-bg: #1e293b;
+  --card-bg-dark: #1e293b;
+  --border-color-dark: #374151;
+  --text-primary-dark: #f8fafc;
+  --text-secondary-dark: #cbd5e1;
+  --bg-secondary-dark: #334155;
 }
 
 a {
@@ -101,6 +111,32 @@ a {
 
 p, button, input, span, a {
   font-family: var(--font-family);
+}
+
+/* Styles globaux pour les select en mode sombre */
+select {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+select option {
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+}
+
+/* Force les styles pour les navigateurs qui ne respectent pas les CSS variables */
+body.dark-theme select,
+.dark-theme select {
+  background-color: #374151 !important;
+  color: #f8fafc !important;
+  border-color: #4b5563 !important;
+}
+
+body.dark-theme select option,
+.dark-theme select option {
+  background-color: #1f2937 !important;
+  color: #f8fafc !important;
 }
 
 /* Utilitaires */

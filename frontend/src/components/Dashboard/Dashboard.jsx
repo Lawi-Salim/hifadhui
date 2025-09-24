@@ -4,6 +4,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { FiFolder, FiFileText, FiLock, FiUpload, FiFile, FiBarChart2, FiMenu, FiImage } from 'react-icons/fi';
 import './Dashboard.css';
+import '../Admin/AdminDashboard.css';
+import LoadingSpinner from '../Common/LoadingSpinner';
 
 const Dashboard = () => {
   const { } = useAuth();
@@ -73,11 +75,7 @@ const Dashboard = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center" style={{ height: '400px' }}>
-        <div className="loading"></div>
-      </div>
-    );
+    return <LoadingSpinner message="Chargement du tableau de bord..." />;
   }
 
   return (
@@ -108,48 +106,48 @@ const Dashboard = () => {
           </div>
         )}
 
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-header">
-              <div className="stat-title">Total des fichiers</div>
-              <div className="stat-icon primary"><FiBarChart2 /></div>
+        <div className="metrics-grid">
+          <div className="metric-card">
+            <div className="metric-icon files">
+              <FiBarChart2 />
             </div>
-            <div className="stat-value">{stats.totalFiles}</div>
-            <div className="stat-change positive">
-              Tous vos documents sécurisés
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-header">
-              <div className="stat-title">Images</div>
-              <div className="stat-icon success"><FiImage /></div>
-            </div>
-            <div className="stat-value">{stats.totalImages}</div>
-            <div className="stat-change positive">
-              Photos et illustrations
+            <div className="metric-content">
+              <h3>Total des fichiers</h3>
+              <div className="metric-value">{stats.totalFiles}</div>
+              <div className="metric-subtitle">Tous vos documents sécurisés</div>
             </div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-header">
-              <div className="stat-title">Documents PDF</div>
-              <div className="stat-icon info"><FiFileText /></div>
+          <div className="metric-card">
+            <div className="metric-icon shares">
+              <FiImage />
             </div>
-            <div className="stat-value">{stats.totalPdfs}</div>
-            <div className="stat-change positive">
-              Documents et rapports
+            <div className="metric-content">
+              <h3>Images</h3>
+              <div className="metric-value">{stats.totalImages}</div>
+              <div className="metric-subtitle">Photos et illustrations</div>
             </div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-header">
-              <div className="stat-title">Sécurité</div>
-              <div className="stat-icon warning"><FiLock /></div>
+          <div className="metric-card">
+            <div className="metric-icon users">
+              <FiFileText />
             </div>
-            <div className="stat-value">100%</div>
-            <div className="stat-change positive">
-              Chiffrement SHA-256
+            <div className="metric-content">
+              <h3>Documents PDF</h3>
+              <div className="metric-value">{stats.totalPdfs}</div>
+              <div className="metric-subtitle">Documents et rapports</div>
+            </div>
+          </div>
+
+          <div className="metric-card">
+            <div className="metric-icon storage">
+              <FiLock />
+            </div>
+            <div className="metric-content">
+              <h3>Sécurité</h3>
+              <div className="metric-value">100%</div>
+              <div className="metric-subtitle">Chiffrement SHA-256</div>
             </div>
           </div>
         </div>

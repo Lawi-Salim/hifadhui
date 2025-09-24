@@ -25,6 +25,13 @@ import SettingsPage from './components/Settings/SettingsPage.jsx';
 import DeleteAccountWizard from './components/Settings/DeleteAccount/DeleteAccountWizard.jsx';
 import ListeUtilisateurs from './components/Admin/ListeUtilisateurs.jsx';
 import AdminDashboard from './components/Admin/AdminDashboard.jsx';
+import ActivityPage from './components/Admin/ActivityPage.jsx';
+import SystemPage from './components/Admin/SystemPage.jsx';
+import AnalyticsPage from './components/Admin/AnalyticsPage.jsx';
+import ReportsPage from './components/Admin/ReportsPage.jsx';
+import TechnicalPage from './components/Admin/TechnicalPage.jsx';
+import UserImages from './components/Admin/UserImages.jsx';
+import UserFiles from './components/Admin/UserFiles.jsx';
 import AdminRoute from './components/routes/AdminRoute.jsx';
 import './App.css';
 
@@ -55,9 +62,10 @@ const PublicRoute = ({ children }) => {
     );
   }
   
-  // Si utilisateur connecté, rediriger vers dashboard
+  // Si utilisateur connecté, rediriger vers le bon dashboard selon le rôle
   if (user) {
-    return <Navigate to="/dashboard" />;
+    const dashboardPath = user.role === 'admin' ? '/admin/dashboard' : '/dashboard';
+    return <Navigate to={dashboardPath} />;
   }
   
   // Permettre l'accès à la page d'accueil même si l'utilisateur a déjà été connecté
@@ -165,6 +173,14 @@ function AppContent() {
           } />
           <Route element={<AdminRoute />}>
             <Route path="/admin/users" element={<ListeUtilisateurs />} />
+            <Route path="/admin/images" element={<UserImages />} />
+            <Route path="/admin/files" element={<UserFiles />} />
+            <Route path="/admin/activity" element={<ActivityPage />} />
+            <Route path="/admin/system" element={<SystemPage />} />
+            <Route path="/admin/analytics" element={<AnalyticsPage />} />
+            <Route path="/admin/reports" element={<ReportsPage />} />
+            <Route path="/admin/technical" element={<TechnicalPage />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
           </Route>
           <Route path="/share/:token" element={<SharedFilePage />} />

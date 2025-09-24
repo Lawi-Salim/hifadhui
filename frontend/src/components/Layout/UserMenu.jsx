@@ -3,7 +3,7 @@ import Profil from './Profil';
 import { useAuth } from '../../contexts/AuthContext';
 import SmartAvatar from './SmartAvatar';
 import UserDisplayName from './UserDisplayName';
-import { FiLogOut, FiUser, FiSettings, FiGrid } from 'react-icons/fi';
+import { FiLogOut, FiUser, FiSettings } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import './UserMenu.css';
 
@@ -60,11 +60,6 @@ const UserMenu = ({ isExpanded }) => {
           <button onClick={() => setProfilModalOpen(true)} className="dropdown-item">
             <FiUser /> Mon profil
           </button>
-          {user?.role === 'admin' && (
-            <Link to="/admin" className="dropdown-item">
-              <FiGrid /> Administration
-            </Link>
-          )}
           <Link to="/settings" className="dropdown-item" onClick={() => setIsOpen(false)}>
             <FiSettings /> Paramètres
           </Link>

@@ -103,6 +103,7 @@ const File = sequelize.define('File', {
     defaultValue: DataTypes.NOW
   }
 }, {
+  modelName: 'File',
   tableName: 'file',
   timestamps: true,
   createdAt: 'date_upload',

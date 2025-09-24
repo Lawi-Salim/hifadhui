@@ -11,7 +11,7 @@ const ActivityLog = sequelize.define('ActivityLog', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Utilisateur',
+      model: 'utilisateur',
       key: 'id',
     },
     field: 'user_id',
@@ -30,6 +30,7 @@ const ActivityLog = sequelize.define('ActivityLog', {
     field: 'created_at',
   },
 }, {
+  modelName: 'ActivityLog',
   tableName: 'activitylogs',
   timestamps: false, // géré par la base de données
 });

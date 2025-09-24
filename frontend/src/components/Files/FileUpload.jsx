@@ -51,6 +51,7 @@ const FileUpload = () => {
     const allowedTypes = [
       'image/jpeg',
       'image/png',
+      'image/svg+xml',
       'application/pdf',
       'application/zip',
       'application/x-zip-compressed'
@@ -67,7 +68,7 @@ const FileUpload = () => {
     if (!allowedTypes.includes(file.type)) {
       setMessage({
         type: 'error',
-        text: 'Type de fichier non autorisé. Formats acceptés: JPG, PNG, PDF, ZIP'
+        text: 'Type de fichier non autorisé. Formats acceptés: JPG, PNG, SVG, PDF, ZIP'
       });
       return;
     }
@@ -221,7 +222,7 @@ const FileUpload = () => {
                 type="file"
                 style={{ display: 'none' }}
                 onChange={handleChange}
-                accept=".jpg,.jpeg,.png,.pdf,.zip"
+                accept=".jpg,.jpeg,.png,.svg,.pdf,.zip"
                 disabled={globalProgressBar.isActive}
               />
               
@@ -234,7 +235,7 @@ const FileUpload = () => {
               </div>
               
               <div className="upload-subtext">
-                Formats acceptés: JPG, PNG, PDF, ZIP (max. 5MB) <br /> Veuillez rester sur cette page jusqu’à la fin de l’upload.
+                Formats acceptés: JPG, PNG, SVG, PDF, ZIP (max. 5MB) <br /> Veuillez rester sur cette page jusqu'à la fin de l'upload.
               </div>
 
               {globalProgressBar.isActive && (

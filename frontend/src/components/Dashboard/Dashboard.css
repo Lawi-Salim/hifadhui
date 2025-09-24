@@ -1,3 +1,24 @@
+/* Forcer les 4 cartes sur une seule ligne pour le dashboard utilisateur */
+.dashboard .metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+/* Responsive pour mobile */
+@media (max-width: 1024px) {
+  .dashboard .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .recent-files-list {
   display: flex;
   flex-direction: column;

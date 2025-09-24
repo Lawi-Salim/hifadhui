@@ -6,6 +6,7 @@ import UserActivityDetails from './UserActivityDetails';
 import Pagination from '../Pagination';
 import SmartAvatar from '../Layout/SmartAvatar';
 import UserDisplayName from '../Layout/UserDisplayName';
+import LoadingSpinner from '../Common/LoadingSpinner';
 
 const ActivityList = () => {
   const [summary, setSummary] = useState([]);
@@ -37,7 +38,7 @@ const ActivityList = () => {
     return actionType.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  if (loading) return <p>Chargement...</p>;
+  if (loading) return <LoadingSpinner message="Chargement des logs d'activité..." />;
   if (error) return <p>{error}</p>;
 
   return (
@@ -63,7 +64,7 @@ const ActivityList = () => {
             summary.map(item => (
               <tr key={item.id} onClick={() => setSelectedUser(item.user)} style={{ cursor: 'pointer' }}>
                 <td><SmartAvatar user={item.user} size={32} /></td>
-                <td>{new Date(item.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
+                <td>{new Date(item.created_at || item.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
                 <td>
                   <div>
                     <div>{item.user?.username || 'N/A'}</div>

@@ -86,6 +86,7 @@ const Utilisateur = sequelize.define('Utilisateur', {
     comment: 'Expiration du token de récupération'
   }
 }, {
+  modelName: 'Utilisateur',
   tableName: 'utilisateur',
   timestamps: true,
   underscored: true,

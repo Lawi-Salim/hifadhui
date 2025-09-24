@@ -221,7 +221,7 @@ function getUserFileConfig(user, file) {
   
   const config = {
     folder: getUserFilePath(user, file),
-    allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'],
+    allowed_formats: ['jpg', 'jpeg', 'png', 'svg', 'pdf'],
     resource_type: fileType === 'pdfs' ? 'raw' : 'auto',
     public_id: generateUniqueFileName(file.originalname),
     access_mode: 'public'

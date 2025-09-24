@@ -1,6 +1,6 @@
 {
   "name": "hifadhui-frontend",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Frontend pour le coffre-fort numérique Hifadhui",
   "private": true,
   "dependencies": {
@@ -19,6 +19,7 @@
     "react-pdf": "^10.1.0",
     "react-router-dom": "^6.11.0",
     "react-scripts": "5.0.1",
+    "recharts": "^3.2.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

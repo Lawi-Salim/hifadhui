@@ -5,6 +5,7 @@ import Dossier from './Dossier.js';
 import ActivityLog from './ActivityLog.js';
 import FileShare from './FileShare.js';
 import PasswordResetToken from './PasswordResetToken.js';
+import UserSession from './UserSession.js';
 
 // Définition des associations
 
@@ -27,6 +28,11 @@ Utilisateur.hasMany(ActivityLog, {
 Utilisateur.hasMany(PasswordResetToken, {
   foreignKey: 'user_id',
   as: 'userPasswordResetTokens'
+});
+
+Utilisateur.hasMany(UserSession, {
+  foreignKey: 'userId',
+  as: 'userSessions'
 });
 
 // 2. Relations Dossier
@@ -96,6 +102,12 @@ PasswordResetToken.belongsTo(Utilisateur, {
   as: 'user'
 });
 
+// 8. Relations UserSession
+UserSession.belongsTo(Utilisateur, {
+  foreignKey: 'userId',
+  as: 'user'
+});
+
 export {
   sequelize,
   Utilisateur,
@@ -103,5 +115,6 @@ export {
   Dossier,
   ActivityLog,
   FileShare,
-  PasswordResetToken
+  PasswordResetToken,
+  UserSession
 };

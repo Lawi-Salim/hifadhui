@@ -15,6 +15,7 @@ import ShareModal from '../Files/ShareModal';
 import FileUploadModal from '../Files/FileUploadModal';
 import api from '../../services/api';
 import './DossiersPage.css';
+import LoadingSpinner from '../Common/LoadingSpinner';
 import dossierService from '../../services/dossierService';
 import { useViewMode } from '../../contexts/ViewModeContext';
 import ContentToolbar from '../Common/ContentToolbar';
@@ -374,7 +375,7 @@ const DossiersPage = () => {
     }
   };
 
-  if (loading) return <div className="dossiers-loading">Chargement...</div>;
+  if (loading) return <LoadingSpinner message="Chargement des dossiers..." />;
   if (error) return <div className="dossiers-error">{error}</div>;
 
   return (

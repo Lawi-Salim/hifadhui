@@ -7,7 +7,7 @@ import ActionMenu from './ActionMenu';
 import PdfPreview from './PdfPreview';
 import { buildCloudinaryUrl } from '../../config/cloudinary';
 import { createSlug, fixEncoding } from '../../utils/textUtils';
-// import './ItemList.css'; // Fichier CSS manquant
+import '../Admin/AdminStyles.css'; // Import des styles admin pour la vue liste
 
 const ItemList = ({ 
   items = [], 
@@ -306,11 +306,14 @@ const ItemList = ({
             )}
           </div>
         );
-      } else { // File in list view
+      } else { // File in list view - Style admin avec aperçus
+        const isImage = item.mimetype && item.mimetype.startsWith('image/');
+        const isPdf = item.mimetype === 'application/pdf';
+        
         return (
           <div 
             key={item.id} 
-            className={`dossier-list-item file-item-list-view ${isSelected ? 'selected' : ''}`}
+            className={`admin-list-item file-item-list-view ${isSelected ? 'selected' : ''}`}
             onClick={() => isSelectionMode ? handleSelectItem(item) : (customPreviewHandler ? customPreviewHandler(item) : (handleOpenPreviewModal && handleOpenPreviewModal(item)))}
           >
             {isSelectionMode && (
@@ -323,17 +326,43 @@ const ItemList = ({
                   />
               </div>
             )}
-            <div className="dossier-list-item-link" style={{ pointerEvents: isSelectionMode ? 'none' : 'auto' }}>
-                {getFileIcon(item.filename)}
-                <div className="dossier-info">
-                    <FormattedText 
-                      text={item.filename} 
-                      type="filename" 
-                      className="dossier-name"
-                      maxLength={15}
-                    />
-                    <p className="dossier-file-count">{formatDate(item.date_upload)}</p>
+            
+            <div className="list-item-preview">
+              {isImage ? (
+                <img 
+                  src={getImageUrl(item.file_url)}
+                  alt={item.filename}
+                  className="list-thumbnail"
+                />
+              ) : isPdf ? (
+                <div className="pdf-preview-container">
+                  <PdfPreview fileUrl={item.file_url} fileId={item.id} className="list-thumbnail" />
+                  <div className="file-type-badge pdf-badge">PDF</div>
                 </div>
+              ) : (
+                <div className="file-icon-preview">
+                  {getFileIcon(item.filename)}
+                </div>
+              )}
+            </div>
+            
+            <div className="list-item-info">
+              <div className="list-item-header">
+                <h4 className="list-item-title" title={item.filename}>
+                  <FormattedText 
+                    text={item.filename} 
+                    type="filename" 
+                    maxLength={40}
+                  />
+                </h4>
+              </div>
+              
+              <div className="list-item-meta">
+                <div className="file-details">
+                  <span className="file-size">{item.size ? `${(item.size / 1024).toFixed(2)} KB` : 'N/A'}</span>
+                  <span className="file-date">{formatDate(item.date_upload)}</span>
+                </div>
+              </div>
             </div>
             {!isSelectionMode && (
               <div className="dossier-actions-container">
