@@ -27,8 +27,16 @@
       "dest": "/frontend/static/$1"
     },
     {
+      "src": "/admin/static/(.*)",
+      "dest": "/frontend/static/$1"
+    },
+    {
       "src": "/share/static/(.*)",
       "dest": "/frontend/static/$1"
+    },
+    {
+      "src": "/admin/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|json|txt|woff|woff2|ttf|eot))",
+      "dest": "/frontend/$1"
     },
     {
       "src": "/share/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|json|txt|woff|woff2|ttf|eot))",
@@ -51,6 +59,10 @@
       "dest": "/frontend/manifest.json"
     },
     {
+      "src": "/admin/manifest\\.json",
+      "dest": "/frontend/manifest.json"
+    },
+    {
       "src": "/og-image\\.png",
       "dest": "/frontend/og-image.png"
     },
@@ -60,6 +72,10 @@
     },
     {
       "src": "/auth/favicon\\.png",
+      "dest": "/frontend/favicon.png"
+    },
+    {
+      "src": "/admin/favicon\\.png",
       "dest": "/frontend/favicon.png"
     },
     {
