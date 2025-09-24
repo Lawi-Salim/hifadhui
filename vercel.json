@@ -63,10 +63,6 @@
       "dest": "/frontend/manifest.json"
     },
     {
-      "src": "/og-image\\.png",
-      "dest": "/frontend/og-image.png"
-    },
-    {
       "src": "/favicon\\.png",
       "dest": "/frontend/favicon.png"
     },
