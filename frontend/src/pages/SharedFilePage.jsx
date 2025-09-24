@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaDownload, FaEye, FaFilePdf, FaImage, FaFileAlt } from 'react-icons/fa';
 import { FiAlertCircle, FiShield, FiUser, FiClock, FiEye } from 'react-icons/fi';
 import PdfPreview from '../components/Common/PdfPreview';
+import DynamicMeta from '../components/Common/DynamicMeta';
 import { buildCloudinaryUrl } from '../config/cloudinary';
 import api from '../services/api';
 import './SharedFilePage.css';
@@ -106,6 +107,52 @@ const SharedFilePage = () => {
     }
     
     return <FaFileAlt className="file-icon" />;
+  };
+
+  // Fonction pour générer les métadonnées du fichier partagé
+  const getFileMetadata = (file, share) => {
+    if (!file || !share) return {};
+
+    const isImage = file.mimetype?.startsWith('image/');
+    const isPdf = file.filename?.toLowerCase().endsWith('.pdf');
+    
+    // Déterminer le type de fichier pour la description
+    let fileType = 'fichier';
+    let fileIcon = '📄';
+    
+    if (isImage) {
+      fileType = 'image';
+      fileIcon = '🖼️';
+    } else if (isPdf) {
+      fileType = 'document PDF';
+      fileIcon = '📄';
+    }
+
+    // Construire le titre et la description
+    const title = `${fileIcon} ${file.filename} - Partagé par ${share.shared_by}`;
+    const description = `${fileType} partagé via Hifadhui par ${share.shared_by}. Fichier sécurisé avec preuve de propriété.`;
+    
+    // URL de l'image à afficher (favicon par défaut, ou image du fichier si c'est une image)
+    let imageUrl = `${window.location.origin}/favicon.png`;
+    
+    // Si c'est une image, on peut utiliser l'image elle-même (optionnel)
+    if (isImage && file.file_url) {
+      try {
+        imageUrl = getCloudinaryUrl(file.file_url, true);
+      } catch (e) {
+        // Fallback au favicon si erreur
+        imageUrl = `${window.location.origin}/favicon.png`;
+      }
+    }
+
+    return {
+      title,
+      description,
+      image: imageUrl,
+      url: window.location.href,
+      author: share.shared_by,
+      filename: file.filename
+    };
   };
 
   const getCloudinaryUrl = (fileUrl, isImage = true) => {
@@ -221,9 +268,20 @@ const SharedFilePage = () => {
   }
 
   const { file, share } = fileData;
+  const metadata = getFileMetadata(file, share);
 
   return (
     <div className="shared-file-page">
+      {/* Métadonnées dynamiques pour le partage social */}
+      <DynamicMeta 
+        title={metadata.title}
+        description={metadata.description}
+        image={metadata.image}
+        url={metadata.url}
+        author={metadata.author}
+        filename={metadata.filename}
+      />
+      
       <div className="shared-file-container">
         <div className="shared-file-header">
           <div className="header-info">

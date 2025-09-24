@@ -4,8 +4,15 @@ import { body, validationResult } from 'express-validator';
 import { Op } from 'sequelize';
 import { File, FileShare, Utilisateur, ActivityLog } from '../models/index.js';
 import { authenticateToken } from '../middleware/auth.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
+
 
 // @route   POST /api/v1/files/:id/share
 // @desc    Créer un lien de partage pour un fichier
@@ -270,5 +277,6 @@ router.get('/:id/shares', authenticateToken, async (req, res) => {
     });
   }
 });
+
 
 export default router;

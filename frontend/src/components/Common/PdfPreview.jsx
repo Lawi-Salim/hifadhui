@@ -50,8 +50,8 @@ const PdfPreview = ({ fileUrl, fileId, className }) => {
         {/* On affiche seulement la première page */}
         <Page 
           pageNumber={1} 
-          scale={2.5}
-          width={115} // Largeur de l'aperçu
+          scale={1.2}
+          width={200} // Largeur adaptée au container
           renderTextLayer={false} 
           renderAnnotationLayer={false} 
         />

@@ -147,13 +147,153 @@ app.use('/api/v1/contact', contactRoutes);
 
 
 // Route pour les partages publics - servir l'app React directement
-app.get('/share/:token', (req, res) => {
-  // En production, servir l'app React directement sans redirection
-  if (process.env.NODE_ENV === 'production') {
-    res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+app.get('/share/:token', async (req, res) => {
+  const token = req.params.token;
+  const userAgent = req.get('User-Agent') || '';
+  
+  // Détecter les crawlers des réseaux sociaux
+  const isCrawler = /facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Slackbot|SkypeUriPreview|Applebot|GoogleBot/i.test(userAgent);
+  
+  if (isCrawler) {
+    // Pour les crawlers, servir du HTML avec métadonnées Open Graph
+    try {
+      // Utiliser la logique de la route shares pour récupérer les données
+      const { Op } = await import('sequelize');
+      const { File, FileShare, Utilisateur } = await import('./models/index.js');
+      
+      const fileShare = await FileShare.findOne({
+        where: {
+          token: token,
+          is_active: true,
+          expires_at: {
+            [Op.gt]: new Date()
+          }
+        },
+        include: [
+          {
+            model: File,
+            as: 'file',
+            include: [
+              {
+                model: Utilisateur,
+                as: 'fileUser',
+                attributes: ['username']
+              },
+            ]
+          },
+          {
+            model: Utilisateur,
+            as: 'creator',
+            attributes: ['username']
+          }
+        ]
+      });
+
+      if (!fileShare) {
+        return res.status(404).send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Lien expiré - Hifadhui</title>
+            <meta name="description" content="Ce lien de partage a expiré ou n'est plus valide." />
+          </head>
+          <body>
+            <h1>Lien expiré</h1>
+            <p>Ce lien de partage a expiré ou n'est plus valide.</p>
+          </body>
+          </html>
+        `);
+      }
+
+      // Générer les métadonnées
+      const isImage = fileShare.file.mimetype?.startsWith('image/');
+      const isPdf = fileShare.file.filename?.toLowerCase().endsWith('.pdf');
+      
+      let fileType = 'fichier';
+      let fileIcon = '📄';
+      
+      if (isImage) {
+        fileType = 'image';
+        fileIcon = '🖼️';
+      } else if (isPdf) {
+        fileType = 'document PDF';
+        fileIcon = '📄';
+      }
+
+      const title = `${fileIcon} ${fileShare.file.filename} - Partagé par ${fileShare.creator?.username || 'Utilisateur'}`;
+      const description = `${fileType} partagé via Hifadhui par ${fileShare.creator?.username || 'Utilisateur'}. Fichier sécurisé avec preuve de propriété.`;
+      const shareUrl = `${process.env.FRONTEND_URL || 'https://hifadhui.site'}/share/${token}`;
+      const imageUrl = `${process.env.FRONTEND_URL || 'https://hifadhui.site'}/favicon.png`;
+
+      const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${title}</title>
+    <meta name="description" content="${description}" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="${shareUrl}" />
+    <meta property="og:title" content="${title}" />
+    <meta property="og:description" content="${description}" />
+    <meta property="og:image" content="${imageUrl}" />
+    <meta property="og:image:width" content="400" />
+    <meta property="og:image:height" content="400" />
+    <meta property="og:site_name" content="Hifadhui" />
+    <meta property="og:locale" content="fr_FR" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="${shareUrl}" />
+    <meta property="twitter:title" content="${title}" />
+    <meta property="twitter:description" content="${description}" />
+    <meta property="twitter:image" content="${imageUrl}" />
+    
+    <!-- Redirection automatique vers l'app React -->
+    <script>
+      window.location.href = "${shareUrl}";
+    </script>
+    
+    <!-- Fallback si JavaScript est désactivé -->
+    <meta http-equiv="refresh" content="0; url=${shareUrl}" />
+</head>
+<body>
+    <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+        <h1>${title}</h1>
+        <p>${description}</p>
+        <p><a href="${shareUrl}">Cliquez ici si vous n'êtes pas redirigé automatiquement</a></p>
+    </div>
+</body>
+</html>`;
+
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+
+    } catch (error) {
+      console.error('Erreur lors de la génération de la page de partage:', error);
+      res.status(500).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Erreur - Hifadhui</title>
+        </head>
+        <body>
+          <h1>Erreur</h1>
+          <p>Une erreur s'est produite lors du chargement de cette page.</p>
+        </body>
+        </html>
+      `);
+    }
   } else {
-    // En développement, rediriger vers le serveur de développement React
-    res.redirect(`http://localhost:3000/share/${req.params.token}`);
+    // Pour les utilisateurs normaux, servir l'app React
+    if (process.env.NODE_ENV === 'production') {
+      res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+    } else {
+      // En développement, rediriger vers le serveur de développement React
+      res.redirect(`http://localhost:3000/share/${req.params.token}`);
+    }
   }
 });
 
