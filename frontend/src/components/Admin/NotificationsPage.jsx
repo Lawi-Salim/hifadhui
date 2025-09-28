@@ -58,53 +58,6 @@ const NotificationsPage = () => {
     hasPrevPage: false
   });
 
-  // Données de test pour les notifications
-  const mockNotifications = [
-    {
-      id: '1',
-      type: 'alert',
-      title: 'Espace disque faible',
-      message: 'L\'espace disque disponible est inférieur à 10%. Veuillez libérer de l\'espace.',
-      status: 'unread',
-      priority: 'high',
-      createdAt: new Date(Date.now() - 30 * 60 * 1000), // 30 min ago
-      source: 'system',
-      metadata: { diskUsage: '92%' }
-    },
-    {
-      id: '2',
-      type: 'info',
-      title: 'Mise à jour système disponible',
-      message: 'Une nouvelle version du système est disponible (v2.1.3).',
-      status: 'unread',
-      priority: 'normal',
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2h ago
-      source: 'system',
-      metadata: { version: '2.1.3' }
-    },
-    {
-      id: '3',
-      type: 'warning',
-      title: 'Tentatives de connexion suspectes',
-      message: '5 tentatives de connexion échouées détectées depuis l\'IP 192.168.1.100.',
-      status: 'read',
-      priority: 'high',
-      createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4h ago
-      source: 'security',
-      metadata: { ip: '192.168.1.100', attempts: 5 }
-    },
-    {
-      id: '4',
-      type: 'success',
-      title: 'Sauvegarde terminée',
-      message: 'La sauvegarde quotidienne s\'est terminée avec succès.',
-      status: 'read',
-      priority: 'normal',
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-      source: 'backup',
-      metadata: { size: '2.3 GB' }
-    }
-  ];
 
   useEffect(() => {
     loadNotifications();
@@ -184,27 +137,20 @@ const NotificationsPage = () => {
     } catch (error) {
       console.error('Erreur lors du chargement des notifications:', error);
       
-      // Fallback avec des données de test
-      const filteredNotifications = mockNotifications.filter(notif => {
-        if (activeTab === 'unread') return notif.status === 'unread';
-        if (activeTab === 'alerts') return notif.type === 'alert' || notif.type === 'warning';
-        if (activeTab === 'info') return notif.type === 'info' || notif.type === 'success';
-        return true;
-      });
-      
-      setNotifications(filteredNotifications);
+      // En cas d'erreur, afficher des données vides
+      setNotifications([]);
       
       setStats({
-        unread: filteredNotifications.filter(n => n.status === 'unread').length,
-        alerts: filteredNotifications.filter(n => n.type === 'alert' || n.type === 'warning').length,
-        info: filteredNotifications.filter(n => n.type === 'info' || n.type === 'success').length,
-        total: filteredNotifications.length
+        unread: 0,
+        alerts: 0,
+        info: 0,
+        total: 0
       });
       
       setPagination({
         currentPage: 1,
         totalPages: 1,
-        totalItems: filteredNotifications.length,
+        totalItems: 0,
         itemsPerPage: 50,
         hasNextPage: false,
         hasPrevPage: false
