@@ -1,10 +1,36 @@
 import express from 'express';
 import { Op, fn, col } from 'sequelize';
 import { sequelize } from '../config/database.js';
-import { Utilisateur, File, Dossier, ActivityLog, UserSession, FileShare } from '../models/index.js';
-import { manualCleanup, getCleanupStats, cleanupUserSessions } from '../utils/dataCleanup.js';
+import { Utilisateur, File, Dossier, FileShare, UserSession, ActivityLog, Message, Notification } from '../models/index.js';
 import { authenticateToken, authorizeAdmin } from '../middleware/auth.js';
-import { deleteCloudinaryFile } from '../utils/cloudinaryStructure.js';
+import os from 'os';
+import fs from 'fs';
+import path from 'path';
+
+// Stockage en mémoire des erreurs système (max 100 entrées)
+const systemErrors = [];
+const MAX_ERRORS = 100;
+
+// Fonction pour ajouter une erreur système
+export const addSystemError = (type, message, details = {}) => {
+  const error = {
+    id: Date.now().toString(),
+    type,
+    message,
+    details,
+    timestamp: new Date(),
+    severity: details.severity || 'warning'
+  };
+  
+  systemErrors.unshift(error);
+  
+  // Garder seulement les 100 dernières erreurs
+  if (systemErrors.length > MAX_ERRORS) {
+    systemErrors.splice(MAX_ERRORS);
+  }
+  
+  console.log(`🚨 [SYSTEM-ERROR] ${type}: ${message}`);
+};
 
 const router = express.Router();
 
@@ -1103,16 +1129,26 @@ router.get('/system/resources', [authenticateToken, authorizeAdmin], async (req,
  */
 router.get('/system/errors', [authenticateToken, authorizeAdmin], async (req, res) => {
   try {
-    // Pour l'instant, retourner un tableau vide
-    // Vous pouvez implémenter un système de logs plus tard
-    const recentErrors = [];
-    const cloudinaryErrors = [];
-    const emailErrors = [];
+    // Filtrer les erreurs par type et récence (dernières 24h)
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    const recentErrors = systemErrors.filter(error => 
+      error.timestamp > last24h
+    ).slice(0, 20); // Max 20 erreurs récentes
+    
+    const cloudinaryErrors = systemErrors.filter(error => 
+      error.type.includes('cloudinary') && error.timestamp > last24h
+    ).slice(0, 10);
+    
+    const emailErrors = systemErrors.filter(error => 
+      error.type.includes('email') && error.timestamp > last24h
+    ).slice(0, 10);
     
     res.json({
       recentErrors,
       cloudinaryErrors,
-      emailErrors
+      emailErrors,
+      totalErrors: systemErrors.length
     });
   } catch (error) {
     console.error('Erreur lors de la récupération des erreurs:', error);
@@ -1120,151 +1156,7 @@ router.get('/system/errors', [authenticateToken, authorizeAdmin], async (req, re
   }
 });
 
-/**
- * @route   GET /api/admin/technical
- * @desc    Récupérer les données techniques (IP, navigateurs, OS, géolocalisation)
- * @access  Private (Admin)
- */
-router.get('/technical', [authenticateToken, authorizeAdmin], async (req, res) => {
-  try {
-    const { filter = 'all', timeRange = '24h' } = req.query;
-    
-    // Calcul de la période
-    const now = new Date();
-    let startDate;
-    
-    switch (timeRange) {
-      case '24h':
-        startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        break;
-      case '7d':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case '30d':
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        break;
-      default:
-        startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    }
 
-    // Récupération des vraies sessions utilisateur
-    const whereClause = {
-      sessionStart: {
-        [Op.gte]: startDate
-      }
-    };
-
-    if (filter === 'suspicious') {
-      whereClause.isSuspicious = true;
-    } else if (filter === 'recent') {
-      // Dernières 2 heures
-      whereClause.sessionStart = {
-        [Op.gte]: new Date(now.getTime() - 2 * 60 * 60 * 1000)
-      };
-    }
-
-    const sessions = await UserSession.findAll({
-      where: whereClause,
-      include: [{
-        model: Utilisateur,
-        as: 'user',
-        attributes: ['email', 'username']
-      }],
-      order: [['sessionStart', 'DESC']],
-      limit: 1000
-    });
-
-    // Transformation des vraies données de session
-    const connections = sessions.map((session) => {
-      return {
-        id: session.id,
-        userId: session.userId,
-        userEmail: session.user?.email || 'Anonyme',
-        userName: session.user?.username || null,
-        user: session.user ? {
-          email: session.user.email,
-          username: session.user.username
-        } : null,
-        ipAddress: session.ipAddress,
-        country: session.country || 'Unknown',
-        countryCode: session.countryCode || 'XX',
-        city: session.city || 'Unknown',
-        region: session.region,
-        timezone: session.timezone,
-        isp: session.isp,
-        browser: session.browser || 'Unknown',
-        browserVersion: session.browserVersion || '',
-        os: session.os || 'Unknown',
-        device: session.device || 'desktop',
-        timestamp: session.sessionStart,
-        sessionStart: session.sessionStart,
-        sessionEnd: session.sessionEnd,
-        isSuspicious: session.isSuspicious || false,
-        suspiciousReason: session.suspiciousReason,
-        isActive: session.isActive,
-        userAgent: session.userAgent
-      };
-    });
-
-    // Calcul des statistiques
-    const uniqueIPs = [...new Set(connections.map(c => c.ipAddress))];
-    const suspiciousCount = connections.filter(c => c.isSuspicious).length;
-    const topCountries = [...new Set(connections.map(c => c.countryCode))];
-
-    // Analyse des navigateurs
-    const browserStats = {};
-    connections.forEach(conn => {
-      browserStats[conn.browser] = (browserStats[conn.browser] || 0) + 1;
-    });
-
-    const browsers = Object.entries(browserStats)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
-
-    // Analyse des OS
-    const osStats = {};
-    connections.forEach(conn => {
-      const osName = conn.os.split(' ')[0]; // Prendre juste le nom de l'OS
-      osStats[osName] = (osStats[osName] || 0) + 1;
-    });
-
-    const operatingSystems = Object.entries(osStats)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
-
-    const responseData = {
-      connections,
-      stats: {
-        totalConnections: connections.length,
-        uniqueIPs: uniqueIPs.length,
-        suspiciousActivity: suspiciousCount,
-        topCountries: topCountries.slice(0, 5)
-      },
-      browsers,
-      operatingSystems
-    };
-
-    console.log(`🔍 [TECHNICAL] Données techniques récupérées:`, {
-      connections: connections.length,
-      uniqueIPs: uniqueIPs.length,
-      suspicious: suspiciousCount,
-      timeRange,
-      filter
-    });
-
-    res.json(responseData);
-
-  } catch (error) {
-    console.error('Erreur lors de la récupération des données techniques:', error);
-    res.status(500).json({ error: 'Erreur serveur lors de la récupération des données techniques' });
-  }
-});
-
-/**
- * @route   GET /api/admin/cleanup/stats
- * @desc    Obtenir les statistiques de nettoyage
- * @access  Private (Admin)
- */
 router.get('/cleanup/stats', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
     const stats = await getCleanupStats();
@@ -1415,6 +1307,538 @@ router.delete('/reports/:id', authenticateToken, authorizeAdmin, async (req, res
   } catch (error) {
     console.error('Erreur lors de la suppression du signalement:', error);
     res.status(500).json({ error: 'Erreur serveur lors de la suppression' });
+  }
+});
+
+// ========================================
+// ROUTES DE TEST DES NOTIFICATIONS ADMIN
+// ========================================
+
+/**
+ * @route   POST /api/admin/notifications/test/disk-space
+ * @desc    Tester la notification d'espace disque
+ * @access  Private (Admin)
+ */
+router.post('/notifications/test/disk-space', [authenticateToken, authorizeAdmin], async (req, res) => {
+  try {
+    const { usagePercentage = 92 } = req.body;
+    
+    await NotificationService.notifyDiskSpaceAlert(
+      usagePercentage, 
+      100 - usagePercentage, // espace disponible
+      100 // espace total
+    );
+    
+    res.json({
+      success: true,
+      message: `Notification d'espace disque envoyée (${usagePercentage}% utilisé)`
+    });
+  } catch (error) {
+    console.error('Erreur test notification espace disque:', error);
+    res.status(500).json({ error: 'Erreur lors du test de notification' });
+  }
+});
+
+/**
+ * @route   POST /api/admin/notifications/test/security
+ * @desc    Tester la notification de sécurité
+ * @access  Private (Admin)
+ */
+router.post('/notifications/test/security', [authenticateToken, authorizeAdmin], async (req, res) => {
+  try {
+    const { 
+      ipAddress = '192.168.1.100', 
+      failedAttempts = 5,
+      email = 'test@example.com'
+    } = req.body;
+    
+    await NotificationService.notifySuspiciousLogin(
+      ipAddress,
+      'Test User Agent',
+      failedAttempts,
+      email
+    );
+    
+    res.json({
+      success: true,
+      message: `Notification de sécurité envoyée (${failedAttempts} tentatives depuis ${ipAddress})`
+    });
+  } catch (error) {
+    console.error('Erreur test notification sécurité:', error);
+    res.status(500).json({ error: 'Erreur lors du test de notification' });
+  }
+});
+
+/**
+ * @route   POST /api/admin/notifications/test/critical-error
+ * @desc    Tester la notification d'erreur critique
+ * @access  Private (Admin)
+ */
+router.post('/notifications/test/critical-error', [authenticateToken, authorizeAdmin], async (req, res) => {
+  try {
+    const { message = 'Erreur de test critique' } = req.body;
+    
+    await NotificationService.notifyCriticalError(
+      message,
+      'Stack trace de test...',
+      { 
+        testMode: true,
+        triggeredBy: req.user.username,
+        timestamp: new Date()
+      }
+    );
+    
+    res.json({
+      success: true,
+      message: `Notification d'erreur critique envoyée: ${message}`
+    });
+  } catch (error) {
+    console.error('Erreur test notification erreur critique:', error);
+    res.status(500).json({ error: 'Erreur lors du test de notification' });
+  }
+});
+
+/**
+ * @route   POST /api/admin/notifications/test/maintenance
+ * @desc    Tester la notification de maintenance
+ * @access  Private (Admin)
+ */
+router.post('/notifications/test/maintenance', [authenticateToken, authorizeAdmin], async (req, res) => {
+  try {
+    const maintenanceDate = new Date();
+    maintenanceDate.setDate(maintenanceDate.getDate() + 1); // Demain
+    maintenanceDate.setHours(2, 0, 0, 0); // 2h du matin
+    
+    await NotificationService.notifyScheduledMaintenance(
+      maintenanceDate,
+      '2 heures',
+      'Maintenance de test programmée par un administrateur'
+    );
+    
+    res.json({
+      success: true,
+      message: `Notification de maintenance envoyée pour ${maintenanceDate.toLocaleString()}`
+    });
+  } catch (error) {
+    console.error('Erreur test notification maintenance:', error);
+    res.status(500).json({ error: 'Erreur lors du test de notification' });
+  }
+});
+
+/**
+ * @route   POST /api/admin/notifications/test/stats
+ * @desc    Tester les statistiques périodiques
+ * @access  Private (Admin)
+ */
+router.post('/notifications/test/stats', [authenticateToken, authorizeAdmin], async (req, res) => {
+  try {
+    const { period = 'weekly' } = req.body;
+    
+    await NotificationService.notifyPeriodicStats(period);
+    
+    res.json({
+      success: true,
+      message: `Statistiques ${period} envoyées`
+    });
+  } catch (error) {
+    console.error('Erreur test notification statistiques:', error);
+    res.status(500).json({ error: 'Erreur lors du test de notification' });
+  }
+});
+
+/**
+ * @route   POST /api/admin/notifications/test/inactive-users
+ * @desc    Tester la notification d'utilisateurs inactifs
+ * @access  Private (Admin)
+ */
+router.post('/notifications/test/inactive-users', [authenticateToken, authorizeAdmin], async (req, res) => {
+  try {
+    const { days = 30 } = req.body;
+    
+    await NotificationService.notifyInactiveUsers(days);
+    
+    res.json({
+      success: true,
+      message: `Vérification des utilisateurs inactifs (${days} jours) effectuée`
+    });
+  } catch (error) {
+    console.error('Erreur test notification utilisateurs inactifs:', error);
+    res.status(500).json({ error: 'Erreur lors du test de notification' });
+  }
+});
+
+/**
+ * @route   GET /api/admin/notifications/security-stats
+ * @desc    Obtenir les statistiques de sécurité
+ * @access  Private (Admin)
+ */
+router.get('/notifications/security-stats', [authenticateToken, authorizeAdmin], async (req, res) => {
+  try {
+    const stats = SecurityMonitor.getSecurityStats();
+    
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    console.error('Erreur récupération stats sécurité:', error);
+    res.status(500).json({ error: 'Erreur lors de la récupération des statistiques' });
+  }
+});
+
+/**
+ * @route   POST /api/admin/scheduler/trigger/:task
+ * @desc    Déclencher manuellement une tâche programmée
+ * @access  Private (Admin)
+ */
+router.post('/scheduler/trigger/:task', [authenticateToken, authorizeAdmin], async (req, res) => {
+  try {
+    const { task } = req.params;
+    const { period, days } = req.body;
+    
+    let result;
+    
+    switch (task) {
+      case 'disk-space':
+        result = await SchedulerService.triggerDiskSpaceCheck();
+        break;
+      case 'stats':
+        result = await SchedulerService.triggerStats(period || 'weekly');
+        break;
+      case 'inactive-users':
+        result = await SchedulerService.triggerInactiveUsersCheck(days || 30);
+        break;
+      default:
+        return res.status(400).json({ error: 'Tâche non reconnue' });
+    }
+    
+    res.json({
+      success: true,
+      message: `Tâche ${task} déclenchée avec succès`,
+      result
+    });
+  } catch (error) {
+    console.error(`Erreur déclenchement tâche ${req.params.task}:`, error);
+    res.status(500).json({ error: 'Erreur lors du déclenchement de la tâche' });
+  }
+});
+
+/**
+ * @route   GET /api/admin/technical
+ * @desc    Récupérer les données techniques (connexions, tentatives d'emails non autorisés, etc.)
+ * @access  Admin
+ */
+router.get('/technical', authenticateToken, authorizeAdmin, async (req, res) => {
+  console.log(`🚀 [TECHNICAL-ROUTE] Route /technical appelée !`);
+  console.log(`🚀 [TECHNICAL-ROUTE] Query params:`, req.query);
+  
+  try {
+    const { filter = 'all', timeRange = '24h', page = 1, limit = 10 } = req.query;
+    
+    console.log(`🔍 [TECHNICAL] Requête données techniques: filter=${filter}, timeRange=${timeRange}, page=${page}`);
+    
+    // Calculer la période selon timeRange
+    const now = new Date();
+    let startDate;
+    
+    switch (timeRange) {
+      case '7d':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '30d':
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case '24h':
+      default:
+        startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        break;
+    }
+
+    // Récupérer les sessions utilisateur (connexions)
+    const connections = await UserSession.findAll({
+      where: {
+        session_start: { [Op.gte]: startDate }
+      },
+      include: [{
+        model: Utilisateur,
+        as: 'user',
+        attributes: ['username', 'email']
+      }],
+      order: [['session_start', 'DESC']],
+      limit: parseInt(limit),
+      offset: (parseInt(page) - 1) * parseInt(limit),
+      raw: false // Garder les objets Sequelize pour accéder aux dataValues
+    });
+
+    // Debug: Vérifier toutes les notifications de sécurité récentes
+    const allSecurityNotifications = await Notification.findAll({
+      where: {
+        type: 'security',
+        created_at: { [Op.gte]: startDate }
+      },
+      order: [['created_at', 'DESC']],
+      limit: 20
+    });
+    
+    console.log(`🔍 [TECHNICAL] Notifications de sécurité trouvées: ${allSecurityNotifications.length}`);
+    allSecurityNotifications.forEach(notif => {
+      console.log(`📋 [TECHNICAL] Notification: ID=${notif.id}, Title="${notif.title}", Type=${notif.type}`);
+    });
+
+    // Récupérer les tentatives d'emails non autorisés depuis les notifications
+    // Utiliser les métadonnées pour une recherche plus fiable
+    const unauthorizedAttempts = await Notification.findAll({
+      where: {
+        type: 'security',
+        [Op.or]: [
+          { title: { [Op.like]: '%domaine non autorisé%' } },
+          { title: { [Op.like]: '%Tentative avec domaine non autorisé%' } },
+          { 
+            metadata: {
+              type: 'unauthorized_domain_attempt'
+            }
+          }
+        ],
+        created_at: { [Op.gte]: startDate }
+      },
+      order: [['created_at', 'DESC']],
+      limit: parseInt(limit),
+      offset: (parseInt(page) - 1) * parseInt(limit)
+    });
+
+    // Statistiques générales
+    const totalConnections = await UserSession.count({
+      where: { session_start: { [Op.gte]: startDate } }
+    });
+
+    const uniqueIPs = await UserSession.count({
+      distinct: true,
+      col: 'ip_address',
+      where: { session_start: { [Op.gte]: startDate } }
+    });
+
+    // Statistiques des tentatives d'emails non autorisés
+    const totalUnauthorizedAttempts = await Notification.count({
+      where: {
+        type: 'security',
+        [Op.or]: [
+          { title: { [Op.like]: '%domaine non autorisé%' } },
+          { title: { [Op.like]: '%Tentative avec domaine non autorisé%' } },
+          { 
+            metadata: {
+              type: 'unauthorized_domain_attempt'
+            }
+          }
+        ],
+        created_at: { [Op.gte]: startDate }
+      }
+    });
+
+    console.log(`📊 [TECHNICAL] Tentatives non autorisées trouvées: ${totalUnauthorizedAttempts}`);
+
+    const uniqueUnauthorizedEmails = await Notification.count({
+      distinct: true,
+      col: 'message',
+      where: {
+        type: 'security',
+        [Op.or]: [
+          { title: { [Op.like]: '%domaine non autorisé%' } },
+          { title: { [Op.like]: '%Tentative avec domaine non autorisé%' } },
+          { 
+            metadata: {
+              type: 'unauthorized_domain_attempt'
+            }
+          }
+        ],
+        created_at: { [Op.gte]: startDate }
+      }
+    });
+
+    // Calculer les IPs uniques depuis les métadonnées des notifications
+    const allUnauthorizedNotifications = await Notification.findAll({
+      where: {
+        type: 'security',
+        [Op.or]: [
+          { title: { [Op.like]: '%domaine non autorisé%' } },
+          { title: { [Op.like]: '%Tentative avec domaine non autorisé%' } },
+          { 
+            metadata: {
+              type: 'unauthorized_domain_attempt'
+            }
+          }
+        ],
+        created_at: { [Op.gte]: startDate }
+      }
+    });
+
+    const uniqueUnauthorizedIPs = [...new Set(
+      allUnauthorizedNotifications
+        .map(notif => notif.metadata?.ipAddress || notif.metadata?.ip)
+        .filter(ip => ip && ip !== 'IP inconnue')
+    )].length;
+
+    console.log(`📊 [TECHNICAL] IPs uniques trouvées: ${uniqueUnauthorizedIPs}`);
+    console.log(`📊 [TECHNICAL] Connexions trouvées: ${connections.length}`);
+    
+    // Debug: Afficher les données brutes des connexions
+    connections.forEach((conn, index) => {
+      const data = conn.dataValues || conn;
+      console.log(`🔍 [TECHNICAL] Connexion ${index + 1}:`, {
+        id: data.id,
+        user_id: data.userId,
+        ipAddress: data.ipAddress,              // ✅ Utilise les alias Sequelize
+        userAgent: data.userAgent?.substring(0, 50) + '...',  // ✅ Utilise les alias Sequelize
+        sessionStart: data.sessionStart,       // ✅ Utilise les alias Sequelize
+        browser: data.browser,
+        browserVersion: data.browserVersion,    // ✅ Ajouté pour debug
+        os: data.os,
+        city: data.city,                       // ✅ Ajouté pour debug
+        country: data.country,
+        countryCode: data.countryCode,         // ✅ Ajouté pour debug
+        isp: data.isp,                         // ✅ Ajouté pour debug
+        timezone: data.timezone,               // ✅ Ajouté pour debug
+        isActive: data.isActive,               // ✅ Ajouté pour debug
+        sessionEnd: data.sessionEnd,           // ✅ Ajouté pour debug
+        user: conn.user ? {
+          username: conn.user.dataValues?.username || conn.user.username,
+          email: conn.user.dataValues?.email || conn.user.email
+        } : 'PAS D\'UTILISATEUR'
+      });
+    });
+    
+    // Connexions récupérées avec succès
+
+    // Analyser les navigateurs depuis les connexions
+    const browserStats = {};
+    connections.forEach(conn => {
+      const data = conn.dataValues || conn;
+      const browser = data.browser || 'Inconnu';
+      browserStats[browser] = (browserStats[browser] || 0) + 1;
+    });
+
+    const browsers = Object.entries(browserStats)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Analyser les OS depuis les connexions
+    const osStats = {};
+    connections.forEach(conn => {
+      const data = conn.dataValues || conn;
+      const os = data.os || 'Inconnu';
+      osStats[os] = (osStats[os] || 0) + 1;
+    });
+
+    const operatingSystems = Object.entries(osStats)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    console.log(`📊 [TECHNICAL] Navigateurs trouvés:`, browsers);
+    console.log(`📊 [TECHNICAL] OS trouvés:`, operatingSystems);
+
+    // Formater les tentatives d'emails non autorisés
+    const formattedUnauthorizedAttempts = unauthorizedAttempts.map(notification => {
+      const metadata = notification.metadata || {};
+      
+      // Métadonnées extraites des notifications
+      
+      return {
+        id: notification.id,
+        email: metadata.email || 'Email inconnu',
+        domain: metadata.domain || 'Domaine inconnu',
+        action: metadata.action || 'register',
+        ipAddress: metadata.ipAddress || metadata.ip || 'IP inconnue', // Frontend cherche ipAddress
+        userAgent: metadata.userAgent || 'User-Agent inconnu',
+        timestamp: notification.created_at || notification.createdAt
+      };
+    });
+
+    // Formater les connexions pour le frontend
+    const formattedConnections = connections.map(conn => {
+        const data = conn.dataValues || conn;
+        return {
+          id: data.id,
+          user: conn.user ? {
+            username: conn.user.dataValues?.username || conn.user.username,
+            email: conn.user.dataValues?.email || conn.user.email
+          } : null,
+          userEmail: conn.user ? (conn.user.dataValues?.email || conn.user.email) : 'Anonyme',  // ✅ Ajouté : Frontend utilise userEmail pour la recherche
+          userId: data.userId,                 // ✅ Ajouté : ID utilisateur pour SessionDetailModal
+          ipAddress: data.ipAddress,           // ✅ RE-CORRIGÉ : Sequelize utilise les alias du modèle
+          userAgent: data.userAgent,          // ✅ RE-CORRIGÉ : Sequelize utilise les alias du modèle
+          createdAt: data.sessionStart,       // ✅ RE-CORRIGÉ : Sequelize utilise les alias du modèle
+          timestamp: data.sessionStart,       // ✅ RE-CORRIGÉ : Sequelize utilise les alias du modèle
+          sessionStart: data.sessionStart,    // ✅ Ajouté : Début de session pour SessionDetailModal
+          sessionEnd: data.sessionEnd,        // ✅ Ajouté : Fin de session pour SessionDetailModal
+          isActive: data.isActive,            // ✅ Ajouté : Statut actif pour SessionDetailModal
+          location: `${data.city || 'Inconnue'}, ${data.country || 'Inconnu'}`,
+          browser: data.browser,
+          browserVersion: data.browserVersion,  // ✅ Ajouté : Version du navigateur
+          os: data.os,
+          device: data.device,
+          country: data.country,
+          city: data.city,                     // ✅ Ajouté : Ville pour le frontend
+          countryCode: data.countryCode,      // ✅ RE-CORRIGÉ : Sequelize utilise les alias du modèle
+          isp: data.isp,                      // ✅ Ajouté : ISP pour SessionDetailModal
+          timezone: data.timezone,            // ✅ Ajouté : Fuseau horaire pour SessionDetailModal
+          region: data.region,                // ✅ Ajouté : Région pour localisation complète
+          isSuspicious: data.isSuspicious || false,  // ✅ RE-CORRIGÉ : Sequelize utilise les alias du modèle
+          suspiciousReason: data.suspiciousReason    // ✅ Ajouté : Raison suspicion pour SessionDetailModal
+        };
+    });
+
+    // Debug: Afficher les connexions formatées
+    console.log(`🔍 [TECHNICAL] Connexions formatées pour le frontend:`, formattedConnections.map(conn => ({
+      id: conn.id,
+      userEmail: conn.userEmail,
+      ipAddress: conn.ipAddress,
+      timestamp: conn.timestamp,
+      location: conn.location,      // ✅ Ajouté pour debug
+      browser: conn.browser,
+      browserVersion: conn.browserVersion,  // ✅ Ajouté pour debug
+      os: conn.os,
+      city: conn.city,              // ✅ Ajouté pour debug
+      country: conn.country,        // ✅ Ajouté pour debug
+      countryCode: conn.countryCode, // ✅ Ajouté pour debug
+      userId: conn.userId,          // ✅ Ajouté pour debug
+      isp: conn.isp,                // ✅ Ajouté pour debug
+      timezone: conn.timezone,      // ✅ Ajouté pour debug
+      isActive: conn.isActive,      // ✅ Ajouté pour debug
+      sessionEnd: conn.sessionEnd   // ✅ Ajouté pour debug
+    })));
+
+    res.json({
+      connections: formattedConnections,
+      unauthorizedAttempts: formattedUnauthorizedAttempts,
+      browsers: browsers,
+      operatingSystems: operatingSystems,
+      stats: {
+        totalConnections,
+        uniqueIPs,
+        suspiciousActivity: 0, // À implémenter selon vos critères
+        topCountries: [] // À implémenter si vous avez des données de géolocalisation
+      },
+      unauthorizedStats: {
+        totalAttempts: totalUnauthorizedAttempts,
+        uniqueEmails: uniqueUnauthorizedEmails,
+        uniqueIPs: uniqueUnauthorizedIPs,
+        topDomains: [] // À implémenter
+      },
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(Math.max(totalConnections, totalUnauthorizedAttempts) / parseInt(limit)),
+        totalItems: Math.max(totalConnections, totalUnauthorizedAttempts),
+        itemsPerPage: parseInt(limit),
+        hasNextPage: parseInt(page) < Math.ceil(Math.max(totalConnections, totalUnauthorizedAttempts) / parseInt(limit)),
+        hasPrevPage: parseInt(page) > 1
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération des données techniques:', error);
+    res.status(500).json({ 
+      error: 'Erreur lors de la récupération des données techniques',
+      details: error.message 
+    });
   }
 });
 

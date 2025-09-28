@@ -19,7 +19,6 @@
   
   .modal-content {
     background-color: var(--bg-secondary);
-    padding: 2rem;
     border-radius: 12px;
     box-shadow: var(--shadow-lg);
     color: var(--text-primary);
@@ -390,7 +389,6 @@
   }
 
   .modal-header {
-    margin-bottom: 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--border-color);
   }
@@ -401,10 +399,10 @@
     font-weight: 600;
     color: var(--text-primary);
   }
-
+/* 
   .modal-body {
     margin-bottom: 1.5rem;
-  }
+  } */
 
   .modal-description {
     color: var(--text-secondary);

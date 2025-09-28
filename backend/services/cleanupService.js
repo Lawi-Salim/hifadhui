@@ -1,4 +1,4 @@
-import { Utilisateur, File, sequelize } from '../models/index.js';
+import { Utilisateur, File, ActivityLog, sequelize } from '../models/index.js';
 import { deleteCloudinaryFile } from '../utils/cloudinaryStructure.js';
 import emailService from './emailService.js';
 import { Op } from 'sequelize';
@@ -191,6 +191,40 @@ class CleanupService {
   }
   
   /**
+   * Nettoie les tentatives d'emails non autorisés anciennes (> 30 jours)
+   */
+  async cleanupUnauthorizedEmailAttempts() {
+    try {
+      console.log('🧹 [CLEANUP] Début du nettoyage des tentatives d\'emails non autorisés...');
+      
+      // Supprimer les tentatives de plus de 30 jours
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 30);
+      
+      const deletedAttempts = await ActivityLog.destroy({
+        where: {
+          action_type: 'unauthorized_domain_attempt',
+          created_at: {
+            [Op.lt]: cutoffDate
+          }
+        }
+      });
+      
+      if (deletedAttempts > 0) {
+        console.log(`🗑️ [CLEANUP] ${deletedAttempts} tentatives d'emails non autorisés supprimées (> 30 jours)`);
+      } else {
+        console.log('✅ [CLEANUP] Aucune tentative d\'email non autorisé à supprimer');
+      }
+      
+      return { deletedAttempts };
+      
+    } catch (error) {
+      console.error('❌ [CLEANUP] Erreur lors du nettoyage des tentatives d\'emails:', error);
+      throw error;
+    }
+  }
+  
+  /**
    * Exécute toutes les tâches de nettoyage
    */
   async runAllCleanupTasks() {
@@ -200,6 +234,7 @@ class CleanupService {
       timestamp: new Date(),
       deletionResults: null,
       reminderResults: null,
+      cleanupResults: null,
       errors: []
     };
     
@@ -225,10 +260,22 @@ class CleanupService {
       });
     }
     
+    try {
+      // 3. Nettoyer les tentatives d'emails non autorisés
+      results.cleanupResults = await this.cleanupUnauthorizedEmailAttempts();
+    } catch (error) {
+      console.error('❌ [CLEANUP SERVICE] Erreur nettoyage tentatives emails:', error);
+      results.errors.push({
+        task: 'cleanupUnauthorizedEmailAttempts',
+        error: error.message
+      });
+    }
+    
     console.log('✅ [CLEANUP SERVICE] Tâches de nettoyage terminées');
     console.log('📊 [CLEANUP SERVICE] Résultats:', {
       deletedAccounts: results.deletionResults?.deletedAccounts || 0,
       sentReminders: results.reminderResults?.sentReminders || 0,
+      deletedUnauthorizedAttempts: results.cleanupResults?.deletedAttempts || 0,
       totalErrors: results.errors.length
     });
     

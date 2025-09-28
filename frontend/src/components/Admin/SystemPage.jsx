@@ -40,8 +40,8 @@ const SystemPage = () => {
 
   useEffect(() => {
     fetchSystemData();
-    // Actualisation automatique toutes les 30 secondes
-    const interval = setInterval(fetchSystemData, 30000);
+    // Actualisation automatique toutes les 2 minutes (monitoring système)
+    const interval = setInterval(fetchSystemData, 120000); // 2 minutes
     return () => clearInterval(interval);
   }, []);
 

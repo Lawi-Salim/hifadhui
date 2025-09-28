@@ -18,9 +18,11 @@ import {
   FiMonitor,
   FiSettings,
   FiLogOut,
-  FiChevronLeft,
-  FiChevronRight,
-  FiAlertTriangle
+  FiAlertTriangle,
+  FiMenu,
+  FiX,
+  FiMail,
+  FiBell
 } from 'react-icons/fi';
 import UserMenu from './UserMenu';
 import './Sidebar.css';
@@ -82,6 +84,8 @@ const Sidebar = () => {
     menuItems = [
       { path: '/admin/dashboard', label: 'Dashboard Admin', icon: FiBarChart2 },
       { path: '/admin/users', label: 'Utilisateurs', icon: FiUser },
+      { path: '/admin/messages', label: 'Messages', icon: FiMail },
+      { path: '/admin/notifications', label: 'Notifications', icon: FiBell },
       { path: '/admin/files', label: 'Tous les PDFs', icon: FiFileText },
       { path: '/admin/images', label: 'Toutes les Images', icon: FiImage },
       { path: '/admin/activity', label: 'Logs d\'activité', icon: FiActivity },

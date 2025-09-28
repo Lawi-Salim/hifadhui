@@ -9,7 +9,7 @@ const ActivityLog = sequelize.define('ActivityLog', {
   },
   userId: {
     type: DataTypes.UUID,
-    allowNull: false,
+    allowNull: true, // Permet null pour les tentatives d'inscription échouées
     references: {
       model: 'utilisateur',
       key: 'id',

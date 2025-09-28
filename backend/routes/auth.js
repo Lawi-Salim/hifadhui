@@ -9,6 +9,9 @@ import { v4 as uuidv4 } from 'uuid';
 import rateLimit from 'express-rate-limit';
 import { Op } from 'sequelize';
 import { deleteCloudinaryFile } from '../utils/cloudinaryStructure.js';
+import { validateEmail } from '../services/emailDomainValidator.js';
+import NotificationService from '../services/notificationService.js';
+import SecurityMonitor from '../middleware/securityMonitor.js';
 
 const router = express.Router();
 
@@ -86,6 +89,18 @@ router.post('/register', registerValidation, async (req, res) => {
 
     const { username, email, password } = req.body;
 
+    // Validation du domaine email
+    console.log(`🔍 [REGISTER] Tentative d'inscription avec email: ${email} depuis IP: ${req.ip}`);
+    try {
+      await validateEmail(email, req.ip, req.get('User-Agent'), 'register');
+      console.log(`✅ [REGISTER] Email ${email} autorisé`);
+    } catch (domainError) {
+      console.log(`❌ [REGISTER] Email ${email} refusé: ${domainError.message}`);
+      return res.status(400).json({
+        error: domainError.message
+      });
+    }
+
     // Vérifier si l'utilisateur existe déjà
     const existingUser = await Utilisateur.findOne({ where: { email } });
     if (existingUser) {
@@ -100,6 +115,9 @@ router.post('/register', registerValidation, async (req, res) => {
       email,
       password
     });
+
+    // 🔔 Notifier les admins du nouvel utilisateur
+    await NotificationService.notifyNewUserRegistration(user);
 
     // Générer le token
     const token = generateToken(user.id);
@@ -119,7 +137,7 @@ router.post('/register', registerValidation, async (req, res) => {
 });
 
 // Route de connexion
-router.post('/login', loginValidation, async (req, res) => {
+router.post('/login', SecurityMonitor.trackFailedLogin, loginValidation, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -270,6 +288,15 @@ router.post('/forgot-password', forgotPasswordLimiter, forgotPasswordValidation,
     }
 
     const { email } = req.body;
+
+    // Validation du domaine email
+    try {
+      await validateEmail(email, req.ip, req.get('User-Agent'), 'forgot-password');
+    } catch (domainError) {
+      return res.status(400).json({
+        error: domainError.message
+      });
+    }
 
     // Vérifier si l'utilisateur existe
     const user = await Utilisateur.findOne({ where: { email } });

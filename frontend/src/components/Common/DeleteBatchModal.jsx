@@ -58,6 +58,14 @@ const DeleteBatchModal = ({ isOpen, onClose, onConfirm, imageCount, itemType = '
       return imageCount === 1 
         ? 'ce 1 dossier sélectionné' 
         : `ces ${imageCount} dossiers sélectionnés`;
+    } else if (itemType === 'notification') {
+      return imageCount === 1 
+        ? 'cette 1 notification sélectionnée' 
+        : `ces ${imageCount} notifications sélectionnées`;
+    } else if (itemType === 'message') {
+      return imageCount === 1 
+        ? 'ce 1 message sélectionné' 
+        : `ces ${imageCount} messages sélectionnés`;
     } else {
       return imageCount === 1 
         ? 'cet 1 élément sélectionné' 
@@ -108,7 +116,7 @@ DeleteBatchModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   onConfirm: PropTypes.func.isRequired,
   imageCount: PropTypes.number.isRequired,
-  itemType: PropTypes.oneOf(['image', 'pdf', 'file', 'dossier']),
+  itemType: PropTypes.oneOf(['image', 'pdf', 'file', 'dossier', 'notification', 'message']),
   selectedItems: PropTypes.array,
 };
 

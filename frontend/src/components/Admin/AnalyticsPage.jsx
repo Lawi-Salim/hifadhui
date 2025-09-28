@@ -34,6 +34,12 @@ const AnalyticsPage = () => {
     fetchReportData();
   }, [selectedPeriod, selectedReport, dateRange]);
 
+  // Actualisation automatique toutes les 30 minutes
+  useEffect(() => {
+    const interval = setInterval(fetchReportData, 1800000); // 30 minutes
+    return () => clearInterval(interval);
+  }, []);
+
   const fetchReportData = async () => {
     try {
       setLoading(true);

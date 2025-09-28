@@ -6,6 +6,9 @@ import ActivityLog from './ActivityLog.js';
 import FileShare from './FileShare.js';
 import PasswordResetToken from './PasswordResetToken.js';
 import UserSession from './UserSession.js';
+import Message from './Message.js';
+import MessageAttachment from './MessageAttachment.js';
+import Notification from './Notification.js';
 
 // Définition des associations
 
@@ -108,6 +111,49 @@ UserSession.belongsTo(Utilisateur, {
   as: 'user'
 });
 
+// 9. Relations Messages
+Message.hasMany(MessageAttachment, {
+  foreignKey: 'messageId',
+  as: 'attachments'
+});
+
+MessageAttachment.belongsTo(Message, {
+  foreignKey: 'messageId',
+  as: 'message'
+});
+
+// Relations auto-référentielles pour les threads et réponses
+Message.hasMany(Message, {
+  foreignKey: 'threadId',
+  as: 'threadMessages'
+});
+
+Message.belongsTo(Message, {
+  foreignKey: 'threadId',
+  as: 'thread'
+});
+
+Message.hasMany(Message, {
+  foreignKey: 'replyTo',
+  as: 'replies'
+});
+
+Message.belongsTo(Message, {
+  foreignKey: 'replyTo',
+  as: 'originalMessage'
+});
+
+// 8. Relations Notification
+Notification.belongsTo(Utilisateur, {
+  foreignKey: 'userId',
+  as: 'user'
+});
+
+Utilisateur.hasMany(Notification, {
+  foreignKey: 'userId',
+  as: 'notifications'
+});
+
 export {
   sequelize,
   Utilisateur,
@@ -116,5 +162,8 @@ export {
   ActivityLog,
   FileShare,
   PasswordResetToken,
-  UserSession
+  UserSession,
+  Message,
+  MessageAttachment,
+  Notification
 };

@@ -2,6 +2,9 @@
 -- SUPPRESSION DES TABLES (POUR LE DÉVELOPPEMENT)
 -- ========================================
 -- L'ordre est important à cause des clés étrangères
+DROP TABLE IF EXISTS Notifications CASCADE;
+DROP TABLE IF EXISTS MessageAttachments CASCADE;
+DROP TABLE IF EXISTS Messages CASCADE;
 DROP TABLE IF EXISTS UserSessions CASCADE;
 DROP TABLE IF EXISTS FileShares CASCADE;
 DROP TABLE IF EXISTS File CASCADE;
@@ -109,6 +112,56 @@ CREATE TABLE FileShares (
 );
 
 -- ========================================
+-- TABLE : Messages (Système de messagerie admin)
+-- ========================================
+CREATE TABLE Messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    -- Type de message
+    type VARCHAR(50) NOT NULL CHECK (type IN ('contact_received', 'email_sent', 'email_received', 'notification', 'alert')),
+    
+    -- Informations du message
+    subject VARCHAR(500) NOT NULL,
+    content TEXT NOT NULL,
+    html_content TEXT, -- Version HTML pour les emails
+    
+    -- Expéditeur et destinataire
+    sender_email VARCHAR(255), -- Email de l'expéditeur (pour contact_received)
+    sender_name VARCHAR(255), -- Nom de l'expéditeur (pour contact_received)
+    recipient_email VARCHAR(255), -- Email du destinataire (pour email_sent)
+    
+    -- Statut et métadonnées
+    status VARCHAR(50) DEFAULT 'unread' CHECK (status IN ('unread', 'read', 'replied', 'archived', 'deleted')),
+    priority VARCHAR(20) DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+    
+    -- Métadonnées techniques
+    message_id VARCHAR(255), -- ID du message email (pour tracking)
+    thread_id UUID REFERENCES Messages(id) ON DELETE SET NULL, -- Pour les conversations
+    reply_to UUID REFERENCES Messages(id) ON DELETE SET NULL, -- Message auquel on répond
+    
+    -- Données supplémentaires
+    metadata JSONB, -- Infos supplémentaires (IP, user-agent, etc.)
+    
+    -- Dates
+    sent_at TIMESTAMP, -- Date d'envoi (pour email_sent)
+    read_at TIMESTAMP, -- Date de lecture
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========================================
+-- TABLE : MessageAttachments (Pièces jointes des messages)
+-- ========================================
+CREATE TABLE MessageAttachments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    message_id UUID NOT NULL REFERENCES Messages(id) ON DELETE CASCADE,
+    filename VARCHAR(255) NOT NULL,
+    file_url TEXT NOT NULL, -- URL Cloudinary ou locale
+    mimetype VARCHAR(100),
+    size BIGINT, -- Taille en octets
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========================================
 -- TABLE : UserSessions (Sessions utilisateur avec données techniques)
 -- ========================================
 CREATE TABLE UserSessions (
@@ -136,23 +189,84 @@ CREATE TABLE UserSessions (
 );
 
 -- ========================================
+-- TABLE : Notifications (Système de notifications admin)
+-- ========================================
+CREATE TABLE Notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    type VARCHAR(50) NOT NULL DEFAULT 'system' CHECK (type IN (
+        'system', 'security', 'user_activity', 'file_activity', 
+        'email', 'maintenance', 'backup', 'storage', 'error', 'success'
+    )),
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    priority VARCHAR(20) NOT NULL DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+    status VARCHAR(20) NOT NULL DEFAULT 'unread' CHECK (status IN ('unread', 'read', 'archived')),
+    userId UUID REFERENCES Utilisateur(id) ON DELETE SET NULL,
+    relatedEntityType VARCHAR(50),
+    relatedEntityId UUID,
+    actionUrl VARCHAR(500),
+    metadata JSONB DEFAULT '{}',
+    read_at TIMESTAMP WITH TIME ZONE,
+    archived_at TIMESTAMP WITH TIME ZONE,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- ========================================
 -- INDEXES (performance)
 -- ========================================
+
+-- Index pour les fichiers
 CREATE INDEX idx_file_owner_id ON File(owner_id);
+
+-- Index pour les dossiers 
 CREATE INDEX idx_dossier_parent_id ON Dossier(parent_id);
+
+-- Index pour les utilisateurs
 CREATE INDEX idx_utilisateur_role ON Utilisateur(role);
 CREATE INDEX idx_utilisateur_google_id ON Utilisateur(google_id);
 CREATE INDEX idx_utilisateur_provider ON Utilisateur(provider);
 CREATE INDEX idx_utilisateur_email_provider ON Utilisateur(email, provider);
+
+-- Index pour les logs d'activités
 CREATE INDEX idx_activitylogs_user_id ON ActivityLogs(user_id);
 CREATE INDEX idx_activitylogs_action_type ON ActivityLogs(action_type);
+
+-- Index pour les fichiers partagés
 CREATE INDEX idx_fileshares_file_id ON FileShares(file_id);
 CREATE INDEX idx_fileshares_token ON FileShares(token);
 CREATE INDEX idx_fileshares_expires_at ON FileShares(expires_at);
 CREATE INDEX idx_fileshares_created_by ON FileShares(created_by);
+
+-- Index pour les réinitialisations des mots de passe
 CREATE INDEX idx_password_reset_tokens_token ON passwordresettokens(token);
 CREATE INDEX idx_password_reset_tokens_email ON passwordresettokens(email);
 CREATE INDEX idx_password_reset_tokens_expires_at ON passwordresettokens(expires_at);
+
+-- Index pour les messages
+CREATE INDEX idx_messages_type ON Messages(type);
+CREATE INDEX idx_messages_status ON Messages(status);
+CREATE INDEX idx_messages_priority ON Messages(priority);
+CREATE INDEX idx_messages_sender_email ON Messages(sender_email);
+CREATE INDEX idx_messages_recipient_email ON Messages(recipient_email);
+CREATE INDEX idx_messages_created_at ON Messages(created_at);
+CREATE INDEX idx_messages_read_at ON Messages(read_at);
+CREATE INDEX idx_messages_thread_id ON Messages(thread_id);
+CREATE INDEX idx_messages_reply_to ON Messages(reply_to);
+CREATE INDEX idx_messages_message_id ON Messages(message_id);
+
+-- Index pour les pièces jointes
+CREATE INDEX idx_message_attachments_message_id ON MessageAttachments(message_id);
+
+-- Index pour les notifications
+CREATE INDEX idx_notifications_user_status ON Notifications(userId, status);
+CREATE INDEX idx_notifications_type_priority ON Notifications(type, priority);
+CREATE INDEX idx_notifications_created_at ON Notifications(created_at);
+CREATE INDEX idx_notifications_status_created ON Notifications(status, created_at);
+CREATE INDEX idx_notifications_expires_at ON Notifications(expires_at);
+CREATE INDEX idx_notifications_priority ON Notifications(priority);
+CREATE INDEX idx_notifications_status ON Notifications(status);
 
 -- Index pour la période de grâce
 CREATE INDEX idx_utilisateur_deleted_at ON Utilisateur(deleted_at);
@@ -218,6 +332,16 @@ EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_usersessions_updated
 BEFORE UPDATE ON UserSessions
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_messages_updated
+BEFORE UPDATE ON Messages
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_notifications_updated
+BEFORE UPDATE ON Notifications
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 

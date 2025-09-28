@@ -287,6 +287,43 @@ class EmailService {
   }
 
   /**
+   * Envoie un email personnalisé
+   */
+  async sendCustomEmail({ to, cc, bcc, subject, content, htmlContent }) {
+    const mailOptions = {
+      from: {
+        name: 'Hifadhui',
+        address: process.env.SMTP_FROM || process.env.SMTP_USER || 'mavuna@hifadhui.site'
+      },
+      to,
+      cc: cc || undefined,
+      bcc: bcc || undefined,
+      subject,
+      text: content,
+      html: htmlContent || content.replace(/\n/g, '<br>')
+    };
+
+    try {
+      const info = await this.transporter.sendMail(mailOptions);
+      
+      // En développement avec Ethereal, afficher l'URL de prévisualisation
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📧 Custom email sent');
+        console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
+      }
+      
+      return {
+        success: true,
+        messageId: info.messageId,
+        previewUrl: nodemailer.getTestMessageUrl(info)
+      };
+    } catch (error) {
+      console.error('❌ Failed to send custom email:', error);
+      throw new Error('Échec de l\'envoi de l\'email personnalisé');
+    }
+  }
+
+  /**
    * Envoie un email de rappel avant suppression définitive
    */
   async sendAccountDeletionReminderEmail(email, username, deletionScheduledAt, recoveryToken, daysRemaining) {

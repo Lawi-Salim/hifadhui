@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FiArrowLeft, FiFileText, FiShield, FiAlertTriangle, FiUsers, FiCreditCard, FiBookOpen } from 'react-icons/fi';
+import { FiArrowLeft, FiFileText, FiShield, FiAlertTriangle, FiUsers, FiCreditCard, FiBookOpen, FiLock, FiCheckCircle } from 'react-icons/fi';
 import './LegalPages.css';
 
 const TermsOfService = () => {
@@ -147,6 +147,67 @@ const TermsOfService = () => {
               <li>Faciliter le partage selon vos instructions</li>
               <li>Assurer la sécurité et les sauvegardes</li>
             </ul>
+          </section>
+
+          {/* Surveillance et données techniques */}
+          <section className="legal-section">
+            <div className="section-header">
+              <FiShield className="section-icon" />
+              <h2>Surveillance et collecte de données techniques</h2>
+            </div>
+            
+            <h3>Finalités de la collecte</h3>
+            <p>
+              En utilisant Hifadhui, vous acceptez que nous collections et analysions des données techniques pour :
+            </p>
+            <ul>
+              <li><strong>Sécurité du service</strong> : Détection d'activités suspectes et de tentatives d'intrusion</li>
+              <li><strong>Amélioration continue</strong> : Optimisation des performances et de l'expérience utilisateur</li>
+              <li><strong>Support technique</strong> : Diagnostic et résolution rapide des problèmes</li>
+              <li><strong>Conformité légale</strong> : Respect des obligations réglementaires</li>
+            </ul>
+
+            <h3>Données collectées automatiquement</h3>
+            <div className="privacy-notice">
+              <p><strong>Informations techniques collectées :</strong></p>
+              <ul>
+                <li>Adresse IP publique et géolocalisation approximative</li>
+                <li>Informations sur le navigateur et le système d'exploitation</li>
+                <li>Historique des connexions et des actions effectuées</li>
+                <li>Données de performance et d'utilisation du service</li>
+                <li>Journaux d'accès et de sécurité</li>
+              </ul>
+            </div>
+
+            <h3>Tableau de bord administrateur</h3>
+            <p>
+              Les administrateurs autorisés peuvent consulter des analyses agrégées et anonymisées via un tableau de bord sécurisé pour :
+            </p>
+            <ul>
+              <li>Surveiller la sécurité globale du service</li>
+              <li>Analyser les tendances d'utilisation</li>
+              <li>Optimiser les performances techniques</li>
+              <li>Détecter et prévenir les abus</li>
+            </ul>
+
+            <h3>Vos droits et garanties</h3>
+            <div className="privacy-highlight">
+              <h4><FiShield className="section-icon" /> Protections mises en place</h4>
+              <ul>
+                <li><strong>Anonymisation automatique</strong> : Données personnelles anonymisées après 90 jours</li>
+                <li><strong>Accès restreint</strong> : Seuls les administrateurs autorisés peuvent consulter ces données</li>
+                <li><strong>Finalité limitée</strong> : Utilisation exclusivement pour la sécurité et l'amélioration du service</li>
+                <li><strong>Pas de commercialisation</strong> : Aucune vente ou partage à des fins commerciales</li>
+                <li><strong>Droit d'accès</strong> : Vous pouvez demander l'accès à vos données techniques</li>
+                <li><strong>Droit de suppression</strong> : Vous pouvez demander la suppression de vos données</li>
+              </ul>
+            </div>
+
+            <h3>Consentement et acceptation</h3>
+            <p>
+              En utilisant Hifadhui, vous consentez explicitement à cette collecte de données techniques. 
+              Ce consentement peut être retiré à tout moment en cessant d'utiliser le service ou en nous contactant.
+            </p>
           </section>
 
           {/* Tarification */}
@@ -320,7 +381,7 @@ const TermsOfService = () => {
             <p>Pour toute question concernant ces conditions d'utilisation :</p>
             
             <div className="contact-info">
-              <div className="contact-item">
+              {/* <div className="contact-item">
                 <strong>Support général :</strong> <a href="mailto:mavuna@hifadhui.site">mavuna@hifadhui.site</a>
               </div>
               <div className="contact-item">
@@ -328,7 +389,7 @@ const TermsOfService = () => {
               </div>
               <div className="contact-item">
                 <strong>Signalement d'abus :</strong> <a href="mailto:mavuna@hifadhui.site">mavuna@hifadhui.site</a>
-              </div>
+              </div> */}
               <div className="contact-item">
                 <strong>Site web :</strong> <a href="https://hifadhui.site">https://hifadhui.site</a>
               </div>

@@ -30,6 +30,8 @@ import SystemPage from './components/Admin/SystemPage.jsx';
 import AnalyticsPage from './components/Admin/AnalyticsPage.jsx';
 import ReportsPage from './components/Admin/ReportsPage.jsx';
 import TechnicalPage from './components/Admin/TechnicalPage.jsx';
+import MessagesPage from './components/Admin/MessagesPage.jsx';
+import NotificationsPage from './components/Admin/NotificationsPage.jsx';
 import UserImages from './components/Admin/UserImages.jsx';
 import UserFiles from './components/Admin/UserFiles.jsx';
 import AdminRoute from './components/routes/AdminRoute.jsx';
@@ -173,6 +175,8 @@ function AppContent() {
           } />
           <Route element={<AdminRoute />}>
             <Route path="/admin/users" element={<ListeUtilisateurs />} />
+            <Route path="/admin/messages" element={<MessagesPage />} />
+            <Route path="/admin/notifications" element={<NotificationsPage />} />
             <Route path="/admin/images" element={<UserImages />} />
             <Route path="/admin/files" element={<UserFiles />} />
             <Route path="/admin/activity" element={<ActivityPage />} />

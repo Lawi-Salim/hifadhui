@@ -1,0 +1,582 @@
+/* Email Composer - Gmail Style */
+.email-composer-overlay {
+  position: fixed;
+  bottom: 0;
+  right: 20px;
+  z-index: 9999;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  direction: ltr;
+}
+
+.email-composer-overlay * {
+  direction: ltr;
+}
+
+.email-composer-overlay.fullscreen {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.email-composer {
+  background: var(--surface-color);
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.15);
+  width: 500px;
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-bottom: none;
+  transition: all 0.3s ease;
+}
+
+.email-composer.minimized {
+  height: 40px;
+  overflow: hidden;
+}
+
+.email-composer.fullscreen-mode {
+  width: 90vw;
+  max-width: 1000px;
+  height: 90vh;
+  max-height: none;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.email-composer.fullscreen-mode .composer-content {
+  max-height: none;
+  flex: 1;
+}
+
+/* Header */
+.composer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 8px 8px 0 0;
+  cursor: move;
+}
+
+.composer-title {
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.composer-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.composer-control-btn {
+  background: none;
+  border: none;
+  color: white;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.composer-control-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.composer-close:hover {
+  background: rgba(255, 0, 0, 0.2);
+}
+
+/* Body */
+.composer-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Recipients */
+.composer-recipients {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.recipient-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.recipient-row:last-child {
+  margin-bottom: 0;
+}
+
+.recipient-row label {
+  min-width: 40px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.recipient-row input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 6px 0;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.recipient-row input:focus {
+  border-bottom-color: var(--primary-color);
+}
+
+.recipient-row input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Input wrapper pour les erreurs */
+.input-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-wrapper input {
+  flex: 1;
+}
+
+.input-wrapper input.error {
+  border-bottom-color: #ef4444 !important;
+  color: #ef4444;
+}
+
+.input-wrapper input.error:focus {
+  border-bottom-color: #ef4444 !important;
+}
+
+/* Indicateur d'erreur */
+.error-indicator {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #ef4444;
+  cursor: help;
+  display: flex;
+  align-items: center;
+}
+
+.error-tooltip {
+  position: absolute;
+  right: 25px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #ef4444;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.error-indicator:hover .error-tooltip {
+  opacity: 1;
+}
+
+.cc-bcc-toggle {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.cc-bcc-toggle:hover {
+  background: var(--border-color);
+}
+
+.sender-email {
+  flex: 1;
+  padding: 6px 0;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+/* Toolbar */
+.composer-toolbar {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--background-color);
+}
+
+.toolbar-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.toolbar-btn {
+  background: none;
+  border: none;
+  padding: 8px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.toolbar-btn:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+.format-btn {
+  background: none;
+  border: none;
+  padding: 6px;
+  border-radius: 3px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.format-btn:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+.format-btn:active,
+.format-btn.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+/* Content Editor */
+.content-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.composer-content {
+  flex: 1;
+  padding: 16px;
+  min-height: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+  outline: none;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--surface-color);
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: normal !important;
+  writing-mode: horizontal-tb !important;
+  resize: none;
+  border: none;
+  font-family: inherit;
+  transition: border-color 0.2s ease;
+}
+
+.composer-content.error {
+  border: 2px solid #ef4444;
+  border-radius: 4px;
+}
+
+.content-error-indicator {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  color: #ef4444;
+  cursor: help;
+  display: flex;
+  align-items: center;
+  background: var(--surface-color);
+  padding: 4px;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.content-error-indicator .error-tooltip {
+  right: 30px;
+  top: 50%;
+}
+
+.composer-content::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.composer-content p {
+  margin: 0 0 1em 0;
+}
+
+.composer-content p:last-child {
+  margin-bottom: 0;
+}
+
+.composer-content ul, .composer-content ol {
+  margin: 0 0 1em 20px;
+  padding: 0;
+}
+
+.composer-content a {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+/* Forcer la direction LTR pour tous les éléments de texte */
+.composer-content *,
+.composer-content::before,
+.composer-content::after {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: normal !important;
+  writing-mode: horizontal-tb !important;
+}
+
+.composer-content br {
+  display: block;
+  content: "";
+  margin-top: 0.5em;
+}
+
+/* Styles spécifiques pour le contenu éditable */
+.composer-content[contenteditable="true"] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  cursor: text;
+}
+
+.composer-content[contenteditable="true"]:focus {
+  direction: ltr !important;
+  text-align: left !important;
+}
+
+/* Attachments */
+.composer-attachments {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-color);
+  background: var(--background-color);
+}
+
+.attachments-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.attachments-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  font-size: 0.75rem;
+}
+
+.attachment-name {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.attachment-size {
+  color: var(--text-secondary);
+}
+
+.attachment-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.attachment-remove:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+/* Footer */
+.composer-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-color);
+  background: var(--background-color);
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.send-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.send-btn:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.send-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.general-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ef4444;
+  font-size: 0.75rem;
+  background: rgba(239, 68, 68, 0.1);
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.composer-shortcuts {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .email-composer {
+    width: 100vw;
+    height: 100vh;
+    max-height: none;
+    border-radius: 0;
+    bottom: 0;
+    right: 0;
+  }
+  
+  .email-composer.minimized {
+    height: 50px;
+  }
+  
+  .composer-content {
+    min-height: 150px;
+  }
+  
+  .recipient-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  
+  .recipient-row label {
+    min-width: auto;
+  }
+  
+  .composer-footer {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .send-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Animation */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.email-composer {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .composer-content {
+    caret-color: var(--text-primary);
+  }
+  
+  .composer-content::selection {
+    background: var(--primary-color);
+    color: white;
+  }
+}

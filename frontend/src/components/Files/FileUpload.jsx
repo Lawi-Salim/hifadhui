@@ -79,13 +79,13 @@ const FileUpload = () => {
     const formData = new FormData();
     formData.append('document', file);
 
+    // Déclarer les variables au niveau supérieur pour être accessibles dans catch
+    let extractionInterval;
+    let realFiles = [];
+
     try {
       // Choisir la route selon le type de fichier
       const isZip = file.type === 'application/zip' || file.type === 'application/x-zip-compressed';
-      
-      // Pour les fichiers ZIP, obtenir la liste réelle des fichiers
-      let extractionInterval;
-      let realFiles = [];
       
       if (isZip) {
         // Première étape : obtenir la liste des fichiers du ZIP
@@ -133,8 +133,13 @@ const FileUpload = () => {
         headers: {
           'Content-Type': 'multipart/form-data'
         },
+        timeout: 90000, // 1.5 minutes pour les uploads de fichiers (5MB max + traitement)
         onUploadProgress: (progressEvent) => {
           // Progression gérée par le hook useProgressBar
+          // Quand l'upload atteint 100%, indiquer le traitement
+          if (progressEvent.loaded === progressEvent.total) {
+            globalProgressBar.updateCurrentItem(isZip ? 'Traitement et extraction en cours...' : 'Finalisation...');
+          }
         }
       });
 
@@ -143,26 +148,72 @@ const FileUpload = () => {
         clearInterval(extractionInterval);
       }
       globalProgressBar.completeProgress();
-      
-      // Attendre un peu pour montrer 100%
-      await new Promise(resolve => setTimeout(resolve, 200));
 
-      // Vérifier si la réponse indique un succès réel
-      if (response.status === 200 || response.status === 201) {
+      // Vérifier si la réponse indique un succès réel (logs pour debug)
+      console.log('Response status:', response.status);
+      console.log('Response data:', response.data);
+      
+      // Ne pas afficher de message ici car le hook useProgressBar gère déjà le message de succès
+      // Le message "Upload terminé avec succès !" du hook est suffisant
+      
+      if (response.status < 200 || response.status >= 300) {
+        // Afficher seulement en cas d'erreur/statut inattendu
+        console.warn('Statut de réponse inattendu:', response.status);
         setMessage({
-          type: 'success',
-          text: 'Fichier uploadé avec succès!'
+          type: 'warning',
+          text: `Upload terminé avec le statut ${response.status}`
         });
       }
 
-      // Pas de redirection automatique - laisser l'utilisateur sur la page d'upload
-
     } catch (error) {
       console.error('Erreur upload:', error);
+      
+      // Nettoyer les intervalles en cas d'erreur
+      if (extractionInterval) {
+        clearInterval(extractionInterval);
+      }
+      
+      // Diagnostic détaillé de l'erreur
+      let errorMessage = 'Erreur lors de l\'upload du fichier';
+      
+      if (error.response) {
+        // Le serveur a répondu avec un code d'erreur
+        console.error('Status:', error.response.status);
+        console.error('Data:', error.response.data);
+        console.error('Headers:', error.response.headers);
+        
+        if (error.response.status === 413) {
+          errorMessage = 'Fichier trop volumineux pour le serveur';
+        } else if (error.response.status === 415) {
+          errorMessage = 'Type de fichier non supporté par le serveur';
+        } else if (error.response.status === 500) {
+          errorMessage = 'Erreur interne du serveur lors du traitement';
+        } else if (error.response.status === 408) {
+          errorMessage = 'Timeout du serveur - le traitement a pris trop de temps';
+        } else {
+          errorMessage = error.response.data?.error || error.response.data?.message || `Erreur serveur (${error.response.status})`;
+        }
+      } else if (error.request) {
+        // La requête a été faite mais pas de réponse
+        console.error('Request:', error.request);
+        if (error.code === 'ECONNABORTED') {
+          errorMessage = 'Timeout - le traitement du fichier a pris trop de temps';
+        } else {
+          errorMessage = 'Pas de réponse du serveur (connexion interrompue)';
+        }
+      } else {
+        // Erreur lors de la configuration de la requête
+        console.error('Error:', error.message);
+        errorMessage = `Erreur de configuration: ${error.message}`;
+      }
+      
       setMessage({
         type: 'error',
-        text: error.response?.data?.error || 'Erreur lors de l\'upload du fichier'
+        text: errorMessage
       });
+      
+      // Réinitialiser la barre de progression en cas d'erreur
+      globalProgressBar.resetProgress();
     } finally {
       // Les barres de progression se réinitialisent automatiquement après un délai
     }

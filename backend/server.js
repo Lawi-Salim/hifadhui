@@ -16,18 +16,20 @@ const __dirname = path.dirname(__filename);
 import { sequelize } from './config/database.js';
 import authRoutes from './routes/auth.js';
 import { createAdmin } from './scripts/create-admin.js';
-import { startAutomaticCleanup } from './utils/dataCleanup.js';
 import adminRoutes from './routes/admin.js';
 import fileRoutes from './routes/files.js';
 import dossierRoutes from './routes/dossiers.js';
 import shareRoutes from './routes/shares.js';
 import bulkActionsRoutes from './routes/bulkActions.js';
 import contactRoutes from './routes/contact.js';
+import messagesRoutes from './routes/messages.js';
+import webhooksRoutes from './routes/webhooks.js';
+import notificationsRoutes from './routes/notifications.js';
+import { startAutomaticCleanup } from './utils/dataCleanup.js';
+import SchedulerService from './services/schedulerService.js';
 
 // Importation des modèles et associations depuis l'index des modèles
 import passport from './config/passport.js';
-
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -144,6 +146,9 @@ app.use('/api/v1/dossiers', dossierRoutes);
 app.use('/api/v1/bulk-actions', bulkActionsRoutes);
 app.use('/api/v1/share', shareRoutes); // Route publique pour accéder aux fichiers partagés
 app.use('/api/v1/contact', contactRoutes);
+app.use('/api/v1/messages', messagesRoutes);
+app.use('/api/v1/webhooks', webhooksRoutes);
+app.use('/api/v1/notifications', notificationsRoutes);
 
 
 // Route pour les partages publics - servir l'app React directement
@@ -367,6 +372,12 @@ if (process.env.VERCEL) {
     try {
       await sequelize.authenticate();
       console.log('✅ Connexion à la base de données réussie');
+      
+      // Synchroniser les nouveaux modèles (notifications)
+      const { Notification } = await import('./models/index.js');
+      await Notification.sync({ alter: true });
+      console.log('✅ Table notifications synchronisée');
+      
       await createAdmin();
       
       app.listen(PORT, () => {
@@ -374,6 +385,9 @@ if (process.env.VERCEL) {
         
         // Démarrer le nettoyage automatique des données
         startAutomaticCleanup();
+        
+        // Initialiser les tâches programmées de notifications
+        SchedulerService.init();
       });
     } catch (error) {
       console.error('❌ Erreur de démarrage:', error.message);

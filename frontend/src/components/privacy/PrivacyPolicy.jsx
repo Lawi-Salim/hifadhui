@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FiArrowLeft, FiShield, FiLock, FiEye, FiDatabase, FiMail, FiUsers } from 'react-icons/fi';
+import { FiArrowLeft, FiShield, FiLock, FiEye, FiDatabase, FiMail, FiUsers, FiMonitor, FiGlobe, FiActivity, FiZap, FiCheckCircle } from 'react-icons/fi';
 import './LegalPages.css';
 
 const PrivacyPolicy = () => {
@@ -57,12 +57,51 @@ const PrivacyPolicy = () => {
               <li><strong>Organisation</strong> : Structure de dossiers et organisation de vos documents</li>
             </ul>
 
-            <h3>Données techniques</h3>
+            <h3>Données techniques et de sécurité</h3>
             <ul>
-              <li><strong>Adresse IP</strong> : Pour la sécurité et la géolocalisation</li>
-              <li><strong>Informations de navigation</strong> : Type de navigateur, système d'exploitation</li>
-              <li><strong>Journaux d'activité</strong> : Actions effectuées pour la sécurité</li>
+              <li><strong>Adresse IP publique</strong> : Pour la sécurité, géolocalisation et détection d'anomalies</li>
+              <li><strong>Informations de navigation</strong> : 
+                <ul>
+                  <li>Type et version du navigateur (Chrome, Firefox, Safari, etc.)</li>
+                  <li>Système d'exploitation (Windows, macOS, Linux, iOS, Android)</li>
+                  <li>Résolution d'écran et informations d'affichage</li>
+                  <li>User-Agent complet pour l'identification technique</li>
+                </ul>
+              </li>
+              <li><strong>Données de géolocalisation</strong> : 
+                <ul>
+                  <li>Pays, région et ville approximative basés sur l'IP</li>
+                  <li>Fournisseur d'accès Internet (FAI)</li>
+                  <li>Fuseau horaire automatiquement détecté</li>
+                </ul>
+              </li>
+              <li><strong>Journaux d'activité détaillés</strong> : 
+                <ul>
+                  <li>Historique des connexions avec horodatage précis</li>
+                  <li>Actions effectuées (upload, téléchargement, partage, suppression)</li>
+                  <li>Tentatives de connexion (réussies et échouées)</li>
+                  <li>Accès aux fichiers partagés avec comptage des consultations</li>
+                </ul>
+              </li>
+              <li><strong>Données de performance</strong> : 
+                <ul>
+                  <li>Temps de chargement des pages</li>
+                  <li>Erreurs techniques rencontrées</li>
+                  <li>Statistiques d'utilisation des fonctionnalités</li>
+                </ul>
+              </li>
+              <li><strong>Empreinte technique</strong> : 
+                <ul>
+                  <li>Informations sur les plugins et extensions installés</li>
+                  <li>Préférences de langue du navigateur</li>
+                  <li>Informations sur les cookies et le stockage local</li>
+                </ul>
+              </li>
             </ul>
+            
+            <div className="privacy-notice">
+              <p><strong><FiLock style={{display: 'inline', marginRight: '8px'}} />Engagement de confidentialité :</strong> Toutes les données techniques sont collectées uniquement à des fins de sécurité, d'amélioration du service et de détection d'activités suspectes. Elles sont automatiquement anonymisées après 90 jours et ne sont jamais partagées avec des tiers.</p>
+            </div>
           </section>
 
           {/* Utilisation des données */}
@@ -77,9 +116,70 @@ const PrivacyPolicy = () => {
               <li><strong>Authentification</strong> : Vérification de votre identité et sécurisation de votre compte</li>
               <li><strong>Communication</strong> : Notifications importantes, mises à jour de sécurité</li>
               <li><strong>Amélioration du service</strong> : Analyse d'usage pour optimiser l'expérience</li>
-              <li><strong>Sécurité</strong> : Détection et prévention des activités malveillantes</li>
+              <li><strong>Sécurité avancée</strong> : 
+                <ul>
+                  <li>Détection d'activités suspectes et de tentatives d'intrusion</li>
+                  <li>Analyse des patterns de connexion pour identifier les anomalies</li>
+                  <li>Surveillance géographique pour détecter les accès inhabituels</li>
+                  <li>Monitoring des plateformes et navigateurs pour la sécurité</li>
+                </ul>
+              </li>
               <li><strong>Support technique</strong> : Assistance et résolution de problèmes</li>
+              <li><strong>Conformité légale</strong> : Respect des obligations légales et réglementaires</li>
             </ul>
+          </section>
+
+          {/* Analyse technique et surveillance */}
+          <section className="legal-section">
+            <div className="section-header">
+              <FiDatabase className="section-icon" />
+              <h2>Analyse technique et surveillance</h2>
+            </div>
+            
+            <h3>Dashboard administrateur</h3>
+            <p>
+              Pour assurer la sécurité et la qualité du service, nous collectons et analysons des données techniques via un tableau de bord administrateur sécurisé :
+            </p>
+            
+            <h4><FiMonitor className="section-icon" /> Analyse des plateformes</h4>
+            <ul>
+              <li><strong>Navigateurs utilisés</strong> : Statistiques d'usage (Chrome, Firefox, Safari, etc.)</li>
+              <li><strong>Systèmes d'exploitation</strong> : Répartition des plateformes (Windows, macOS, Linux, mobile)</li>
+              <li><strong>Versions et compatibilité</strong> : Suivi des versions pour optimiser la compatibilité</li>
+            </ul>
+
+            <h4><FiGlobe className="section-icon" /> Analyse géographique</h4>
+            <ul>
+              <li><strong>Répartition géographique</strong> : Pays et régions d'utilisation du service</li>
+              <li><strong>Détection d'anomalies</strong> : Connexions depuis des localisations inhabituelles</li>
+              <li><strong>Optimisation réseau</strong> : Amélioration des performances selon les régions</li>
+            </ul>
+
+            <h4><FiActivity className="section-icon" /> Historique des connexions</h4>
+            <ul>
+              <li><strong>Journaux de connexion</strong> : Horodatage, IP, navigateur, localisation</li>
+              <li><strong>Détection de fraude</strong> : Identification des tentatives d'accès non autorisées</li>
+              <li><strong>Analyse comportementale</strong> : Patterns d'utilisation pour la sécurité</li>
+              <li><strong>Rétention limitée</strong> : Données automatiquement supprimées après 90 jours</li>
+            </ul>
+
+            <h4><FiZap className="section-icon" /> Monitoring technique</h4>
+            <ul>
+              <li><strong>Performance du service</strong> : Temps de réponse, disponibilité, erreurs</li>
+              <li><strong>Utilisation des ressources</strong> : Optimisation de l'infrastructure</li>
+              <li><strong>Diagnostics d'erreurs</strong> : Identification et résolution rapide des problèmes</li>
+            </ul>
+
+            <div className="privacy-highlight">
+              <h4><FiShield className="section-icon" /> Garanties de confidentialité</h4>
+              <ul>
+                <li><strong>Accès restreint</strong> : Seuls les administrateurs autorisés peuvent consulter ces données</li>
+                <li><strong>Anonymisation automatique</strong> : Les données personnelles sont anonymisées après 90 jours</li>
+                <li><strong>Finalité limitée</strong> : Utilisation exclusivement pour la sécurité et l'amélioration du service</li>
+                <li><strong>Pas de profilage commercial</strong> : Aucune utilisation à des fins publicitaires ou commerciales</li>
+                <li><strong>Conformité RGPD</strong> : Respect strict des réglementations européennes sur la protection des données</li>
+              </ul>
+            </div>
           </section>
 
           {/* Stockage et sécurité */}
@@ -219,7 +319,7 @@ const PrivacyPolicy = () => {
             <p>Pour toute question concernant cette politique de confidentialité :</p>
             
             <div className="contact-info">
-              <div className="contact-item">
+              {/* <div className="contact-item">
                 <strong>Support général :</strong> <a href="mailto:mavuna@hifadhui.site">mavuna@hifadhui.site</a>
               </div>
               <div className="contact-item">
@@ -227,7 +327,7 @@ const PrivacyPolicy = () => {
               </div>
               <div className="contact-item">
                 <strong>Questions juridiques :</strong> <a href="mailto:mavuna@hifadhui.site">mavuna@hifadhui.site</a>
-              </div>
+              </div> */}
               <div className="contact-item">
                 <strong>Site web :</strong> <a href="https://hifadhui.site">https://hifadhui.site</a>
               </div>

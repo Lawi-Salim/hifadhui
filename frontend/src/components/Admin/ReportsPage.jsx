@@ -34,6 +34,12 @@ const ReportsPage = () => {
     fetchReports();
   }, [filter, typeFilter]);
 
+  // Actualisation automatique toutes les 15 minutes
+  useEffect(() => {
+    const interval = setInterval(fetchReports, 900000); // 15 minutes
+    return () => clearInterval(interval);
+  }, []);
+
   const fetchReports = async () => {
     try {
       setLoading(true);

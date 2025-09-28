@@ -5,9 +5,13 @@ README-DEPLOYMENT.md
 *deployment*.md
 !schema-psql.sql
 *.sql
+*test*.*
 
 # Roadmap
 Roadmap-features
+
+# Migrations
+migrations
 
 # Dépendances
 /node_modules
@@ -16,6 +20,7 @@ Roadmap-features
 
 # Fichiers d'environnement
 # Ne jamais versionner les fichiers .env !
+*env*
 .env
 .env.*
 /.env.example

@@ -2,6 +2,83 @@
    PAGES LÉGALES - STYLES GÉNÉRAUX
    ======================================== */
 
+/* Styles pour les nouvelles sections de confidentialité */
+.privacy-notice {
+  background: var(--bg-secondary, #2a2a2a);
+  border: 1px solid var(--primary-color, #007bff);
+  border-radius: 12px;
+  padding: var(--spacing-lg, 1.5rem);
+  margin: var(--spacing-lg, 1.5rem) 0;
+  position: relative;
+}
+
+.privacy-notice::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--primary-color, #007bff);
+  border-radius: 2px 0 0 2px;
+}
+
+.privacy-notice p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-primary, #ffffff);
+}
+
+.privacy-highlight {
+  background: var(--bg-tertiary, #1a1a1a);
+  border: 2px solid var(--success-color, #28a745);
+  border-radius: 16px;
+  padding: var(--spacing-xl, 2rem);
+  margin: var(--spacing-xl, 2rem) 0;
+  position: relative;
+  box-shadow: 0 8px 25px rgba(40, 167, 69, 0.15);
+}
+
+.privacy-highlight::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  background: var(--success-color, #28a745);
+  border-radius: 3px 0 0 3px;
+}
+
+.privacy-highlight h4 {
+  color: var(--success-color, #28a745);
+  margin-top: 0;
+  margin-bottom: var(--spacing-md, 1rem);
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 0.5rem);
+}
+
+.privacy-highlight ul {
+  margin-bottom: 0;
+}
+
+.privacy-highlight li {
+  margin-bottom: var(--spacing-sm, 0.5rem);
+  color: var(--text-primary, #ffffff);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* Styles pour les icônes dans les titres */
+.legal-content h4 .section-icon {
+  margin-right: var(--spacing-sm, 0.5rem);
+  color: var(--primary-color, #007bff);
+}
+
 .legal-page {
   min-height: 100vh;
   background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);

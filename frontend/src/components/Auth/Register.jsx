@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FiEye, FiEyeOff, FiCheck, FiX, FiArrowLeft } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiCheck, FiX, FiArrowLeft, FiAlertTriangle } from 'react-icons/fi';
 import { FaGoogle, FaFacebook, FaGithub } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
+import { validateEmail } from '../../utils/emailDomainValidator';
 import './Auth.css';
 
 const Register = () => {
@@ -107,8 +108,13 @@ const Register = () => {
 
     if (!formData.email) {
       newErrors.email = 'L\'email est requis';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Format d\'email invalide';
+    } else {
+      // Validation de format basique seulement - laisser le backend gérer les domaines
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        newErrors.email = 'Format d\'email invalide';
+      }
+      // Note: La validation des domaines se fait côté backend pour permettre le logging des tentatives
     }
 
     if (!formData.password) {
@@ -201,7 +207,13 @@ const Register = () => {
     if (result.success) {
       navigate('/login');
     } else {
-      setErrors({ general: result.message });
+      // Détecter si c'est une erreur de domaine email
+      if (result.message && result.message.includes('adresse email valide et reconnue')) {
+        setErrors({ email: result.message });
+      } else {
+        // Pour les autres erreurs, les ignorer silencieusement ou les logger
+        console.error('Erreur d\'inscription:', result.message);
+      }
     }
     
     setLoading(false);
@@ -234,11 +246,6 @@ const Register = () => {
           </p>
         </div>
 
-        {errors.general && (
-          <div className="alert alert-error">
-            {errors.general}
-          </div>
-        )}
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-grid">
@@ -246,38 +253,46 @@ const Register = () => {
               <label htmlFor="username" className="form-label">
                 Nom d'utilisateur
               </label>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                className={`form-input ${errors.username ? 'error' : ''}`}
-                placeholder="Votre nom d'utilisateur"
-                disabled={loading}
-              />
-              {errors.username && (
-                <div className="form-error">{errors.username}</div>
-              )}
+              <div className="input-with-icon">
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  className={`form-input ${errors.username ? 'error' : ''}`}
+                  placeholder="Votre nom d'utilisateur"
+                  disabled={loading}
+                />
+                {errors.username && (
+                  <div className="input-error-icon" title={errors.username}>
+                    <FiAlertTriangle />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="form-group">
               <label htmlFor="email" className="form-label">
                 Adresse email
               </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`form-input ${errors.email ? 'error' : ''}`}
-                placeholder="votre@email.com"
-                disabled={loading}
-              />
-              {errors.email && (
-                <div className="form-error">{errors.email}</div>
-              )}
+              <div className="input-with-icon">
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`form-input ${errors.email ? 'error' : ''}`}
+                  placeholder="votre@email.com"
+                  disabled={loading}
+                />
+                {errors.email && (
+                  <div className="input-error-icon" title={errors.email}>
+                    <FiAlertTriangle />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="form-group">
@@ -295,6 +310,11 @@ const Register = () => {
                   placeholder="••••••••"
                   disabled={loading}
                 />
+                {errors.password && (
+                  <div className="password-error-icon" title={errors.password}>
+                    <FiAlertTriangle />
+                  </div>
+                )}
                 <button
                   type="button"
                   className="password-toggle"
@@ -304,9 +324,6 @@ const Register = () => {
                   {showPassword ? <FiEyeOff /> : <FiEye />}
                 </button>
               </div>
-              {errors.password && (
-                <div className="form-error">{errors.password}</div>
-              )}
               
             </div>
 
@@ -325,6 +342,11 @@ const Register = () => {
                   placeholder="••••••••"
                   disabled={loading}
                 />
+                {errors.confirmPassword && (
+                  <div className="password-error-icon" title={errors.confirmPassword}>
+                    <FiAlertTriangle />
+                  </div>
+                )}
                 <button
                   type="button"
                   className="password-toggle"
@@ -334,9 +356,6 @@ const Register = () => {
                   {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
                 </button>
               </div>
-              {errors.confirmPassword && (
-                <div className="password-mismatch-message">{errors.confirmPassword}</div>
-              )}
             </div>
           </div>
 
@@ -403,39 +422,43 @@ const Register = () => {
 
           {/* Checkbox pour accepter les conditions */}
           <div className="form-group terms-checkbox">
-            <label className="checkbox-container">
-              <input
-                type="checkbox"
-                checked={acceptTerms}
-                onChange={(e) => setAcceptTerms(e.target.checked)}
-                disabled={loading}
-                className={errors.acceptTerms ? 'error' : ''}
-              />
-              <span className="checkmark"></span>
-              <span className="checkbox-text">
-                J'accepte les{' '}
-                <Link 
-                  to="/terms" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="terms-link"
-                >
-                  conditions d'utilisation
-                </Link>
-                {' '}et la{' '}
-                <Link 
-                  to="/privacy" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="terms-link"
-                >
-                  politique de confidentialité
-                </Link>
-              </span>
-            </label>
-            {errors.acceptTerms && (
-              <div className="form-error">{errors.acceptTerms}</div>
-            )}
+            <div className="checkbox-with-icon">
+              <label className="checkbox-container">
+                <input
+                  type="checkbox"
+                  checked={acceptTerms}
+                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                  disabled={loading}
+                  className={errors.acceptTerms ? 'error' : ''}
+                />
+                <span className="checkmark"></span>
+                <span className="checkbox-text">
+                  J'accepte les{' '}
+                  <Link 
+                    to="/terms" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="terms-link"
+                  >
+                    conditions d'utilisation
+                  </Link>
+                  {' '}et la{' '}
+                  <Link 
+                    to="/privacy" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="terms-link"
+                  >
+                    politique de confidentialité
+                  </Link>
+                </span>
+              </label>
+              {errors.acceptTerms && (
+                <div className="checkbox-error-icon" title={errors.acceptTerms}>
+                  <FiAlertTriangle />
+                </div>
+              )}
+            </div>
           </div>
 
           <button
