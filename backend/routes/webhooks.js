@@ -13,10 +13,12 @@ const upload = multer();
  */
 router.post('/sendgrid/inbound', upload.any(), async (req, res) => {
   try {
-    console.log('📨 [WEBHOOK] Email entrant reçu');
-    console.log('Headers:', req.headers);
-    console.log('Body:', req.body);
-    console.log('Files:', req.files);
+    console.log('📨 [WEBHOOK] Email entrant reçu - TIMESTAMP:', new Date().toISOString());
+    console.log('📨 [WEBHOOK] User-Agent:', req.headers['user-agent']);
+    console.log('📨 [WEBHOOK] Content-Type:', req.headers['content-type']);
+    console.log('📨 [WEBHOOK] Headers complets:', req.headers);
+    console.log('📨 [WEBHOOK] Body:', req.body);
+    console.log('📨 [WEBHOOK] Files:', req.files);
 
     // Extraire les données de l'email
     const emailData = {
@@ -57,6 +59,30 @@ router.post('/sendgrid/inbound', upload.any(), async (req, res) => {
     });
 
     console.log('✅ [WEBHOOK] Message sauvegardé:', message.id);
+
+    // Forward automatique vers Gmail
+    try {
+      const { emailService } = await import('../services/emailService.js');
+      
+      await emailService.sendEmail({
+        to: 'dahlawibrahim@gmail.com',
+        subject: `[HIFADHUI] ${emailData.subject}`,
+        text: `Email reçu sur mavuna@hifadhui.site\n\nDe: ${emailData.from}\nSujet: ${emailData.subject}\n\n${emailData.text || 'Contenu HTML uniquement'}`,
+        html: emailData.html ? `
+          <div style="border-left: 4px solid #2563eb; padding-left: 16px; margin-bottom: 16px;">
+            <p><strong>Email reçu sur mavuna@hifadhui.site</strong></p>
+            <p><strong>De:</strong> ${emailData.from}</p>
+            <p><strong>Sujet:</strong> ${emailData.subject}</p>
+          </div>
+          ${emailData.html}
+        ` : null
+      });
+      
+      console.log('📧 [WEBHOOK] Email forwardé vers Gmail avec succès');
+    } catch (forwardError) {
+      console.error('⚠️ [WEBHOOK] Erreur lors du forward vers Gmail:', forwardError);
+      // Ne pas faire échouer le webhook si le forward échoue
+    }
 
     // Traiter les pièces jointes si présentes
     if (emailData.attachments.length > 0) {
