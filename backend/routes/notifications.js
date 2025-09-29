@@ -21,15 +21,7 @@ router.use(authorizeAdmin);
  */
 router.get('/', async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 20,
-      type,
-      status,
-      priority,
-      search,
-      category  // Nouveau paramètre pour filtrage par catégorie
-    } = req.query;
+    const { page = 1, limit = 50, category = 'all', type, status, priority, search } = req.query;
 
     // S'assurer que page et limit sont des nombres valides
     const pageNum = parseInt(page) || 1;

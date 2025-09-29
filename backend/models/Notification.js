@@ -61,15 +61,18 @@ const Notification = sequelize.define('Notification', {
   },
   relatedEntityType: {
     type: DataTypes.STRING(50),
-    allowNull: true // 'file', 'user', 'message', etc.
+    allowNull: true, // 'file', 'user', 'message', etc.
+    field: 'relatedentitytype' // Force le nom de colonne en base
   },
   relatedEntityId: {
     type: DataTypes.UUID,
-    allowNull: true
+    allowNull: true,
+    field: 'relatedentityid' // Force le nom de colonne en base
   },
   actionUrl: {
     type: DataTypes.STRING(500),
-    allowNull: true // URL vers l'action à effectuer
+    allowNull: true, // URL vers l'action à effectuer
+    field: 'actionurl' // Force le nom de colonne en base
   },
   metadata: {
     type: DataTypes.JSONB,
@@ -78,25 +81,30 @@ const Notification = sequelize.define('Notification', {
   },
   readAt: {
     type: DataTypes.DATE,
-    allowNull: true
+    allowNull: true,
+    field: 'read_at' // Force le nom de colonne en base
   },
   archivedAt: {
     type: DataTypes.DATE,
-    allowNull: true
+    allowNull: true,
+    field: 'archived_at' // Force le nom de colonne en base
   },
   expiresAt: {
     type: DataTypes.DATE,
-    allowNull: true
+    allowNull: true,
+    field: 'expires_at' // Force le nom de colonne en base
   },
   createdAt: {
     type: DataTypes.DATE,
     allowNull: false,
-    defaultValue: DataTypes.NOW
+    defaultValue: DataTypes.NOW,
+    field: 'created_at' // Force le nom de colonne en base
   },
   updatedAt: {
     type: DataTypes.DATE,
     allowNull: false,
-    defaultValue: DataTypes.NOW
+    defaultValue: DataTypes.NOW,
+    field: 'updated_at' // Force le nom de colonne en base
   }
 }, {
   tableName: 'notifications',
