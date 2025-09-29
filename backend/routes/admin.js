@@ -562,7 +562,7 @@ router.get('/dashboard/charts', [authenticateToken, authorizeAdmin], async (req,
       ],
       where: {
         role: { [Op.ne]: 'admin' },
-        created_at: { [Op.gte]: startDate }
+        createdAt: { [Op.gte]: startDate }
       },
       group: [fn('TO_CHAR', col('created_at'), dateFormat)],
       order: [[fn('TO_CHAR', col('created_at'), dateFormat), 'ASC']],
@@ -657,7 +657,7 @@ router.get('/dashboard/charts', [authenticateToken, authorizeAdmin], async (req,
         [fn('COUNT', fn('DISTINCT', col('user_id'))), 'activeUsers']
       ],
       where: {
-        created_at: { [Op.gte]: startDate }
+        createdAt: { [Op.gte]: startDate }
       },
       group: [fn('DATE', col('created_at'))],
       order: [[fn('DATE', col('created_at')), 'ASC']],
@@ -1574,9 +1574,9 @@ router.get('/technical', authenticateToken, authorizeAdmin, async (req, res) => 
     const allSecurityNotifications = await Notification.findAll({
       where: {
         type: 'security',
-        created_at: { [Op.gte]: startDate }
+        createdAt: { [Op.gte]: startDate }
       },
-      order: [['created_at', 'DESC']],
+      order: [['createdAt', 'DESC']],
       limit: 20
     });
     
@@ -1599,9 +1599,9 @@ router.get('/technical', authenticateToken, authorizeAdmin, async (req, res) => 
             }
           }
         ],
-        created_at: { [Op.gte]: startDate }
+        createdAt: { [Op.gte]: startDate }
       },
-      order: [['created_at', 'DESC']],
+      order: [['createdAt', 'DESC']],
       limit: parseInt(limit),
       offset: (parseInt(page) - 1) * parseInt(limit)
     });
@@ -1630,7 +1630,7 @@ router.get('/technical', authenticateToken, authorizeAdmin, async (req, res) => 
             }
           }
         ],
-        created_at: { [Op.gte]: startDate }
+        createdAt: { [Op.gte]: startDate }
       }
     });
 
@@ -1650,7 +1650,7 @@ router.get('/technical', authenticateToken, authorizeAdmin, async (req, res) => 
             }
           }
         ],
-        created_at: { [Op.gte]: startDate }
+        createdAt: { [Op.gte]: startDate }
       }
     });
 
@@ -1667,7 +1667,7 @@ router.get('/technical', authenticateToken, authorizeAdmin, async (req, res) => 
             }
           }
         ],
-        created_at: { [Op.gte]: startDate }
+        createdAt: { [Op.gte]: startDate }
       }
     });
 
@@ -1748,7 +1748,7 @@ router.get('/technical', authenticateToken, authorizeAdmin, async (req, res) => 
         action: metadata.action || 'register',
         ipAddress: metadata.ipAddress || metadata.ip || 'IP inconnue', // Frontend cherche ipAddress
         userAgent: metadata.userAgent || 'User-Agent inconnu',
-        timestamp: notification.created_at || notification.createdAt
+        timestamp: notification.createdAt
       };
     });
 

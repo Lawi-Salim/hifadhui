@@ -53,6 +53,7 @@ const Notification = sequelize.define('Notification', {
   userId: {
     type: DataTypes.UUID,
     allowNull: true, // null = notification pour tous les admins
+    field: 'userid', // Force le nom de colonne en base
     references: {
       model: 'utilisateur',
       key: 'id'
@@ -103,7 +104,7 @@ const Notification = sequelize.define('Notification', {
   underscored: true,
   indexes: [
     {
-      fields: ['userId', 'status']
+      fields: ['userid', 'status']
     },
     {
       fields: ['type', 'priority']
