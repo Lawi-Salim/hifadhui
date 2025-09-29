@@ -8,6 +8,7 @@ import {
   FiAlertTriangle,
   FiActivity,
   FiClock,
+  FiRefreshCw,
   FiEye,
   FiDownload,
   FiUpload
@@ -73,6 +74,12 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchDashboardData();
   }, [timeRange]);
+
+  // Actualisation automatique toutes les 5 minutes
+  useEffect(() => {
+    const interval = setInterval(fetchDashboardData, 300000); // 5 minutes
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchDashboardData = async () => {
     try {
@@ -172,24 +179,34 @@ const AdminDashboard = () => {
     <div className="admin-dashboard">
       <div className="dashboard-header">
         <h1>Dashboard Admin</h1>
-        <div className="time-range-selector">
+        <div className="dashboard-controls">
+          <div className="time-range-selector">
+            <button 
+              className={timeRange === '7d' ? 'active' : ''}
+              onClick={() => setTimeRange('7d')}
+            >
+              7 jours
+            </button>
+            <button 
+              className={timeRange === '30d' ? 'active' : ''}
+              onClick={() => setTimeRange('30d')}
+            >
+              30 jours
+            </button>
+            <button 
+              className={timeRange === '90d' ? 'active' : ''}
+              onClick={() => setTimeRange('90d')}
+            >
+              90 jours
+            </button>
+          </div>
           <button 
-            className={timeRange === '7d' ? 'active' : ''}
-            onClick={() => setTimeRange('7d')}
+            className="btn btn-primary refresh-btn"
+            onClick={fetchDashboardData}
+            disabled={loading}
           >
-            7 jours
-          </button>
-          <button 
-            className={timeRange === '30d' ? 'active' : ''}
-            onClick={() => setTimeRange('30d')}
-          >
-            30 jours
-          </button>
-          <button 
-            className={timeRange === '90d' ? 'active' : ''}
-            onClick={() => setTimeRange('90d')}
-          >
-            90 jours
+            <FiRefreshCw className={loading ? 'spinning' : ''} />
+            Actualiser
           </button>
         </div>
       </div>
