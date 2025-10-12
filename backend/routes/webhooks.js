@@ -31,20 +31,30 @@ router.post('/sendgrid/inbound', upload.any(), async (req, res) => {
     if (!textContent && !htmlContent && req.body.email) {
       const rawEmail = req.body.email;
       
-      // Extraction basique du texte (quoted-printable)
-      const textMatch = rawEmail.match(/Content-Type: text\/plain[^]*?Content-Transfer-Encoding: quoted-printable\r\n\r\n([^]*?)\r\n\r\n--/);
+      // Extraction du texte (avec ou sans quoted-printable)
+      const textMatch = rawEmail.match(/Content-Type: text\/plain[^]*?\r\n\r\n([^]*?)(?:\r\n\r\n--|\r\n--)/);
       if (textMatch) {
-        textContent = textMatch[1]
-          .replace(/=\r\n/g, '') // Retirer les soft line breaks
-          .replace(/=([0-9A-F]{2})/g, (match, hex) => String.fromCharCode(parseInt(hex, 16))); // Décoder quoted-printable
+        let extracted = textMatch[1];
+        // Si c'est du quoted-printable, décoder
+        if (rawEmail.includes('Content-Transfer-Encoding: quoted-printable')) {
+          extracted = extracted
+            .replace(/=\r\n/g, '') // Retirer les soft line breaks
+            .replace(/=([0-9A-F]{2})/g, (match, hex) => String.fromCharCode(parseInt(hex, 16))); // Décoder
+        }
+        textContent = extracted.trim();
       }
       
-      // Extraction basique du HTML (quoted-printable)
-      const htmlMatch = rawEmail.match(/Content-Type: text\/html[^]*?Content-Transfer-Encoding: quoted-printable\r\n\r\n([^]*?)\r\n\r\n--/);
+      // Extraction du HTML (avec ou sans quoted-printable)
+      const htmlMatch = rawEmail.match(/Content-Type: text\/html[^]*?\r\n\r\n([^]*?)(?:\r\n\r\n--|\r\n--)/);
       if (htmlMatch) {
-        htmlContent = htmlMatch[1]
-          .replace(/=\r\n/g, '') // Retirer les soft line breaks
-          .replace(/=([0-9A-F]{2})/g, (match, hex) => String.fromCharCode(parseInt(hex, 16))); // Décoder quoted-printable
+        let extracted = htmlMatch[1];
+        // Si c'est du quoted-printable, décoder
+        if (rawEmail.includes('Content-Transfer-Encoding: quoted-printable')) {
+          extracted = extracted
+            .replace(/=\r\n/g, '') // Retirer les soft line breaks
+            .replace(/=([0-9A-F]{2})/g, (match, hex) => String.fromCharCode(parseInt(hex, 16))); // Décoder
+        }
+        htmlContent = extracted.trim();
       }
     }
     

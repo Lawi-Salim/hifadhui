@@ -44,13 +44,13 @@ if (isProduction) {
     },
   };
   
-  // Configuration spéciale pour Vercel + Supabase - Pool ultra-conservateur
+  // Configuration spéciale pour Vercel + Supabase - Pool conservateur
   dbConfig.pool = {
-    max: 1,           // Une seule connexion max
+    max: 3,           // Max 3 connexions (Supabase pooler peut gérer plus)
     min: 0,           // Aucune connexion minimum
     acquire: 60000,   // Attendre 60s pour acquérir une connexion
-    idle: 1000,       // Fermer après 1s d'inactivité
-    evict: 500,       // Vérifier toutes les 500ms
+    idle: 10000,      // Fermer après 10s d'inactivité
+    evict: 1000,      // Vérifier toutes les secondes
   };
   
   // Forcer la fermeture des connexions inactives
