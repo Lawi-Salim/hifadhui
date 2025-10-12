@@ -487,14 +487,16 @@ const MessagesPage = () => {
             <FiPlus /> Nouveau message
           </button>
           
-          <button 
-            className="btn btn-secondary"
-            onClick={handleTestReceiveEmail}
-            style={{ marginLeft: '10px' }}
-            title="Simuler la réception d'un email"
-          >
-            <FiInbox /> Test Réception
-          </button>
+          {process.env.NODE_ENV === 'development' && (
+            <button 
+              className="btn btn-secondary"
+              onClick={handleTestReceiveEmail}
+              style={{ marginLeft: '10px' }}
+              title="Simuler la réception d'un email"
+            >
+              <FiInbox /> Test Réception
+            </button>
+          )}
           <button 
             className="btn btn-secondary"
             onClick={loadMessages}
