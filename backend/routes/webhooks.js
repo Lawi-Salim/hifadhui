@@ -171,11 +171,7 @@ router.post('/test/receive-email', async (req, res) => {
       to: req.body.to || 'mavuna@hifadhui.site',
       subject: req.body.subject || 'Test Email - ' + new Date().toLocaleString(),
       text: req.body.text || 'Ceci est un email de test pour vérifier la réception en localhost.',
-      html: req.body.html || '<p>Ceci est un <strong>email de test</strong> pour vérifier la réception en localhost.</p>',
-      envelope: JSON.stringify({
-        to: ['mavuna@hifadhui.site'],
-        from: req.body.from || 'test@example.com'
-      })
+      html: req.body.html || '<p>Ceci est un <strong>email de test</strong> pour vérifier la réception en localhost.</p>'
     };
 
     console.log('🧪 [TEST] Données email de test:', testEmailData);
@@ -184,6 +180,12 @@ router.post('/test/receive-email', async (req, res) => {
     const senderMatch = testEmailData.from.match(/^(.+?)\s*<(.+?)>$/) || [null, testEmailData.from, testEmailData.from];
     const senderName = senderMatch[1] ? senderMatch[1].trim() : '';
     const senderEmail = senderMatch[2] ? senderMatch[2].trim() : testEmailData.from;
+
+    // Créer l'objet envelope directement
+    const envelopeData = {
+      to: [testEmailData.to],
+      from: senderEmail
+    };
 
     // Créer le message en base de données
     const message = await Message.create({
@@ -198,9 +200,9 @@ router.post('/test/receive-email', async (req, res) => {
       priority: 'normal',
       receivedAt: new Date(),
       metadata: {
-        envelope: JSON.parse(testEmailData.envelope),
+        envelope: envelopeData,
         attachmentsCount: 0,
-        webhookSource: 'test-localhost',
+        webhookSource: 'test-production',
         testMessage: true
       }
     });
