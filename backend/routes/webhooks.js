@@ -63,11 +63,11 @@ router.post('/sendgrid/inbound', upload.any(), async (req, res) => {
 
     // Forward automatique vers Gmail
     try {
-      await emailService.sendEmail({
+      await emailService.sendEmailOnly({
         to: 'dahlawibrahim@gmail.com',
         subject: `[HIFADHUI] ${emailData.subject}`,
-        text: `Email reçu sur mavuna@hifadhui.site\n\nDe: ${emailData.from}\nSujet: ${emailData.subject}\n\n${emailData.text || 'Contenu HTML uniquement'}`,
-        html: emailData.html ? `
+        content: `Email reçu sur mavuna@hifadhui.site\n\nDe: ${emailData.from}\nSujet: ${emailData.subject}\n\n${emailData.text || 'Contenu HTML uniquement'}`,
+        htmlContent: emailData.html ? `
           <div style="border-left: 4px solid #2563eb; padding-left: 16px; margin-bottom: 16px;">
             <p><strong>Email reçu sur mavuna@hifadhui.site</strong></p>
             <p><strong>De:</strong> ${emailData.from}</p>
