@@ -1,6 +1,7 @@
 import express from 'express';
 import { Message } from '../models/index.js';
 import multer from 'multer';
+import emailService from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -62,8 +63,6 @@ router.post('/sendgrid/inbound', upload.any(), async (req, res) => {
 
     // Forward automatique vers Gmail
     try {
-      const { emailService } = await import('../services/emailService.js');
-      
       await emailService.sendEmail({
         to: 'dahlawibrahim@gmail.com',
         subject: `[HIFADHUI] ${emailData.subject}`,
