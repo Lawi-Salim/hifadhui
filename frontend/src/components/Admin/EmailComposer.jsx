@@ -43,6 +43,7 @@ const EmailComposer = ({
   const [showFormatting, setShowFormatting] = useState(false);
   const [attachments, setAttachments] = useState([]);
   const [validationErrors, setValidationErrors] = useState({});
+  const [sendingInProgress, setSendingInProgress] = useState(false);
   
   const contentRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -126,14 +127,22 @@ const EmailComposer = ({
   };
 
   const handleSend = async () => {
+    // Protection contre double clic
+    if (sendingInProgress) {
+      return;
+    }
+    
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       return;
     }
 
+    setSendingInProgress(true);
     setIsSending(true);
     try {
+      let result;
+      
       if (replyTo) {
         // Utiliser la route de réponse spécifique
         const replyData = {
@@ -143,7 +152,7 @@ const EmailComposer = ({
           priority: 'normal'
         };
         
-        await messagesService.replyToMessage(replyTo.id, replyData);
+        result = await messagesService.replyToMessage(replyTo.id, replyData);
       } else {
         // Créer un nouveau message
         const messageData = {
@@ -160,13 +169,10 @@ const EmailComposer = ({
           }
         };
 
-        await messagesService.createMessage(messageData);
+        result = await messagesService.createMessage(messageData);
       }
-
-      onSent();
-      onClose();
       
-      // Reset form
+      // Reset form AVANT d'appeler onSent et onClose
       setFormData({
         to: '',
         cc: '',
@@ -178,6 +184,12 @@ const EmailComposer = ({
       setAttachments([]);
       setValidationErrors({});
       
+      // Appeler onSent en premier
+      await onSent();
+      
+      // Puis fermer le modal
+      onClose();
+      
     } catch (error) {
       console.error('Erreur lors de l\'envoi:', error);
       setValidationErrors({ 
@@ -185,6 +197,7 @@ const EmailComposer = ({
       });
     } finally {
       setIsSending(false);
+      setSendingInProgress(false);
     }
   };
 
@@ -426,10 +439,10 @@ const EmailComposer = ({
                 <button 
                   className="send-btn"
                   onClick={handleSend}
-                  disabled={isSending}
+                  disabled={isSending || sendingInProgress}
                 >
                   <FiSend />
-                  {isSending ? 'Envoi...' : 'Envoyer'}
+                  {(isSending || sendingInProgress) ? 'Envoi...' : 'Envoyer'}
                 </button>
                 {validationErrors.general && (
                   <div className="general-error">

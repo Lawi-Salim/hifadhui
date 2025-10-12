@@ -103,7 +103,16 @@ const Login = () => {
         const from = location.state?.from || defaultPath;
         navigate(from, { replace: true });
       } else {
-        setErrors({ general: result.message || 'Échec de la connexion' });
+        // Gestion spéciale pour le blocage temporaire
+        if (result.blocked) {
+          setErrors({ 
+            general: result.message,
+            blocked: true,
+            retryAfter: result.retryAfter
+          });
+        } else {
+          setErrors({ general: result.message || 'Échec de la connexion' });
+        }
       }
     } catch (error) {
       setErrors({ general: error.message || 'Erreur lors de la connexion' });
@@ -147,8 +156,20 @@ const Login = () => {
         )}
 
         {errors.general && (
-          <div className="alert alert-error">
-            {errors.general}
+          <div className={`alert ${errors.blocked ? 'alert-warning' : 'alert-error'}`}>
+            {errors.blocked && (
+              <div className="blocked-message">
+                <strong>🔒 Accès temporairement bloqué</strong>
+                <br />
+                {errors.general}
+                <br />
+                <small>
+                  Votre IP a été temporairement bloquée suite à plusieurs tentatives de connexion échouées.
+                  Ceci est une mesure de sécurité automatique.
+                </small>
+              </div>
+            )}
+            {!errors.blocked && errors.general}
           </div>
         )}
 

@@ -25,8 +25,12 @@ import contactRoutes from './routes/contact.js';
 import messagesRoutes from './routes/messages.js';
 import webhooksRoutes from './routes/webhooks.js';
 import notificationsRoutes from './routes/notifications.js';
+import userActivityRoutes from './routes/user/activity.js';
+import userProfileRoutes from './routes/user/profile.js';
+import adminUserActivityRoutes from './routes/admin/userActivity.js';
 import { startAutomaticCleanup } from './utils/dataCleanup.js';
 import SchedulerService from './services/schedulerService.js';
+import emailService from './services/emailService.js';
 
 // Importation des modèles et associations depuis l'index des modèles
 import passport from './config/passport.js';
@@ -85,6 +89,9 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Middleware pour gérer les données sendBeacon (text/plain)
+app.use('/api/v1/user/activity', express.text({ type: 'text/plain' }));
+
 // Configuration des sessions (nécessaire pour OAuth)
 app.use(session({
   secret: process.env.SESSION_SECRET || 'hifadhui-oauth-secret-key',
@@ -99,6 +106,10 @@ app.use(session({
 // Initialisation Passport
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Attacher les services à app.locals pour les rendre disponibles dans les routes
+app.locals.emailService = emailService;
+console.log('📧 [BOOT] EmailService attaché à app.locals');
 
 // Middleware de gestion des connexions DB pour Vercel
 if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
@@ -140,6 +151,9 @@ if (process.env.NODE_ENV !== 'production') {
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/admin/users', adminUserActivityRoutes); // Routes d'activité admin
+app.use('/api/v1/user', userActivityRoutes); // Routes d'activité utilisateur
+app.use('/api/v1/user/profile', userProfileRoutes); // Routes de profil utilisateur
 app.use('/api/v1/files', fileRoutes);
 app.use('/api/v1/files', shareRoutes); // Routes de partage sous /files (publiques)
 app.use('/api/v1/dossiers', dossierRoutes);

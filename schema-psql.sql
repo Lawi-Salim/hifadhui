@@ -2,6 +2,8 @@
 -- SUPPRESSION DES TABLES (POUR LE DÉVELOPPEMENT)
 -- ========================================
 -- L'ordre est important à cause des clés étrangères
+DROP TABLE IF EXISTS ModerationActions CASCADE;
+DROP TABLE IF EXISTS Reports CASCADE;
 DROP TABLE IF EXISTS Notifications CASCADE;
 DROP TABLE IF EXISTS MessageAttachments CASCADE;
 DROP TABLE IF EXISTS Messages CASCADE;
@@ -76,9 +78,9 @@ CREATE TABLE File (
 -- ========================================
 CREATE TABLE ActivityLogs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE,
-    action_type VARCHAR(50) NOT NULL, -- ex: 'FILE_UPLOAD', 'FOLDER_CREATE', 'FILE_DELETE'
-    details JSONB, -- { "fileId": "...", "fileName": "...", "folderId": "..." }
+    user_id UUID REFERENCES Utilisateur(id) ON DELETE CASCADE, -- NULL autorisé pour actions système (ex: échecs de connexion)
+    action_type VARCHAR(50) NOT NULL, -- ex: 'FILE_UPLOAD', 'FOLDER_CREATE', 'FILE_DELETE', 'failed_login'
+    details JSONB, -- { "fileId": "...", "fileName": "...", "folderId": "..." } ou { "ip": "...", "email": "..." }
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -181,6 +183,7 @@ CREATE TABLE UserSessions (
     isp VARCHAR(200),
     session_start TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     session_end TIMESTAMP NULL,
+    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_active BOOLEAN DEFAULT TRUE,
     is_suspicious BOOLEAN DEFAULT FALSE,
     suspicious_reason TEXT,
@@ -211,6 +214,45 @@ CREATE TABLE Notifications (
     expires_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- ========================================
+-- TABLE : Reports (Signalements)
+-- ========================================
+CREATE TABLE Reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reporter_id UUID REFERENCES Utilisateur(id) ON DELETE SET NULL, -- NULL pour signalements anonymes
+    reported_user_id UUID REFERENCES Utilisateur(id) ON DELETE CASCADE, -- NULL pour signalements système (ex: tentatives de connexion)
+    file_id UUID REFERENCES File(id) ON DELETE SET NULL, -- NULL si pas lié à un fichier
+    type VARCHAR(50) NOT NULL DEFAULT 'inappropriate' CHECK (type IN ('inappropriate', 'spam', 'copyright', 'harassment', 'failed_login_attempts', 'other')),
+    reason TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'resolved', 'dismissed')),
+    admin_id UUID REFERENCES Utilisateur(id) ON DELETE SET NULL, -- Admin qui a traité
+    admin_action TEXT, -- Description de l'action prise
+    resolved_at TIMESTAMP,
+    source VARCHAR(20) NOT NULL DEFAULT 'manual' CHECK (source IN ('manual', 'automatic')), -- Source du signalement
+    evidence TEXT, -- JSON stringifié contenant les preuves du signalement automatique
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========================================
+-- TABLE : ModerationActions (Actions de modération)
+-- ========================================
+CREATE TABLE ModerationActions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE,
+    admin_id UUID NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE,
+    report_id UUID REFERENCES Reports(id) ON DELETE SET NULL, -- NULL si action indépendante
+    action_type VARCHAR(50) NOT NULL CHECK (action_type IN ('warning', 'suspension', 'deletion', 'content_removal')),
+    reason TEXT NOT NULL,
+    duration INTEGER, -- En jours, NULL pour actions permanentes
+    start_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    end_date TIMESTAMP, -- Calculé automatiquement pour suspensions
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    metadata JSONB DEFAULT '{}', -- Données supplémentaires
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ========================================
@@ -268,6 +310,31 @@ CREATE INDEX idx_notifications_expires_at ON Notifications(expires_at);
 CREATE INDEX idx_notifications_priority ON Notifications(priority);
 CREATE INDEX idx_notifications_status ON Notifications(status);
 
+-- Index pour Reports
+CREATE INDEX idx_reports_status ON Reports(status);
+CREATE INDEX idx_reports_type ON Reports(type);
+CREATE INDEX idx_reports_source ON Reports(source);
+CREATE INDEX idx_reports_reported_user_id ON Reports(reported_user_id);
+CREATE INDEX idx_reports_reporter_id ON Reports(reporter_id);
+CREATE INDEX idx_reports_admin_id ON Reports(admin_id);
+CREATE INDEX idx_reports_created_at ON Reports(created_at);
+CREATE INDEX idx_reports_file_id ON Reports(file_id);
+CREATE INDEX idx_reports_source_created_at ON Reports(source, created_at);
+
+-- Index pour ModerationActions
+CREATE INDEX idx_moderation_actions_user_id ON ModerationActions(user_id);
+CREATE INDEX idx_moderation_actions_admin_id ON ModerationActions(admin_id);
+CREATE INDEX idx_moderation_actions_action_type ON ModerationActions(action_type);
+CREATE INDEX idx_moderation_actions_is_active ON ModerationActions(is_active);
+CREATE INDEX idx_moderation_actions_start_date ON ModerationActions(start_date);
+CREATE INDEX idx_moderation_actions_end_date ON ModerationActions(end_date);
+CREATE INDEX idx_moderation_actions_report_id ON ModerationActions(report_id);
+CREATE INDEX idx_moderation_actions_created_at ON ModerationActions(created_at);
+
+-- Index composé pour les suspensions actives
+CREATE INDEX idx_moderation_actions_active_suspensions ON ModerationActions(user_id, action_type, is_active, end_date) 
+WHERE action_type = 'suspension' AND is_active = TRUE;
+
 -- Index pour la période de grâce
 CREATE INDEX idx_utilisateur_deleted_at ON Utilisateur(deleted_at);
 CREATE INDEX idx_utilisateur_deletion_scheduled_at ON Utilisateur(deletion_scheduled_at);
@@ -278,6 +345,7 @@ CREATE INDEX idx_utilisateur_recovery_token_expires_at ON Utilisateur(recovery_t
 CREATE INDEX idx_usersessions_user_id ON UserSessions(user_id);
 CREATE INDEX idx_usersessions_ip_address ON UserSessions(ip_address);
 CREATE INDEX idx_usersessions_session_start ON UserSessions(session_start);
+CREATE INDEX idx_usersessions_last_activity ON UserSessions(last_activity);
 CREATE INDEX idx_usersessions_is_active ON UserSessions(is_active);
 CREATE INDEX idx_usersessions_is_suspicious ON UserSessions(is_suspicious);
 
@@ -342,6 +410,16 @@ EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_notifications_updated
 BEFORE UPDATE ON Notifications
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_reports_updated
+BEFORE UPDATE ON Reports
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_moderation_actions_updated
+BEFORE UPDATE ON ModerationActions
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 

@@ -5,6 +5,8 @@ import { sequelize } from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { upload, handleUploadError } from '../middleware/upload.js';
 import uploadLocal from '../middleware/upload-local.js';
+import { behaviorMonitor } from '../middleware/behaviorMonitor.js';
+import { checkUploadQuota, getQuotaInfo } from '../middleware/uploadQuota.js';
 import crypto from 'crypto';
 import { deleteCloudinaryFile } from '../utils/cloudinaryStructure.js';
 import { body, validationResult } from 'express-validator';
@@ -14,6 +16,9 @@ import fs from 'fs';
 import path from 'path';
 
 const router = express.Router();
+
+// Route pour récupérer les informations de quota
+router.get('/quota', authenticateToken, getQuotaInfo);
 
 // Fonction pour corriger l'encodage des caractères spéciaux français mal encodés
 const fixEncoding = (text) => {
@@ -174,7 +179,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
 });
 
 // Route pour uploader un fichier (images/PDFs directement sur Cloudinary)
-router.post('/upload', authenticateToken, upload.single('document'), async (req, res) => {
+router.post('/upload', authenticateToken, checkUploadQuota, behaviorMonitor, upload.single('document'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Aucun fichier fourni' });
@@ -269,7 +274,7 @@ router.post('/zip-preview', authenticateToken, uploadLocal.upload.single('docume
 });
 
 // Route spécifique pour uploader des fichiers ZIP
-router.post('/upload-zip', authenticateToken, uploadLocal.upload.single('document'), async (req, res) => {
+router.post('/upload-zip', authenticateToken, behaviorMonitor, uploadLocal.upload.single('document'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Aucun fichier fourni' });

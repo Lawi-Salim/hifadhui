@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AuthProvider } from './contexts/AuthContext';
 import { ViewModeProvider } from './contexts/ViewModeContext';
 import { useAuth } from './contexts/AuthContext';
+import ActivityTracker from './components/Common/ActivityTracker';
 import Sidebar from './components/Layout/Sidebar.jsx';
 import Login from './components/Auth/Login.jsx';
 import Register from './components/Auth/Register.jsx';
@@ -29,6 +30,7 @@ import ActivityPage from './components/Admin/ActivityPage.jsx';
 import SystemPage from './components/Admin/SystemPage.jsx';
 import AnalyticsPage from './components/Admin/AnalyticsPage.jsx';
 import ReportsPage from './components/Admin/ReportsPage.jsx';
+import RiskDashboard from './components/Admin/RiskDashboard.jsx';
 import TechnicalPage from './components/Admin/TechnicalPage.jsx';
 import MessagesPage from './components/Admin/MessagesPage.jsx';
 import NotificationsPage from './components/Admin/NotificationsPage.jsx';
@@ -182,6 +184,7 @@ function AppContent() {
             <Route path="/admin/activity" element={<ActivityPage />} />
             <Route path="/admin/system" element={<SystemPage />} />
             <Route path="/admin/analytics" element={<AnalyticsPage />} />
+            <Route path="/admin/risk" element={<RiskDashboard />} />
             <Route path="/admin/reports" element={<ReportsPage />} />
             <Route path="/admin/technical" element={<TechnicalPage />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
@@ -204,7 +207,9 @@ function App() {
     <AuthProvider>
       <ViewModeProvider>
         <Router>
-          <AppContent />
+          <ActivityTracker>
+            <AppContent />
+          </ActivityTracker>
         </Router>
       </ViewModeProvider>
     </AuthProvider>

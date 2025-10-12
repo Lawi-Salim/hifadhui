@@ -91,6 +91,7 @@ const Sidebar = () => {
       { path: '/admin/activity', label: 'Logs d\'activité', icon: FiActivity },
       { path: '/admin/system', label: 'Système', icon: FiServer },
       { path: '/admin/analytics', label: 'Analytics', icon: FiPieChart },
+      { path: '/admin/risk', label: 'Surveillance Risques', icon: FiShield },
       { path: '/admin/reports', label: 'Signalements', icon: FiAlertTriangle },
       { path: '/admin/technical', label: 'Données techniques', icon: FiMonitor }
     ];
@@ -132,8 +133,7 @@ const Sidebar = () => {
       <nav ref={sidebarRef} className={`sidebar ${isMobile && isExpanded ? 'expanded' : ''} ${isVerySmallScreen ? 'mobile-hidden' : ''}`}>
       <div className="sidebar-brand">
         <Link to="/dashboard" className="brand-link">
-          <span className="brand-icon"><FiLock /></span>
-          {(!isMobile || isExpanded) && <span className="brand-text">Hifadhui</span>}
+          <img src="/hifadhui-name.svg" alt="Hifadhui" className="brand-logo" />
         </Link>
       </div>
 

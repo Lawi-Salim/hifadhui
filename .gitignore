@@ -6,6 +6,8 @@ README-DEPLOYMENT.md
 !schema-psql.sql
 *.sql
 *test*.*
+PLAN_SIGNALEMENT_AUTOMATIQUE.md
+uploads
 
 # Roadmap
 Roadmap-features
@@ -74,3 +76,7 @@ Thumbs.db
 *copy.*
 *copy*.*
 *test.*
+
+create-moderation-tables.js
+MIGRATION_MODERATION.md
+MODERATION_SETUP.md

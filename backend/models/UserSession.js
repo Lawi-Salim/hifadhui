@@ -78,6 +78,11 @@ const UserSession = sequelize.define('UserSession', {
     allowNull: true,
     field: 'session_end',
   },
+  lastActivity: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+    field: 'last_activity',
+  },
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true,

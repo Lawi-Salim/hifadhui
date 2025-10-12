@@ -7,6 +7,7 @@ import {
   getAccountDeletionGraceTemplate,
   getAccountDeletionReminderTemplate
 } from './template-mails/index.js';
+import Message from '../models/Message.js';
 
 class EmailService {
   constructor() {
@@ -287,7 +288,46 @@ class EmailService {
   }
 
   /**
-   * Envoie un email personnalisé
+   * Envoie un email sans l'enregistrer dans la base de données
+   * Utilisé pour les emails de modération automatiques
+   */
+  async sendEmailOnly({ to, cc, bcc, subject, content, htmlContent }) {
+    const mailOptions = {
+      from: {
+        name: 'Hifadhui',
+        address: process.env.SMTP_FROM || process.env.SMTP_USER || 'mavuna@hifadhui.site'
+      },
+      to,
+      cc: cc || undefined,
+      bcc: bcc || undefined,
+      subject,
+      text: content,
+      html: htmlContent || content.replace(/\n/g, '<br>')
+    };
+
+    try {
+      const info = await this.transporter.sendMail(mailOptions);
+      
+      // En développement avec Ethereal, afficher l'URL de prévisualisation
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📧 Email sent (no DB record)');
+        console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
+      }
+
+      return {
+        success: true,
+        messageId: info.messageId,
+        response: info.response
+      };
+    } catch (error) {
+      console.error('❌ Erreur envoi email:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Envoie un email personnalisé ET l'enregistre dans la base de données
+   * Utilisé pour les emails manuels depuis l'interface admin
    */
   async sendCustomEmail({ to, cc, bcc, subject, content, htmlContent }) {
     const mailOptions = {
@@ -305,6 +345,31 @@ class EmailService {
 
     try {
       const info = await this.transporter.sendMail(mailOptions);
+      
+      // Enregistrer l'email envoyé dans la base de données
+      try {
+        await Message.create({
+          type: 'email_sent',
+          subject: subject,
+          content: content,
+          htmlContent: htmlContent || content.replace(/\n/g, '<br>'),
+          senderEmail: mailOptions.from.address,
+          senderName: mailOptions.from.name,
+          recipientEmail: to,
+          status: 'read', // Les emails envoyés sont considérés comme "lus"
+          messageId: info.messageId,
+          metadata: {
+            cc: cc || null,
+            bcc: bcc || null,
+            sentAt: new Date(),
+            provider: 'smtp'
+          }
+        });
+        console.log('📧 [DB] Email enregistré dans la base de données');
+      } catch (dbError) {
+        console.error('❌ [DB] Erreur enregistrement email:', dbError);
+        // Ne pas faire échouer l'envoi si l'enregistrement échoue
+      }
       
       // En développement avec Ethereal, afficher l'URL de prévisualisation
       if (process.env.NODE_ENV === 'development') {

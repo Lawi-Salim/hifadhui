@@ -25,6 +25,10 @@ router.get('/stats', async (req, res) => {
       Message.count({
         where: { status: ['read', 'replied'] }
       }),
+      // Messages reçus
+      Message.count({
+        where: { type: ['contact_received', 'email_received'] }
+      }),
       // Emails envoyés
       Message.count({
         where: { type: 'email_sent' }
@@ -36,8 +40,9 @@ router.get('/stats', async (req, res) => {
     res.json({
       unread: stats[0],
       read: stats[1],
-      sent: stats[2],
-      total: stats[3]
+      received: stats[2],
+      sent: stats[3],
+      total: stats[4]
     });
   } catch (error) {
     console.error('Erreur lors de la récupération des stats messages:', error);
@@ -51,6 +56,7 @@ router.get('/stats', async (req, res) => {
  * Récupère la liste des messages avec pagination et filtres
  */
 router.get('/', async (req, res) => {
+  
   try {
     const { 
       page = 1, 
@@ -75,6 +81,8 @@ router.get('/', async (req, res) => {
       whereClause.status = 'unread';
     } else if (tab === 'read') {
       whereClause.status = ['read', 'replied'];
+    } else if (tab === 'received') {
+      whereClause.type = ['contact_received', 'email_received'];
     } else if (tab === 'sent') {
       whereClause.type = 'email_sent';
     }
@@ -104,8 +112,20 @@ router.get('/', async (req, res) => {
       }],
       order: [['createdAt', 'DESC']],
       limit: limitNum,
-      offset: offset
+      offset: offset,
+      distinct: true // Éviter les doublons dus aux joins
     });
+
+    // Vérification des doublons côté serveur
+    const messageIds = messages.map(msg => msg.id);
+    const uniqueIds = [...new Set(messageIds)];
+    if (messageIds.length !== uniqueIds.length) {
+      // Filtrer les doublons
+      const uniqueMessages = messages.filter((msg, index, self) => 
+        index === self.findIndex(m => m.id === msg.id)
+      );
+      messages.splice(0, messages.length, ...uniqueMessages);
+    }
 
     const totalPages = Math.ceil(total / limitNum);
     const hasNextPage = pageNum < totalPages;
@@ -351,6 +371,27 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Vérifier s'il n'y a pas déjà un message identique récent (protection contre doublons)
+    if (type === 'email_sent') {
+      const recentMessage = await Message.findOne({
+        where: {
+          type: 'email_sent',
+          subject,
+          recipientEmail,
+          createdAt: {
+            [Op.gte]: new Date(Date.now() - 30000) // 30 secondes
+          }
+        }
+      });
+
+      if (recentMessage) {
+        return res.status(200).json({
+          message: 'Message déjà envoyé récemment',
+          data: recentMessage
+        });
+      }
+    }
+
     // Créer le message en base
     const message = await Message.create({
       type,
@@ -367,7 +408,7 @@ router.post('/', async (req, res) => {
     // Si c'est un email à envoyer, l'envoyer réellement
     if (type === 'email_sent' && recipientEmail) {
       try {
-        await emailService.sendCustomEmail({
+        await emailService.sendEmailOnly({
           to: recipientEmail,
           cc: metadata.cc,
           bcc: metadata.bcc,
@@ -376,9 +417,8 @@ router.post('/', async (req, res) => {
           htmlContent: htmlContent || content
         });
         
-        console.log(`✅ Email envoyé avec succès à ${recipientEmail}`);
       } catch (emailError) {
-        console.error('❌ Erreur lors de l\'envoi de l\'email:', emailError);
+        console.error('Erreur lors de l\'envoi de l\'email:', emailError);
         // On ne fait pas échouer la création du message si l'envoi échoue
         // mais on met à jour le metadata pour indiquer l'échec
         await message.update({

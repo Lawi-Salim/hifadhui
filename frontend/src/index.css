@@ -507,6 +507,24 @@ h1, h2, h3, h4, h5, h6 {
   border-color: #fed7aa;
 }
 
+.blocked-message {
+  text-align: center;
+  line-height: 1.5;
+}
+
+.blocked-message strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 1.1em;
+}
+
+.blocked-message small {
+  display: block;
+  margin-top: 8px;
+  opacity: 0.8;
+  font-size: 0.9em;
+}
+
 .loading {
   display: inline-block;
   width: 20px;

@@ -25,8 +25,7 @@ const PublicNavbar = () => {
       <div className="navbar-container">
         {/* Logo */}
         <Link to="/" className="navbar-brand">
-          <FiShield className="brand-icon" />
-          <span className="brand-text">Hifadhui</span>
+          <img src="/hifadhui-name.svg" alt="Hifadhui" className="navbar-brand-logo" />
         </Link>
 
         {/* Menu Desktop */}

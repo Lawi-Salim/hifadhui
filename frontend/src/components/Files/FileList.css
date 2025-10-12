@@ -1,9 +1,6 @@
-/* Styles globaux pour les pages de fichiers */
-.dossiers-loading,
-.files-loading {
-  text-align: center;
-  padding: 3rem;
-  color: var(--text-secondary);
+/* Notification de quota professionnelle */
+.quota-notification {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .dossiers-error,
@@ -524,3 +521,4 @@
   padding: 1rem;
   text-align: center;
 }
+

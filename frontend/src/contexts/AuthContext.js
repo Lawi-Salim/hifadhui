@@ -108,6 +108,19 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       return { success: true, user };
     } catch (error) {
+      // Gestion spéciale pour le blocage temporaire (429)
+      if (error.response?.status === 429) {
+        const data = error.response.data;
+        const retryMinutes = Math.ceil((data.retryAfter || 900) / 60); // Convertir en minutes
+        
+        return {
+          success: false,
+          blocked: true,
+          retryAfter: data.retryAfter,
+          message: data.message || `Trop de tentatives échouées. Réessayez dans ${retryMinutes} minutes.`
+        };
+      }
+      
       return {
         success: false,
         message: error.response?.data?.error || 'Erreur de connexion'

@@ -15,8 +15,7 @@ const Footer = () => {
           {/* Brand Section */}
           <div className="footer-section">
             <div className="footer-brand">
-              <FiShield className="footer-brand-icon" />
-              <span className="footer-brand-text">Hifadhui</span>
+              <img src="/hifadhui-name.svg" alt="Hifadhui" className="footer-brand-logo" />
             </div>
             <p className="footer-description">
               Votre coffre-fort numérique sécurisé pour stocker et partager vos documents importants avec une preuve de propriété incontestable.

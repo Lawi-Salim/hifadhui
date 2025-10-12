@@ -118,13 +118,13 @@ const Notification = sequelize.define('Notification', {
       fields: ['type', 'priority']
     },
     {
-      fields: ['createdAt']
+      fields: ['created_at']
     },
     {
-      fields: ['status', 'createdAt']
+      fields: ['status', 'created_at']
     },
     {
-      fields: ['expiresAt']
+      fields: ['expires_at']
     }
   ]
 });

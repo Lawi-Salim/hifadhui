@@ -33,7 +33,12 @@ import EmailComposer from './EmailComposer';
 import './AdminDashboard.css';
 
 const MessagesPage = () => {
-  const [activeTab, setActiveTab] = useState('unread');
+  const [activeTab, setActiveTabState] = useState('unread');
+  
+  // Wrapper pour setActiveTab
+  const setActiveTab = (newTab) => {
+    setActiveTabState(newTab);
+  };
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,6 +50,7 @@ const MessagesPage = () => {
   const [stats, setStats] = useState({
     unread: 0,
     read: 0,
+    received: 0,
     sent: 0,
     total: 0
   });
@@ -68,18 +74,30 @@ const MessagesPage = () => {
   });
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [error, setError] = useState(null);
-
+  const [isSending, setIsSending] = useState(false);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [lastLoadedTab, setLastLoadedTab] = useState(null);
+  
   useEffect(() => {
+    // Éviter les appels multiples pour le même onglet
+    if (lastLoadedTab === activeTab) {
+      return;
+    }
+    
+    setLastLoadedTab(activeTab);
     loadMessages();
-  }, [activeTab]);
+  }, [activeTab, lastLoadedTab]);
 
   // Actualisation automatique toutes les 10 minutes
   useEffect(() => {
     const interval = setInterval(() => {
-      loadMessages(pagination.currentPage);
+      // Ne pas actualiser si un modal est ouvert ou si on est en train d'envoyer
+      if (!showComposer && !showMessageDetail && !isSending) {
+        loadMessages(pagination.currentPage);
+      }
     }, 600000); // 10 minutes
     return () => clearInterval(interval);
-  }, [pagination.currentPage]);
+  }, [pagination.currentPage, showComposer, showMessageDetail, isSending]);
 
   // Fermer le menu d'actions quand on clique ailleurs
   useEffect(() => {
@@ -96,6 +114,12 @@ const MessagesPage = () => {
   }, [showActionsMenu]);
 
   const loadMessages = async (page = 1) => {
+    // Protection contre les appels multiples simultanés
+    if (loadingMessages) {
+      return;
+    }
+    
+    setLoadingMessages(true);
     setLoading(true);
     setError(null);
     try {
@@ -121,6 +145,7 @@ const MessagesPage = () => {
       setMessages([]);
     } finally {
       setLoading(false);
+      setLoadingMessages(false);
     }
   };
 
@@ -225,13 +250,73 @@ const MessagesPage = () => {
   };
 
   const handleCompose = () => {
+    setSelectedMessage(null);
     setShowComposer(true);
   };
 
   const handleReply = (message) => {
-    // Pour l'instant, on ouvre le composeur avec les données pré-remplies
-    // TODO: Implémenter la logique de réponse avec destinataire pré-rempli
+    setSelectedMessage(message);
     setShowComposer(true);
+  };
+
+  // Fonction de test pour simuler la réception d'un email (développement uniquement)
+  const handleTestReceiveEmail = async () => {
+    try {
+      const testEmailData = {
+        from: 'test.sender@example.com <Test Sender>',
+        to: 'mavuna@hifadhui.site',
+        subject: `Test Email Reçu - ${new Date().toLocaleString()}`,
+        text: 'Ceci est un email de test pour vérifier que la réception fonctionne correctement dans l\'interface admin.',
+        html: '<p>Ceci est un <strong>email de test</strong> pour vérifier que la réception fonctionne correctement dans l\'interface admin.</p><p>Timestamp: ' + new Date().toISOString() + '</p>'
+      };
+
+      const response = await fetch('/api/v1/webhooks/test/receive-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(testEmailData)
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Recharger les messages pour voir le nouveau message reçu
+        await loadMessages();
+        
+        // Basculer vers l'onglet "Reçus" pour voir le message
+        setActiveTab('received');
+        
+        alert(`✅ Email de test reçu avec succès!\nID: ${result.messageId}\nSujet: ${result.data.subject}`);
+      } else {
+        alert(`❌ Erreur: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Erreur lors du test de réception:', error);
+      alert(`❌ Erreur lors du test: ${error.message}`);
+    }
+  };
+
+  // Fonction appelée après envoi d'un message
+  const handleMessageSent = async () => {
+    try {
+      setIsSending(true);
+      
+      // Attendre un court délai pour s'assurer que le message est bien créé côté serveur
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Recharger seulement les stats et la page courante
+      const statsData = await messagesService.getStats();
+      setStats(statsData);
+      
+      // Basculer vers l'onglet "Envoyés" pour voir le message envoyé
+      setActiveTab('sent');
+      
+    } catch (error) {
+      console.error('Erreur lors du rechargement après envoi:', error);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   // Marquer tous les messages comme lus
@@ -397,13 +482,20 @@ const MessagesPage = () => {
         <div className="header-actions">
           <button 
             className="btn btn-primary"
-            onClick={() => {
-              setSelectedMessage(null);
-              setShowComposer(true);
-            }}
+            onClick={handleCompose}
           >
             <FiPlus /> Nouveau message
           </button>
+          
+          {process.env.NODE_ENV === 'development' && (
+            <button 
+              className="btn btn-secondary"
+              onClick={handleTestReceiveEmail}
+              style={{ marginLeft: '10px' }}
+            >
+              <FiInbox /> Test Réception
+            </button>
+          )}
           <button 
             className="btn btn-secondary"
             onClick={loadMessages}
@@ -434,6 +526,17 @@ const MessagesPage = () => {
             <h3>Lus</h3>
             <div className="metric-value">{stats.read}</div>
             <div className="metric-subtitle">Messages traités</div>
+          </div>
+        </div>
+        
+        <div className="metric-card">
+          <div className="metric-icon received">
+            <FiInbox />
+          </div>
+          <div className="metric-content">
+            <h3>Reçus</h3>
+            <div className="metric-value">{stats.received || 0}</div>
+            <div className="metric-subtitle">Messages reçus</div>
           </div>
         </div>
         
@@ -473,6 +576,12 @@ const MessagesPage = () => {
           onClick={() => setActiveTab('read')}
         >
           <FiMessageSquare /> Lus ({stats.read})
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'received' ? 'active' : ''}`}
+          onClick={() => setActiveTab('received')}
+        >
+          <FiInbox /> Reçus ({stats.received || 0})
         </button>
         <button 
           className={`tab-btn ${activeTab === 'sent' ? 'active' : ''}`}
@@ -565,18 +674,27 @@ const MessagesPage = () => {
               <p>
                 {activeTab === 'unread' && 'Tous vos messages sont lus !'}
                 {activeTab === 'read' && 'Aucun message lu pour le moment.'}
+                {activeTab === 'received' && 'Aucun message reçu pour le moment.'}
                 {activeTab === 'sent' && 'Aucun email envoyé pour le moment.'}
               </p>
             </div>
           ) : (
-            messages
-              .filter(msg => 
+            (() => {
+              const filteredMessages = messages.filter(msg => 
                 !searchTerm || 
                 msg.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 msg.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 (msg.senderEmail && msg.senderEmail.toLowerCase().includes(searchTerm.toLowerCase()))
-              )
-              .map(message => (
+              );
+              
+              // Vérifier s'il y a des doublons dans l'état React
+              const messageIds = filteredMessages.map(msg => msg.id);
+              const uniqueIds = [...new Set(messageIds)];
+              if (messageIds.length !== uniqueIds.length) {
+                console.warn('Doublons détectés dans l\'état React!');
+              }
+              
+              return filteredMessages.map(message => (
                 <div 
                   key={message.id} 
                   className={`gmail-message-row ${message.status}`}
@@ -643,7 +761,8 @@ const MessagesPage = () => {
                     <div className="gmail-unread-indicator"></div>
                   )}
                 </div>
-              ))
+              ));
+            })()
           )}
         </div>
       </div>
@@ -942,7 +1061,7 @@ const MessagesPage = () => {
         isOpen={showComposer}
         onClose={() => setShowComposer(false)}
         replyTo={selectedMessage}
-        onSent={() => loadMessages()} // Recharger les messages après envoi
+        onSent={handleMessageSent} // Utiliser la fonction spécialisée
       />
     </div>
   );

@@ -22,10 +22,19 @@
 .brand-link {
   display: flex;
   align-items: center;
+  justify-content: center;
   text-decoration: none;
-  color: var(--navbar-text-color);
-  font-size: 1.25rem;
-  font-weight: 700;
+  /* width: 100%; */
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.brand-logo {
+  height: 50px;
+  font-weight: 500;
+  width: auto;
+  max-width: 150px;
+  object-fit: contain;
 }
 
 .brand-icon {
@@ -54,6 +63,26 @@
 .sidebar-nav {
   flex: 1;
   padding: 0 1rem;
+  overflow-y: auto;
+  max-height: calc(100vh - 200px); /* Laisse de l'espace pour le header et le user menu */
+}
+
+/* Scrollbar discrète pour la navigation */
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .nav-link {
@@ -292,10 +321,12 @@
 
   .sidebar-nav {
     padding: 0 0.5rem;
+    max-height: calc(100vh - 180px); /* Ajusté pour mobile */
   }
 
   .sidebar.expanded .sidebar-nav {
     padding: 0 1rem;
+    max-height: calc(100vh - 200px);
   }
 
   .nav-link {

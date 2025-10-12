@@ -173,7 +173,16 @@ const FileUpload = () => {
         clearInterval(extractionInterval);
       }
       
-      // Diagnostic détaillé de l'erreur
+      // Vérifier si c'est une erreur de quota (429)
+      if (error.response?.status === 429 && error.response?.data?.code === 'QUOTA_EXCEEDED') {
+        setMessage({
+          type: 'error',
+          text: error.response.data.error
+        });
+        return;
+      }
+      
+      // Diagnostic détaillé des autres erreurs
       let errorMessage = 'Erreur lors de l\'upload du fichier';
       
       if (error.response) {
@@ -251,6 +260,7 @@ const FileUpload = () => {
             Sécurisez vos documents avec notre système de chiffrement SHA-256
           </p>
         </div>
+
 
         {message.text && (
           <div className={`alert alert-${message.type}`}>

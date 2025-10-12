@@ -157,4 +157,77 @@ router.get('/test', (req, res) => {
   });
 });
 
+/**
+ * POST /api/v1/webhooks/test/receive-email
+ * Route de test pour simuler la réception d'un email (localhost uniquement)
+ */
+router.post('/test/receive-email', async (req, res) => {
+  try {
+    console.log('🧪 [TEST] Simulation de réception d\'email');
+    
+    // Données de test par défaut ou depuis le body
+    const testEmailData = {
+      from: req.body.from || 'test@example.com <Test Sender>',
+      to: req.body.to || 'mavuna@hifadhui.site',
+      subject: req.body.subject || 'Test Email - ' + new Date().toLocaleString(),
+      text: req.body.text || 'Ceci est un email de test pour vérifier la réception en localhost.',
+      html: req.body.html || '<p>Ceci est un <strong>email de test</strong> pour vérifier la réception en localhost.</p>',
+      envelope: JSON.stringify({
+        to: ['mavuna@hifadhui.site'],
+        from: req.body.from || 'test@example.com'
+      })
+    };
+
+    console.log('🧪 [TEST] Données email de test:', testEmailData);
+
+    // Parser l'adresse email de l'expéditeur
+    const senderMatch = testEmailData.from.match(/^(.+?)\s*<(.+?)>$/) || [null, testEmailData.from, testEmailData.from];
+    const senderName = senderMatch[1] ? senderMatch[1].trim() : '';
+    const senderEmail = senderMatch[2] ? senderMatch[2].trim() : testEmailData.from;
+
+    // Créer le message en base de données
+    const message = await Message.create({
+      type: 'email_received',
+      subject: testEmailData.subject || 'Sans sujet',
+      content: testEmailData.text || testEmailData.html || '',
+      htmlContent: testEmailData.html || null,
+      senderName: senderName || 'Test Sender',
+      senderEmail: senderEmail,
+      recipientEmail: testEmailData.to,
+      status: 'unread',
+      priority: 'normal',
+      receivedAt: new Date(),
+      metadata: {
+        envelope: JSON.parse(testEmailData.envelope),
+        attachmentsCount: 0,
+        webhookSource: 'test-localhost',
+        testMessage: true
+      }
+    });
+
+    console.log('✅ [TEST] Message de test créé:', message.id);
+
+    res.status(200).json({ 
+      success: true, 
+      messageId: message.id,
+      message: 'Email de test reçu et traité avec succès',
+      data: {
+        id: message.id,
+        subject: message.subject,
+        senderEmail: message.senderEmail,
+        senderName: message.senderName,
+        receivedAt: message.receivedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [TEST] Erreur lors de la simulation:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erreur lors de la simulation de réception',
+      details: error.message 
+    });
+  }
+});
+
 export default router;

@@ -9,6 +9,8 @@ import UserSession from './UserSession.js';
 import Message from './Message.js';
 import MessageAttachment from './MessageAttachment.js';
 import Notification from './Notification.js';
+import Report from './Report.js';
+import ModerationAction from './ModerationAction.js';
 
 // Définition des associations
 
@@ -154,6 +156,72 @@ Utilisateur.hasMany(Notification, {
   as: 'notifications'
 });
 
+// 9. Relations Report
+Report.belongsTo(Utilisateur, {
+  foreignKey: 'reporter_id',
+  as: 'reporter'
+});
+
+Report.belongsTo(Utilisateur, {
+  foreignKey: 'reported_user_id',
+  as: 'reportedUser'
+});
+Report.belongsTo(File, {
+  foreignKey: 'file_id',
+  as: 'reportedFile'
+});
+
+Report.belongsTo(Utilisateur, {
+  foreignKey: 'admin_id',
+  as: 'admin'
+});
+
+Utilisateur.hasMany(Report, {
+  foreignKey: 'reporter_id',
+  as: 'reportsMade'
+});
+
+Utilisateur.hasMany(Report, {
+  foreignKey: 'reported_user_id',
+  as: 'reportsReceived'
+});
+
+File.hasMany(Report, {
+  foreignKey: 'file_id',
+  as: 'reports'
+});
+
+// 10. Relations ModerationAction
+ModerationAction.belongsTo(Utilisateur, {
+  foreignKey: 'user_id',
+  as: 'user'
+});
+
+ModerationAction.belongsTo(Utilisateur, {
+  foreignKey: 'admin_id',
+  as: 'admin'
+});
+
+ModerationAction.belongsTo(Report, {
+  foreignKey: 'report_id',
+  as: 'report'
+});
+
+Utilisateur.hasMany(ModerationAction, {
+  foreignKey: 'user_id',
+  as: 'moderationActions'
+});
+
+Utilisateur.hasMany(ModerationAction, {
+  foreignKey: 'admin_id',
+  as: 'adminActions'
+});
+
+Report.hasMany(ModerationAction, {
+  foreignKey: 'report_id',
+  as: 'actions'
+});
+
 export {
   sequelize,
   Utilisateur,
@@ -165,5 +233,7 @@ export {
   UserSession,
   Message,
   MessageAttachment,
-  Notification
+  Notification,
+  Report,
+  ModerationAction
 };

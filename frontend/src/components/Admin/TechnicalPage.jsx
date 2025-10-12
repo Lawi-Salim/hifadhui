@@ -160,6 +160,7 @@ const TechnicalPage = () => {
   };
 
   const getBrowserIcon = (browser) => {
+    if (!browser) return '🌐';
     switch (browser.toLowerCase()) {
       case 'chrome': return '🌐';
       case 'firefox': return '🦊';
@@ -170,6 +171,7 @@ const TechnicalPage = () => {
   };
 
   const getOSIcon = (os) => {
+    if (!os) return '💻';
     switch (os.toLowerCase()) {
       case 'windows': return '🪟';
       case 'macos': return '🍎';
