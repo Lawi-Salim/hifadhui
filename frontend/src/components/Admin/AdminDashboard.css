@@ -1685,8 +1685,8 @@
 .gmail-message-modal {
   background: var(--surface-color);
   border-radius: 8px;
-  width: 95vw;
-  max-width: 1200px;
+  width: 70vw;
+  max-width: 900px;
   max-height: 90vh;
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
@@ -1836,6 +1836,12 @@
   font-weight: 600;
   color: var(--text-primary);
   font-size: 0.875rem;
+}
+
+.gmail-sender-email {
+  font-weight: 400;
+  color: var(--text-secondary);
+  font-size: 0.813rem;
 }
 
 .gmail-recipient-info {

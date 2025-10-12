@@ -872,15 +872,25 @@ const MessagesPage = () => {
                       <div className="gmail-sender-details">
                         <div className="gmail-sender-name-line">
                           <span className="gmail-sender-name">
-                            {(messageDetail.type === 'contact_received' || messageDetail.type === 'email_received') && messageDetail.senderName}
-                            {messageDetail.type === 'email_sent' && 'Hifadhui'}
+                            {(messageDetail.type === 'contact_received' || messageDetail.type === 'email_received') && (
+                              <>
+                                {messageDetail.senderName} <span className="gmail-sender-email">&lt;{messageDetail.senderEmail}&gt;</span>
+                              </>
+                            )}
+                            {messageDetail.type === 'email_sent' && (
+                              <>
+                                Hifadhui <span className="gmail-sender-email">&lt;mavuna@hifadhui.site&gt;</span>
+                              </>
+                            )}
                             {(messageDetail.type === 'notification' || messageDetail.type === 'alert') && 'Système Hifadhui'}
                           </span>
+                        </div>
+                        <div className="gmail-sender-name-line">
                           <div className="gmail-recipient-info">
                             <span className="gmail-to-me">
-                              {(messageDetail.type === 'contact_received' || messageDetail.type === 'email_received') && 'à mavuna@hifadhui.site'}
-                              {messageDetail.type === 'email_sent' && `à ${messageDetail.recipientEmail?.split('@')[0]}`}
-                              {(messageDetail.type === 'notification' || messageDetail.type === 'alert') && 'à moi'}
+                              {(messageDetail.type === 'contact_received' || messageDetail.type === 'email_received') && 'À moi'}
+                              {messageDetail.type === 'email_sent' && `À ${messageDetail.recipientEmail?.split('@')[0]}`}
+                              {(messageDetail.type === 'notification' || messageDetail.type === 'alert') && 'À moi'}
                             </span>
                             <button 
                               className="gmail-dropdown-arrow"
