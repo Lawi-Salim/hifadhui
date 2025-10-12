@@ -22,12 +22,38 @@ router.post('/sendgrid/inbound', upload.any(), async (req, res) => {
     console.log('📨 [WEBHOOK] Files:', req.files);
 
     // Extraire les données de l'email
+    // SendGrid envoie les champs text et html si "POST the raw, full MIME message" est désactivé
+    // Sinon, il faut parser le champ email (raw)
+    let textContent = req.body.text;
+    let htmlContent = req.body.html;
+    
+    // Si text/html ne sont pas présents, extraire du raw email
+    if (!textContent && !htmlContent && req.body.email) {
+      const rawEmail = req.body.email;
+      
+      // Extraction basique du texte (quoted-printable)
+      const textMatch = rawEmail.match(/Content-Type: text\/plain[^]*?Content-Transfer-Encoding: quoted-printable\r\n\r\n([^]*?)\r\n\r\n--/);
+      if (textMatch) {
+        textContent = textMatch[1]
+          .replace(/=\r\n/g, '') // Retirer les soft line breaks
+          .replace(/=([0-9A-F]{2})/g, (match, hex) => String.fromCharCode(parseInt(hex, 16))); // Décoder quoted-printable
+      }
+      
+      // Extraction basique du HTML (quoted-printable)
+      const htmlMatch = rawEmail.match(/Content-Type: text\/html[^]*?Content-Transfer-Encoding: quoted-printable\r\n\r\n([^]*?)\r\n\r\n--/);
+      if (htmlMatch) {
+        htmlContent = htmlMatch[1]
+          .replace(/=\r\n/g, '') // Retirer les soft line breaks
+          .replace(/=([0-9A-F]{2})/g, (match, hex) => String.fromCharCode(parseInt(hex, 16))); // Décoder quoted-printable
+      }
+    }
+    
     const emailData = {
       from: req.body.from,
       to: req.body.to,
       subject: req.body.subject,
-      text: req.body.text,
-      html: req.body.html,
+      text: textContent,
+      html: htmlContent,
       envelope: req.body.envelope ? JSON.parse(req.body.envelope) : null,
       attachments: req.files || []
     };
