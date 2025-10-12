@@ -327,64 +327,60 @@ const ItemList = ({
               </div>
             )}
             
-            <div className="list-item-preview">
+            <div className="list-item-thumbnail">
               {isImage ? (
                 <img 
                   src={getImageUrl(item.file_url)}
                   alt={item.filename}
-                  className="list-thumbnail"
+                  className="list-image-thumb"
                 />
               ) : isPdf ? (
-                <div className="pdf-preview-container">
-                  <PdfPreview fileUrl={item.file_url} fileId={item.id} className="list-thumbnail" />
-                  <div className="file-type-badge pdf-badge">PDF</div>
+                <div className="pdf-preview-small">
+                  <PdfPreview fileUrl={item.file_url} fileId={item.id} className="list-pdf-thumb" />
+                  <div className="file-type-badge-small pdf-badge">PDF</div>
                 </div>
               ) : (
-                <div className="file-icon-preview">
+                <div className="file-icon-small">
                   {getFileIcon(item.filename)}
                 </div>
               )}
             </div>
             
-            <div className="list-item-info">
-              <div className="list-item-header">
-                <h4 className="list-item-title" title={item.filename}>
-                  <FormattedText 
-                    text={item.filename} 
-                    type="filename" 
-                    maxLength={40}
-                  />
-                </h4>
-              </div>
-              
-              <div className="list-item-meta">
-                <div className="file-details">
-                  <span className="file-size">{item.size ? `${(item.size / 1024).toFixed(2)} KB` : 'N/A'}</span>
-                  <span className="file-date">{formatDate(item.date_upload)}</span>
-                </div>
+            <div className="list-item-content">
+              <h4 className="list-file-name" title={item.filename}>
+                <FormattedText 
+                  text={item.filename} 
+                  type="filename" 
+                  maxLength={40}
+                />
+              </h4>
+              <div className="list-meta-info">
+                <span className="list-file-size">{item.size ? `${(item.size / 1024).toFixed(2)} KB` : 'N/A'}</span>
+                <span className="list-file-date">{formatDate(item.date_upload)}</span>
               </div>
             </div>
+            
             {!isSelectionMode && (
-              <div className="dossier-actions-container">
-                  <button 
-                      className="btn-menu" 
-                      ref={el => refs.current[item.id] = el}
-                      onClick={(e) => { e.stopPropagation(); toggleMenu(e, item.id); }}
-                  >
-                      <FaEllipsisV />
-                  </button>
-                  {activeMenu?.id === item.id && customActionsMenu && customActionsMenu(item)}
-                  {activeMenu?.id === item.id && !customActionsMenu && (
-                    <ActionMenu
-                      isOpen={true}
-                      position={activeMenu?.position || 'bottom'}
-                      onDownload={handleOpenFile ? () => { handleOpenFile(item); toggleMenu(null); } : null}
-                      onShare={handleShare ? () => { handleShare(item); toggleMenu(null); } : null}
-                      onRename={handleOpenFileRenameModal ? () => { handleOpenFileRenameModal(item); toggleMenu(null); } : null}
-                      onDelete={handleOpenFileDeleteModal ? () => { handleOpenFileDeleteModal(item); toggleMenu(null); } : null}
-                      onClose={() => toggleMenu(null)}
-                    />
-                  )}
+              <div className="list-item-actions">
+                <button 
+                    className="btn-menu" 
+                    ref={el => refs.current[item.id] = el}
+                    onClick={(e) => { e.stopPropagation(); toggleMenu(e, item.id); }}
+                >
+                    <FaEllipsisV />
+                </button>
+                {activeMenu?.id === item.id && customActionsMenu && customActionsMenu(item)}
+                {activeMenu?.id === item.id && !customActionsMenu && (
+                  <ActionMenu
+                    isOpen={true}
+                    position={activeMenu?.position || 'bottom'}
+                    onDownload={handleOpenFile ? () => { handleOpenFile(item); toggleMenu(null); } : null}
+                    onShare={handleShare ? () => { handleShare(item); toggleMenu(null); } : null}
+                    onRename={handleOpenFileRenameModal ? () => { handleOpenFileRenameModal(item); toggleMenu(null); } : null}
+                    onDelete={handleOpenFileDeleteModal ? () => { handleOpenFileDeleteModal(item); toggleMenu(null); } : null}
+                    onClose={() => toggleMenu(null)}
+                  />
+                )}
               </div>
             )}
           </div>

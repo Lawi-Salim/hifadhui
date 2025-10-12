@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaEye, FaImage } from 'react-icons/fa';
+import { FaImage } from 'react-icons/fa';
 import { FiUser, FiCalendar, FiHardDrive, FiMenu } from 'react-icons/fi';
 import { getAdminFiles } from '../../services/adminService';
-import api from '../../services/api';
 import FileDetailModal from '../Common/FileDetailModal';
 import ContentToolbar from '../Common/ContentToolbar';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
@@ -115,8 +114,8 @@ const UserImages = () => {
         </div>
 
         {/* Filtres Admin */}
-        <div className="admin-filters mb-4">
-          <div className="flex flex-wrap gap-4">
+        <div className="admin-filters-section">
+          <div className="filters-grid">
             <div className="filter-group">
               <label className="filter-label">
                 <FiUser className="filter-icon" />
@@ -130,7 +129,7 @@ const UserImages = () => {
                 <option value="">Tous les utilisateurs</option>
                 {getUniqueUsers().map(user => (
                   <option key={user.id} value={user.id}>
-                    {user.display_name || user.username || user.email} ({user.email})
+                    <UserDisplayName user={user} /> ({user.email})
                   </option>
                 ))}
               </select>
@@ -174,15 +173,12 @@ const UserImages = () => {
           </div>
         </div>
 
-        <div className="file-list-header">
-          <div className="header-left">
-            <h2 className="text-lg font-semibold">Images de tous les utilisateurs</h2>
+        <div className="admin-content-header">
+          <div className="content-header-left">
+            <h2 className="section-title">Images de tous les utilisateurs</h2>
+            <span className="items-count">{images.length} / {totalCount} images chargées</span>
           </div>
-          <div className="header-right">
-            <div className="text-sm text-secondary text-page">
-              {images.length} / {totalCount} images chargées
-            </div>
-            
+          <div className="content-header-right">
             <ContentToolbar
               viewMode={viewMode}
               setViewMode={setViewMode}
@@ -221,40 +217,26 @@ const UserImages = () => {
                       />
                     </div>
                     
-                    <div className="admin-image-info">
-                      <div className="image-header">
-                        <h4 className="image-title" title={image.filename}>
-                          {image.filename}
-                        </h4>
-                        <div className="image-actions">
-                          <button 
-                            onClick={() => handlePreview(image)}
-                            className="action-btn"
-                            title="Aperçu"
-                          >
-                            <FaEye />
-                          </button>
-                        </div>
+                    <div className="admin-file-footer">
+                      <h4 className="file-name" title={image.filename}>
+                        {image.filename}
+                      </h4>
+                      
+                      <div className="user-info-row">
+                        <SmartAvatar user={image.fileUser} size={24} />
+                        <span className="user-name-text">
+                          <UserDisplayName user={image.fileUser} />
+                        </span>
+                        <ProviderIcon user={image.fileUser} size="small" />
                       </div>
                       
-                      <div className="image-meta">
-                        <div className="user-info">
-                          <SmartAvatar user={image.fileUser} size={20} />
-                          <span className="user-name">
-                            <UserDisplayName user={image.fileUser} />
-                          </span>
-                          <ProviderIcon user={image.fileUser} size="small" />
-                        </div>
-                        
-                        <div className="file-details">
-                          <span className="file-size">{formatFileSize(image.size)}</span>
-                          <span className="file-date">
-                            {new Date(image.date_upload || image.createdAt).toLocaleDateString('fr-FR')}
-                          </span>
-                        </div>
+                      <div className="file-meta-row">
+                        <span className="file-size-text">{formatFileSize(image.size)}</span>
+                        <span className="file-date-text">
+                          {new Date(image.date_upload || image.createdAt).toLocaleDateString('fr-FR')}
+                        </span>
                       </div>
                     </div>
-                    
                   </div>
                 ))}
               </div>
@@ -267,46 +249,35 @@ const UserImages = () => {
                     className="admin-list-item"
                     ref={index === images.length - 1 ? lastItemRef : null}
                   >
-                    <div className="list-item-preview">
+                    <div className="list-item-thumbnail">
                       <img 
                         src={buildImageUrl(image.file_url)}
                         alt={image.filename}
-                        className="list-thumbnail"
+                        className="list-image-thumb"
                         onClick={() => handlePreview(image)}
                       />
                     </div>
                     
-                    <div className="list-item-info">
-                      <div className="list-item-header">
-                        <h4 className="list-item-title" title={image.filename}>
-                          {image.filename}
-                        </h4>
-                        <div className="list-item-actions">
-                          <button 
-                            onClick={() => handlePreview(image)}
-                            className="action-btn"
-                            title="Aperçu"
-                          >
-                            <FaEye />
-                          </button>
-                        </div>
-                      </div>
+                    <div className="list-item-content">
+                      <h4 className="list-file-name" title={image.filename}>
+                        {image.filename}
+                      </h4>
                       
-                      <div className="list-item-meta">
-                        <div className="user-info">
-                          <SmartAvatar user={image.fileUser} size={20} />
-                          <span className="user-name">
-                            <UserDisplayName user={image.fileUser} />
-                          </span>
-                          <ProviderIcon user={image.fileUser} size="small" />
-                        </div>
-                        
-                        <div className="file-details">
-                          <span className="file-size">{formatFileSize(image.size)}</span>
-                          <span className="file-date">
-                            {new Date(image.date_upload || image.createdAt).toLocaleDateString('fr-FR')}
-                          </span>
-                        </div>
+                      <div className="list-user-info">
+                        <SmartAvatar user={image.fileUser} size={20} />
+                        <span className="list-user-name">
+                          <UserDisplayName user={image.fileUser} />
+                        </span>
+                        <ProviderIcon user={image.fileUser} size="small" />
+                      </div>
+                    </div>
+                    
+                    <div className="list-item-meta-right">
+                      <div className="list-meta-info">
+                        <span className="list-file-size">{formatFileSize(image.size)}</span>
+                        <span className="list-file-date">
+                          {new Date(image.date_upload || image.createdAt).toLocaleDateString('fr-FR')}
+                        </span>
                       </div>
                     </div>
                   </div>

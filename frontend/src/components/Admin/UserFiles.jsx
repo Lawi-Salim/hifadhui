@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaEye, FaFileAlt } from 'react-icons/fa';
+import { FaFileAlt } from 'react-icons/fa';
 import { FiUser, FiCalendar, FiHardDrive, FiMenu } from 'react-icons/fi';
 import { getAdminFiles } from '../../services/adminService';
-import api from '../../services/api';
 import FileDetailModal from '../Common/FileDetailModal';
 import ContentToolbar from '../Common/ContentToolbar';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import SmartAvatar from '../Layout/SmartAvatar';
 import UserDisplayName from '../Layout/UserDisplayName';
 import ProviderIcon from '../Layout/ProviderIcon';
-import { buildPdfUrl } from '../../config/cloudinary';
 import PdfPreview from '../Common/PdfPreview';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import '../Files/FileList.css';
@@ -125,8 +123,8 @@ const UserFiles = () => {
         </div>
 
         {/* Filtres Admin */}
-        <div className="admin-filters mb-4">
-          <div className="flex flex-wrap gap-4">
+        <div className="admin-filters-section">
+          <div className="filters-grid">
             <div className="filter-group">
               <label className="filter-label">
                 <FiUser className="filter-icon" />
@@ -184,15 +182,12 @@ const UserFiles = () => {
           </div>
         </div>
 
-        <div className="file-list-header">
-          <div className="header-left">
-            <h2 className="text-lg font-semibold">Fichiers de tous les utilisateurs</h2>
+        <div className="admin-content-header">
+          <div className="content-header-left">
+            <h2 className="section-title">Fichiers de tous les utilisateurs</h2>
+            <span className="items-count">{files.length} / {totalCount} fichiers chargés</span>
           </div>
-          <div className="header-right">
-            <div className="text-sm text-secondary text-page">
-              {files.length} / {totalCount} fichiers chargés
-            </div>
-            
+          <div className="content-header-right">
             <ContentToolbar
               viewMode={viewMode}
               setViewMode={setViewMode}
@@ -241,40 +236,26 @@ const UserFiles = () => {
                       )}
                     </div>
                     
-                    <div className="admin-file-info">
-                      <div className="file-header">
-                        <h4 className="file-title" title={file.filename}>
-                          {file.filename}
-                        </h4>
-                        <div className="file-actions">
-                          <button 
-                            onClick={() => handlePreview(file)}
-                            className="action-btn"
-                            title="Aperçu"
-                          >
-                            <FaEye />
-                          </button>
-                        </div>
+                    <div className="admin-file-footer">
+                      <h4 className="file-name" title={file.filename}>
+                        {file.filename}
+                      </h4>
+                      
+                      <div className="user-info-row">
+                        <SmartAvatar user={file.fileUser} size={24} />
+                        <span className="user-name-text">
+                          <UserDisplayName user={file.fileUser} />
+                        </span>
+                        <ProviderIcon user={file.fileUser} size="small" />
                       </div>
                       
-                      <div className="file-meta">
-                        <div className="user-info">
-                          <SmartAvatar user={file.fileUser} size={20} />
-                          <span className="user-name">
-                            <UserDisplayName user={file.fileUser} />
-                          </span>
-                          <ProviderIcon user={file.fileUser} size="small" />
-                        </div>
-                        
-                        <div className="file-details">
-                          <span className="file-size">{formatFileSize(file.size)}</span>
-                          <span className="file-date">
-                            {new Date(file.date_upload || file.createdAt).toLocaleDateString('fr-FR')}
-                          </span>
-                        </div>
+                      <div className="file-meta-row">
+                        <span className="file-size-text">{formatFileSize(file.size)}</span>
+                        <span className="file-date-text">
+                          {new Date(file.date_upload || file.createdAt).toLocaleDateString('fr-FR')}
+                        </span>
                       </div>
                     </div>
-                    
                   </div>
                 ))}
               </div>
@@ -287,50 +268,39 @@ const UserFiles = () => {
                     className="admin-list-item"
                     ref={index === files.length - 1 ? lastItemRef : null}
                   >
-                    <div className="list-item-preview">
+                    <div className="list-item-thumbnail">
                       {file.mimetype?.includes('pdf') ? (
-                        <div className="pdf-preview-container">
-                          <PdfPreview fileUrl={file.file_url} fileId={file.id} className="list-thumbnail" />
-                          <div className="file-type-badge pdf-badge">PDF</div>
+                        <div className="pdf-preview-small">
+                          <PdfPreview fileUrl={file.file_url} fileId={file.id} className="list-pdf-thumb" />
+                          <div className="file-type-badge-small pdf-badge">PDF</div>
                         </div>
                       ) : (
-                        <div className="file-icon-preview">
+                        <div className="file-icon-small">
                           {getFileIcon(file.filename, file.mimetype)}
                         </div>
                       )}
                     </div>
                     
-                    <div className="list-item-info">
-                      <div className="list-item-header">
-                        <h4 className="list-item-title" title={file.filename}>
-                          {file.filename}
-                        </h4>
-                        <div className="list-item-actions">
-                          <button 
-                            onClick={() => handlePreview(file)}
-                            className="action-btn"
-                            title="Aperçu"
-                          >
-                            <FaEye />
-                          </button>
-                        </div>
-                      </div>
+                    <div className="list-item-content">
+                      <h4 className="list-file-name" title={file.filename}>
+                        {file.filename}
+                      </h4>
                       
-                      <div className="list-item-meta">
-                        <div className="user-info">
-                          <SmartAvatar user={file.fileUser} size={20} />
-                          <span className="user-name">
-                            <UserDisplayName user={file.fileUser} />
-                          </span>
-                          <ProviderIcon user={file.fileUser} size="small" />
-                        </div>
-                        
-                        <div className="file-details">
-                          <span className="file-size">{formatFileSize(file.size)}</span>
-                          <span className="file-date">
-                            {new Date(file.date_upload || file.createdAt).toLocaleDateString('fr-FR')}
-                          </span>
-                        </div>
+                      <div className="list-user-info">
+                        <SmartAvatar user={file.fileUser} size={20} />
+                        <span className="list-user-name">
+                          <UserDisplayName user={file.fileUser} />
+                        </span>
+                        <ProviderIcon user={file.fileUser} size="small" />
+                      </div>
+                    </div>
+                    
+                    <div className="list-item-meta-right">
+                      <div className="list-meta-info">
+                        <span className="list-file-size">{formatFileSize(file.size)}</span>
+                        <span className="list-file-date">
+                          {new Date(file.date_upload || file.createdAt).toLocaleDateString('fr-FR')}
+                        </span>
                       </div>
                     </div>
                   </div>
