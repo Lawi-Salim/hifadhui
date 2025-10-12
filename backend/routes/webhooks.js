@@ -27,6 +27,36 @@ router.post('/sendgrid/inbound', upload.any(), async (req, res) => {
     let textContent = req.body.text;
     let htmlContent = req.body.html;
     
+    // Fonction pour décoder quoted-printable UTF-8
+    const decodeQuotedPrintable = (text) => {
+      // Retirer les soft line breaks (= à la fin de ligne)
+      text = text.replace(/=\r\n/g, '');
+      
+      // Extraire tous les bytes encodés
+      const bytes = [];
+      let i = 0;
+      while (i < text.length) {
+        if (text[i] === '=' && i + 2 < text.length) {
+          const hex = text.substr(i + 1, 2);
+          if (/^[0-9A-F]{2}$/i.test(hex)) {
+            bytes.push(parseInt(hex, 16));
+            i += 3;
+            continue;
+          }
+        }
+        bytes.push(text.charCodeAt(i));
+        i++;
+      }
+      
+      // Convertir les bytes en string UTF-8
+      try {
+        return new TextDecoder('utf-8').decode(new Uint8Array(bytes));
+      } catch (e) {
+        // Fallback si le décodage échoue
+        return String.fromCharCode(...bytes);
+      }
+    };
+    
     // Si text/html ne sont pas présents, extraire du raw email
     if (!textContent && !htmlContent && req.body.email) {
       const rawEmail = req.body.email;
@@ -37,9 +67,7 @@ router.post('/sendgrid/inbound', upload.any(), async (req, res) => {
         let extracted = textMatch[1];
         // Si c'est du quoted-printable, décoder
         if (rawEmail.includes('Content-Transfer-Encoding: quoted-printable')) {
-          extracted = extracted
-            .replace(/=\r\n/g, '') // Retirer les soft line breaks
-            .replace(/=([0-9A-F]{2})/g, (match, hex) => String.fromCharCode(parseInt(hex, 16))); // Décoder
+          extracted = decodeQuotedPrintable(extracted);
         }
         textContent = extracted.trim();
       }
@@ -50,9 +78,7 @@ router.post('/sendgrid/inbound', upload.any(), async (req, res) => {
         let extracted = htmlMatch[1];
         // Si c'est du quoted-printable, décoder
         if (rawEmail.includes('Content-Transfer-Encoding: quoted-printable')) {
-          extracted = extracted
-            .replace(/=\r\n/g, '') // Retirer les soft line breaks
-            .replace(/=([0-9A-F]{2})/g, (match, hex) => String.fromCharCode(parseInt(hex, 16))); // Décoder
+          extracted = decodeQuotedPrintable(extracted);
         }
         htmlContent = extracted.trim();
       }

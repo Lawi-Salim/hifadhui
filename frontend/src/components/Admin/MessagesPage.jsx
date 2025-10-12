@@ -447,7 +447,8 @@ const MessagesPage = () => {
 
   const getMessageIcon = (message) => {
     switch (message.type) {
-      case 'contact_received': return <FiMail className="message-type-icon contact" />;
+      case 'contact_received':
+      case 'email_received': return <FiMail className="message-type-icon contact" />;
       case 'email_sent': return <FiSend className="message-type-icon sent" />;
       case 'notification': return <FiAlertCircle className="message-type-icon notification" />;
       case 'alert': return <FiAlertCircle className="message-type-icon alert" />;
@@ -716,7 +717,7 @@ const MessagesPage = () => {
                   </div>
                   
                   <div className="gmail-message-sender">
-                    {message.type === 'contact_received' && message.senderName}
+                    {(message.type === 'contact_received' || message.type === 'email_received') && message.senderName}
                     {message.type === 'email_sent' && `À: ${message.recipientEmail?.split('@')[0]}`}
                     {(message.type === 'notification' || message.type === 'alert') && 'Système Hifadhui'}
                   </div>
@@ -835,7 +836,7 @@ const MessagesPage = () => {
                     <h1>{messageDetail.subject}</h1>
                     <div className="gmail-modal-labels">
                       <span className={`gmail-label ${messageDetail.type}`}>
-                        {messageDetail.type === 'contact_received' && 'Contact'}
+                        {(messageDetail.type === 'contact_received' || messageDetail.type === 'email_received') && 'Email reçu'}
                         {messageDetail.type === 'email_sent' && 'Envoyé'}
                         {messageDetail.type === 'notification' && 'Notification'}
                         {messageDetail.type === 'alert' && 'Alerte'}
@@ -864,20 +865,20 @@ const MessagesPage = () => {
                   <div className="gmail-message-header-info">
                     <div className="gmail-sender-info">
                       <div className="gmail-sender-avatar">
-                        {messageDetail.type === 'contact_received' && messageDetail.senderName?.charAt(0)?.toUpperCase()}
+                        {(messageDetail.type === 'contact_received' || messageDetail.type === 'email_received') && messageDetail.senderName?.charAt(0)?.toUpperCase()}
                         {messageDetail.type === 'email_sent' && 'H'}
                         {(messageDetail.type === 'notification' || messageDetail.type === 'alert') && 'S'}
                       </div>
                       <div className="gmail-sender-details">
                         <div className="gmail-sender-name-line">
                           <span className="gmail-sender-name">
-                            {messageDetail.type === 'contact_received' && messageDetail.senderName}
+                            {(messageDetail.type === 'contact_received' || messageDetail.type === 'email_received') && messageDetail.senderName}
                             {messageDetail.type === 'email_sent' && 'Hifadhui'}
                             {(messageDetail.type === 'notification' || messageDetail.type === 'alert') && 'Système Hifadhui'}
                           </span>
                           <div className="gmail-recipient-info">
                             <span className="gmail-to-me">
-                              {messageDetail.type === 'contact_received' && 'à moi'}
+                              {(messageDetail.type === 'contact_received' || messageDetail.type === 'email_received') && 'à mavuna@hifadhui.site'}
                               {messageDetail.type === 'email_sent' && `à ${messageDetail.recipientEmail?.split('@')[0]}`}
                               {(messageDetail.type === 'notification' || messageDetail.type === 'alert') && 'à moi'}
                             </span>
@@ -892,13 +893,13 @@ const MessagesPage = () => {
                               <div className="gmail-tooltip">
                                 <div className="gmail-tooltip-header">
                                   <strong>De:</strong> 
-                                  {messageDetail.type === 'contact_received' && ` ${messageDetail.senderName} <${messageDetail.senderEmail}>`}
+                                  {(messageDetail.type === 'contact_received' || messageDetail.type === 'email_received') && ` ${messageDetail.senderName} <${messageDetail.senderEmail}>`}
                                   {messageDetail.type === 'email_sent' && ' Hifadhui <mavuna@hifadhui.site>'}
                                   {(messageDetail.type === 'notification' || messageDetail.type === 'alert') && ' Système Hifadhui <système@hifadhui.site>'}
                                 </div>
                                 <div className="gmail-tooltip-row">
                                   <strong>répondre à:</strong> 
-                                  {messageDetail.type === 'contact_received' && ` ${messageDetail.senderEmail}`}
+                                  {(messageDetail.type === 'contact_received' || messageDetail.type === 'email_received') && ` ${messageDetail.senderEmail}`}
                                   {messageDetail.type === 'email_sent' && ' mavuna@hifadhui.site'}
                                   {(messageDetail.type === 'notification' || messageDetail.type === 'alert') && ' système@hifadhui.site'}
                                 </div>
@@ -973,28 +974,11 @@ const MessagesPage = () => {
                     </div>
                   )}
 
-                  {/* Technical Details */}
-                  {messageDetail.metadata && Object.keys(messageDetail.metadata).length > 0 && (
-                    <div className="gmail-technical-details">
-                      <button className="gmail-details-toggle">
-                        <FiChevronDown />
-                        Afficher les détails techniques
-                      </button>
-                      <div className="gmail-details-content">
-                        {Object.entries(messageDetail.metadata).map(([key, value]) => (
-                          <div key={key} className="gmail-detail-item">
-                            <span className="detail-key">{key}:</span>
-                            <span className="detail-value">{JSON.stringify(value)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Gmail Reply Actions */}
                 <div className="gmail-modal-footer">
-                  {messageDetail.type === 'contact_received' && (
+                  {(messageDetail.type === 'contact_received' || messageDetail.type === 'email_received') && (
                     <button 
                       className="gmail-reply-btn gmail-reply-primary"
                       onClick={() => {
