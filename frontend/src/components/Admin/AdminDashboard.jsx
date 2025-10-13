@@ -11,7 +11,8 @@ import {
   FiRefreshCw,
   FiEye,
   FiDownload,
-  FiUpload
+  FiUpload,
+  FiMenu
 } from 'react-icons/fi';
 import './AdminDashboard.css';
 import LoadingSpinner from '../Common/LoadingSpinner';
@@ -178,28 +179,18 @@ const AdminDashboard = () => {
   return (
     <div className="admin-dashboard">
       <div className="dashboard-header">
-        <h1>Dashboard Admin</h1>
-        <div className="dashboard-controls">
-          <div className="time-range-selector">
-            <button 
-              className={timeRange === '7d' ? 'active' : ''}
-              onClick={() => setTimeRange('7d')}
-            >
-              7 jours
-            </button>
-            <button 
-              className={timeRange === '30d' ? 'active' : ''}
-              onClick={() => setTimeRange('30d')}
-            >
-              30 jours
-            </button>
-            <button 
-              className={timeRange === '90d' ? 'active' : ''}
-              onClick={() => setTimeRange('90d')}
-            >
-              90 jours
-            </button>
-          </div>
+        <div className="dashboard-header-top">
+          <button 
+            className="mobile-hamburger-menu"
+            onClick={() => {
+              const event = new CustomEvent('toggleSidebar');
+              window.dispatchEvent(event);
+            }}
+            aria-label="Toggle menu"
+          >
+            <FiMenu />
+          </button>
+          <h1>Dashboard Admin</h1>
           <button 
             className="btn btn-primary refresh-btn"
             onClick={fetchDashboardData}
@@ -207,6 +198,27 @@ const AdminDashboard = () => {
           >
             <FiRefreshCw className={loading ? 'spinning' : ''} />
             Actualiser
+          </button>
+        </div>
+        
+        <div className="time-range-selector">
+          <button 
+            className={timeRange === '7d' ? 'active' : ''}
+            onClick={() => setTimeRange('7d')}
+          >
+            7 jours
+          </button>
+          <button 
+            className={timeRange === '30d' ? 'active' : ''}
+            onClick={() => setTimeRange('30d')}
+          >
+            30 jours
+          </button>
+          <button 
+            className={timeRange === '90d' ? 'active' : ''}
+            onClick={() => setTimeRange('90d')}
+          >
+            90 jours
           </button>
         </div>
       </div>

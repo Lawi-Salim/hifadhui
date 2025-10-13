@@ -17,7 +17,8 @@ import {
   FiSettings, 
   FiHardDrive,
   FiX,
-  FiTrash2
+  FiTrash2,
+  FiMenu
 } from 'react-icons/fi';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import AdminDeleteModal from './AdminDeleteModal';
@@ -473,11 +474,22 @@ const NotificationsPage = () => {
     <div className="messages-page">
       <div className="messages-header">
         <div className="header-title">
-          <h1>
-            <FiBell className="page-icon" />
-            Notifications Système
-          </h1>
-          <p>Surveillez les alertes et notifications du système</p>
+          <button 
+            className="mobile-hamburger-menu"
+            onClick={() => {
+              const event = new CustomEvent('toggleSidebar');
+              window.dispatchEvent(event);
+            }}
+            aria-label="Toggle menu"
+          >
+            <FiMenu />
+          </button>
+          <div className="title-content">
+            <h1>
+              <FiBell className="page-icon" />
+              Notifications
+            </h1>
+          </div>
         </div>
         
         <div className="header-actions">

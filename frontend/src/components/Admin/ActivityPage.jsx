@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiClock } from 'react-icons/fi';
+import { FiClock, FiMenu, FiActivity } from 'react-icons/fi';
 import ActivityList from './ActivityList';
 import './AdminDashboard.css';
 
@@ -7,7 +7,17 @@ const ActivityPage = () => {
   return (
     <div className="admin-dashboard">
       <div className="dashboard-header">
-        <h1>Logs d'activité</h1>
+        <button 
+          className="mobile-hamburger-menu"
+          onClick={() => {
+            const event = new CustomEvent('toggleSidebar');
+            window.dispatchEvent(event);
+          }}
+          aria-label="Toggle menu"
+        >
+          <FiMenu />
+        </button>
+        <h1><FiActivity className="page-icon" /> Logs d'activité</h1>
       </div>
 
       {/* Journal des activités récentes */}

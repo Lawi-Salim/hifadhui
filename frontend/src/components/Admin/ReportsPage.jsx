@@ -21,7 +21,8 @@ import {
   FiActivity,
   FiTarget,
   FiCpu,
-  FiBell
+  FiBell,
+  FiMenu
 } from 'react-icons/fi';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import ModerationActionModal from './ModerationActionModal';
@@ -704,7 +705,19 @@ const ReportsPage = () => {
   return (
     <div className="admin-dashboard">
       <div className="dashboard-header">
-        <h1>Modération & Signalements</h1>
+        <button 
+          className="mobile-hamburger-menu"
+          onClick={() => {
+            const event = new CustomEvent('toggleSidebar');
+            window.dispatchEvent(event);
+          }}
+          aria-label="Toggle menu"
+        >
+          <FiMenu />
+        </button>
+        <div className="title-content">
+          <h1><FiAlertTriangle className="page-icon" /> Modération & Signalements</h1>
+        </div>
         <div className="header-actions">
           <button 
             className="refresh-btn"

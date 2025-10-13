@@ -7,9 +7,16 @@
 /* Header */
 .dashboard-header {
   display: flex;
+  flex-direction: column;
+  margin-bottom: 30px;
+  gap: 1rem;
+}
+
+.dashboard-header-top {
+  display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  gap: 1rem;
 }
 
 .dashboard-header h1 {
@@ -17,6 +24,10 @@
   font-size: 2rem;
   font-weight: 600;
   margin: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .dashboard-controls {
@@ -31,6 +42,7 @@
   border-radius: 8px;
   padding: 4px;
   border: 1px solid var(--border-color);
+  width: fit-content;
 }
 
 .refresh-btn {
@@ -521,11 +533,24 @@
   gap: 2rem;
 }
 
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.title-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 .header-title h1 {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin: 0 0 0.5rem 0;
+  margin: 0;
   color: var(--text-primary);
   font-size: 2rem;
   font-weight: 700;
@@ -1687,7 +1712,7 @@
   border-radius: 8px;
   width: 70vw;
   max-width: 900px;
-  max-height: 90vh;
+  height: 90vh;
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   display: flex;
@@ -3565,6 +3590,38 @@
   
   .alerts-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Layout spécial Dashboard Admin pour mobile */
+@media (max-width: 600px) {
+  .dashboard-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 1.25rem;
+    flex: 1;
+  }
+  
+  .dashboard-header .refresh-btn {
+    padding: 6px 12px;
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+  
+  .time-range-selector {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .time-range-selector button {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 0.875rem;
   }
 }
 

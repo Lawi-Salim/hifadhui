@@ -24,7 +24,6 @@
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  /* width: 100%; */
   border-radius: 8px;
   transition: all 0.2s ease;
 }
@@ -35,6 +34,11 @@
   width: auto;
   max-width: 150px;
   object-fit: contain;
+}
+
+.brand-logo-icon {
+  font-size: 2rem;
+  color: var(--primary-color);
 }
 
 .brand-icon {

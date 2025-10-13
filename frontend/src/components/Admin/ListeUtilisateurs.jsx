@@ -7,7 +7,7 @@ import Pagination from '../Pagination';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { FiUsers, FiRefreshCw, FiEye, FiAlertTriangle, FiPause, FiTrash2 } from 'react-icons/fi';
+import { FiUsers, FiRefreshCw, FiEye, FiAlertTriangle, FiPause, FiTrash2, FiMenu } from 'react-icons/fi';
 import UserDetailsModal from './UserDetailsModal';
 import './StyleAdmin.css';
 import './AdminDashboard.css';
@@ -143,11 +143,22 @@ const ListeUtilisateurs = () => {
     <div className="messages-page">
       <div className="messages-header">
         <div className="header-title">
-          <h1>
-            <FiUsers className="page-icon" />
-            Liste des Utilisateurs
-          </h1>
-          <p>Gérez et surveillez tous les comptes utilisateurs de la plateforme</p>
+          <button 
+            className="mobile-hamburger-menu"
+            onClick={() => {
+              const event = new CustomEvent('toggleSidebar');
+              window.dispatchEvent(event);
+            }}
+            aria-label="Toggle menu"
+          >
+            <FiMenu />
+          </button>
+          <div className="title-content">
+            <h1 style={{ fontSize: '20px' }}>
+              <FiUsers className="page-icon" />
+              Liste utilisateur
+            </h1>
+          </div>
         </div>
         
         <div className="header-actions">

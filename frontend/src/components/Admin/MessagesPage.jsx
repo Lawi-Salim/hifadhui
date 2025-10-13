@@ -10,8 +10,6 @@ import {
   FiPlus,
   FiEye,
   FiTrash2,
-  FiClock,
-  FiUser,
   FiAlertCircle,
   FiMessageSquare,
   FiCornerUpLeft,
@@ -23,7 +21,8 @@ import {
   FiPaperclip,
   FiDownload,
   FiChevronDown,
-  FiCheckCircle
+  FiCheckCircle,
+  FiMenu
 } from 'react-icons/fi';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import AdminDeleteModal from './AdminDeleteModal';
@@ -473,14 +472,34 @@ const MessagesPage = () => {
     <div className="messages-page">
       <div className="messages-header">
         <div className="header-title">
-          <h1>
-            <FiMail className="page-icon" />
-            Messages
-          </h1>
-          <p>Gérez vos emails et communications</p>
+          <button 
+            className="mobile-hamburger-menu"
+            onClick={() => {
+              const event = new CustomEvent('toggleSidebar');
+              window.dispatchEvent(event);
+            }}
+            aria-label="Toggle menu"
+          >
+            <FiMenu />
+          </button>
+          <div className="title-content">
+            <h1>
+              <FiMail className="page-icon" />
+              Messages
+            </h1>
+          </div>
         </div>
         
         <div className="header-actions">
+          <button 
+            className="btn btn-secondary"
+            onClick={() => {
+              // Actualiser les messages
+              window.location.reload();
+            }}
+          >
+            <FiRefreshCw /> Actualiser
+          </button>
           <button 
             className="btn btn-primary"
             onClick={handleCompose}
@@ -914,7 +933,10 @@ const MessagesPage = () => {
                                   {(messageDetail.type === 'notification' || messageDetail.type === 'alert') && ' système@hifadhui.site'}
                                 </div>
                                 <div className="gmail-tooltip-row">
-                                  <strong>à:</strong> mavuna@hifadhui.site
+                                  <strong>à:</strong> 
+                                  {(messageDetail.type === 'contact_received' || messageDetail.type === 'email_received') && ' mavuna@hifadhui.site'}
+                                  {messageDetail.type === 'email_sent' && ` ${messageDetail.recipientEmail}`}
+                                  {(messageDetail.type === 'notification' || messageDetail.type === 'alert') && ' mavuna@hifadhui.site'}
                                 </div>
                                 <div className="gmail-tooltip-row">
                                   <strong>Date:</strong> {new Date(messageDetail.createdAt).toLocaleString('fr-FR')}

@@ -9,7 +9,8 @@ import {
   FiPieChart,
   FiBarChart2,
   FiFilter,
-  FiRefreshCw
+  FiRefreshCw,
+  FiMenu
 } from 'react-icons/fi';
 import './AdminDashboard.css';
 import LoadingSpinner from '../Common/LoadingSpinner';
@@ -186,7 +187,19 @@ const AnalyticsPage = () => {
   return (
     <div className="admin-dashboard">
       <div className="dashboard-header">
-        <h1>Analytics</h1>
+        <button 
+          className="mobile-hamburger-menu"
+          onClick={() => {
+            const event = new CustomEvent('toggleSidebar');
+            window.dispatchEvent(event);
+          }}
+          aria-label="Toggle menu"
+        >
+          <FiMenu />
+        </button>
+        <div className="title-content">
+          <h1><FiPieChart className="page-icon" /> Analytics</h1>
+        </div>
         <div className="header-actions">
           <button 
             className="refresh-btn"

@@ -132,8 +132,12 @@ const Sidebar = () => {
       
       <nav ref={sidebarRef} className={`sidebar ${isMobile && isExpanded ? 'expanded' : ''} ${isVerySmallScreen ? 'mobile-hidden' : ''}`}>
       <div className="sidebar-brand">
-        <Link to="/dashboard" className="brand-link">
-          <img src="/hifadhui-name.svg" alt="Hifadhui" className="brand-logo" />
+        <Link to={user?.role === 'admin' ? '/admin/dashboard' : '/dashboard'} className="brand-link">
+          {isMobile ? (
+            <FiShield className="brand-logo-icon" />
+          ) : (
+            <img src="/hifadhui-name.svg" alt="Hifadhui" className="brand-logo" />
+          )}
         </Link>
       </div>
 

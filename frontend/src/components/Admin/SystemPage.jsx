@@ -10,7 +10,8 @@ import {
   FiClock,
   FiCheckCircle,
   FiXCircle,
-  FiRefreshCw
+  FiRefreshCw,
+  FiMenu
 } from 'react-icons/fi';
 import './AdminDashboard.css';
 import LoadingSpinner from '../Common/LoadingSpinner';
@@ -149,7 +150,20 @@ const SystemPage = () => {
   return (
     <div className="admin-dashboard">
       <div className="dashboard-header">
-        <h1>Monitoring Système</h1>
+        <button 
+          className="mobile-hamburger-menu"
+          onClick={() => {
+            const event = new CustomEvent('toggleSidebar');
+            window.dispatchEvent(event);
+          }}
+          aria-label="Toggle menu"
+        >
+          <FiMenu />
+        </button>
+        <div className="title-content">
+          <h1><FiServer className="page-icon" /> Système</h1>
+          <p>Dernière mise à jour : {lastUpdate.toLocaleTimeString('fr-FR')}</p>
+        </div>
         <div className="header-actions">
           <button 
             className="refresh-btn"
@@ -159,9 +173,6 @@ const SystemPage = () => {
             <FiRefreshCw className={loading ? 'spinning' : ''} />
             Actualiser
           </button>
-          <span className="last-update">
-            Dernière mise à jour : {lastUpdate.toLocaleTimeString('fr-FR')}
-          </span>
         </div>
       </div>
 

@@ -17,7 +17,8 @@ import {
   FiUserX,
   FiEye,
   FiClock,
-  FiServer
+  FiServer,
+  FiMenu
 } from 'react-icons/fi';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import './AdminDashboard.css';
@@ -413,7 +414,19 @@ const RiskDashboard = () => {
   return (
     <div className="admin-dashboard">
       <div className="dashboard-header">
-        <h1>Dashboard de Surveillance des Risques</h1>
+        <button 
+          className="mobile-hamburger-menu"
+          onClick={() => {
+            const event = new CustomEvent('toggleSidebar');
+            window.dispatchEvent(event);
+          }}
+          aria-label="Toggle menu"
+        >
+          <FiMenu />
+        </button>
+        <div className="title-content">
+          <h1><FiShield className="page-icon" /> Risque</h1>
+        </div>
         <div className="header-actions">
           <button className="refresh-btn" onClick={handleRefresh}>
             <FiRefreshCw />
