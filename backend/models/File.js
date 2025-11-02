@@ -86,6 +86,12 @@ const File = sequelize.define('File', {
     allowNull: false,
     defaultValue: true
   },
+  is_public_verification: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: 'Autoriser la vérification publique avec affichage des détails du fichier'
+  },
   date_upload: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW

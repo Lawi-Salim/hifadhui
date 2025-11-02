@@ -37,6 +37,7 @@ import NotificationsPage from './components/Admin/NotificationsPage.jsx';
 import UserImages from './components/Admin/UserImages.jsx';
 import UserFiles from './components/Admin/UserFiles.jsx';
 import AdminRoute from './components/routes/AdminRoute.jsx';
+import VerifyPage from './pages/VerifyPage.jsx';
 import './App.css';
 
 // Composant pour protéger les routes
@@ -82,7 +83,7 @@ function AppContent() {
   const { user } = useAuth();
   const location = useLocation();
 
-  const shouldShowSidebar = user && location.pathname !== '/' && !location.pathname.startsWith('/share/');
+  const shouldShowSidebar = user && location.pathname !== '/' && !location.pathname.startsWith('/share/') && !location.pathname.startsWith('/verify');
 
   return (
     <div className="App">
@@ -130,6 +131,11 @@ function AppContent() {
             </PublicRoute>
           } />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          
+          {/* Routes de vérification publique */}
+          <Route path="/verify" element={<VerifyPage />} />
+          <Route path="/verify/:hash" element={<VerifyPage />} />
+          
           <Route path="/dashboard" element={
             <PrivateRoute>
               <Dashboard />

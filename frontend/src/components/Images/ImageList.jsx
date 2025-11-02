@@ -11,6 +11,8 @@ import ContentToolbar from '../Common/ContentToolbar';
 import DeleteBatchModal from '../Common/DeleteBatchModal';
 import BulkActionsManager from '../Common/BulkActionsManager';
 import { useDownloadZip, DownloadProgressIndicator } from '../Common/DownloadZip';
+import CertificateModal from '../Certificates/CertificateModal';
+import certificateService from '../../services/certificateService';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import { Link } from 'react-router-dom';
 import './Images.css';
@@ -69,6 +71,8 @@ const ImageList = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [fileToShare, setFileToShare] = useState(null);
+  const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
+  const [fileToCertify, setFileToCertify] = useState(null);
 
   const handleDownload = async (image) => {
     try {
@@ -106,6 +110,12 @@ const ImageList = () => {
   const handleShare = (image) => {
     setFileToShare(image);
     setIsShareModalOpen(true);
+    setOpenMenuId(null); // Fermer le menu
+  };
+
+  const handleCertificate = (image) => {
+    setFileToCertify(image);
+    setIsCertificateModalOpen(true);
     setOpenMenuId(null); // Fermer le menu
   };
 
@@ -295,6 +305,7 @@ const ImageList = () => {
             handleOpenFileRenameModal={handleRename}
             handleOpenFileDeleteModal={openDeleteModal}
             handleShare={handleShare}
+            handleCertificate={handleCertificate}
             handleOpenPreviewModal={handlePreview}
             // Props pour la sélection multiple
             isSelectionMode={isSelectionMode}
@@ -370,6 +381,12 @@ const ImageList = () => {
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         file={fileToShare}
+      />
+
+      <CertificateModal
+        file={fileToCertify}
+        isOpen={isCertificateModalOpen}
+        onClose={() => setIsCertificateModalOpen(false)}
       />
     </BulkActionsManager>
   );

@@ -3,8 +3,8 @@ Lawi.session.sql
 Features.md
 README-DEPLOYMENT.md
 *deployment*.md
-!schema-psql.sql
-*.sql
+# !schema-psql.sql
+# *.sql
 *test*.*
 PLAN_SIGNALEMENT_AUTOMATIQUE.md
 uploads

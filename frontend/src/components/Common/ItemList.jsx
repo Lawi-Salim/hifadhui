@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaUpload, FaEye, FaDownload, FaShare, FaEdit, FaTrash, FaEllipsisV, FaFolder, FaImage, FaFilePdf, FaFileAlt } from 'react-icons/fa';
+import { FaUpload, FaEye, FaDownload, FaShare, FaEdit, FaTrash, FaEllipsisV, FaFolder, FaImage, FaFilePdf, FaFileAlt, FaCertificate } from 'react-icons/fa';
 import { FiFilePlus } from 'react-icons/fi';
 import FormattedText from './FormattedText';
 import ActionMenu from './ActionMenu';
@@ -20,6 +20,7 @@ const ItemList = ({
   handleOpenFileDeleteModal,
   handleOpenPreviewModal,
   handleShare,
+  handleCertificate,
   // Handlers pour les dossiers
   handleOpenRenameModal,
   handleOpenUploadModal,
@@ -210,6 +211,18 @@ const ItemList = ({
                 />
               </div>
             )}
+            {!isSelectionMode && handleCertificate && (
+              <button 
+                className="certificate-badge-icon"
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  handleCertificate(item); 
+                }}
+                title="Certificat d'authenticité"
+              >
+                <FaCertificate />
+              </button>
+            )}
             <div className="image-preview-modern" onClick={(e) => {
               if (isSelectionMode) {
                 e.stopPropagation();
@@ -266,6 +279,7 @@ const ItemList = ({
                   position={activeMenu?.position || 'bottom'}
                   onDownload={handleOpenFile ? () => { handleOpenFile(item); toggleMenu(null); } : null}
                   onShare={handleShare ? () => { handleShare(item); toggleMenu(null); } : null}
+                  onCertificate={handleCertificate ? () => { handleCertificate(item); toggleMenu(null); } : null}
                   onRename={handleOpenFileRenameModal ? () => { handleOpenFileRenameModal(item); toggleMenu(null); } : null}
                   onDelete={handleOpenFileDeleteModal ? () => { handleOpenFileDeleteModal(item); toggleMenu(null); } : null}
                   onClose={() => toggleMenu(null)}

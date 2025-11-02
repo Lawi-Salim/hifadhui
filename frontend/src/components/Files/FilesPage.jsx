@@ -8,6 +8,7 @@ import DeleteFileModal from '../Common/DeleteFileModal';
 import RenameFileModal from '../Common/RenameFileModal';
 import FileDetailModal from '../Common/FileDetailModal';
 import ShareModal from './ShareModal';
+import CertificateModal from '../Certificates/CertificateModal';
 import ContentToolbar from '../Common/ContentToolbar';
 import { Link } from 'react-router-dom';
 import DeleteBatchModal from '../Common/DeleteBatchModal';
@@ -44,6 +45,8 @@ const FilesPage = () => {
   const [fileToPreview, setFileToPreview] = useState(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [fileToShare, setFileToShare] = useState(null);
+  const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
+  const [fileToCertify, setFileToCertify] = useState(null);
   
   // Hook pour le scroll infini
   const {
@@ -136,6 +139,11 @@ const FilesPage = () => {
   const handleShare = (file) => {
     setFileToShare(file);
     setIsShareModalOpen(true);
+  };
+
+  const handleCertificate = (file) => {
+    setFileToCertify(file);
+    setIsCertificateModalOpen(true);
   };
 
   const toggleSelectionMode = () => {
@@ -297,6 +305,7 @@ const FilesPage = () => {
         handleOpenFileDeleteModal={handleOpenDeleteModal}
         handleOpenPreviewModal={handlePreview}
         handleShare={handleShare}
+        handleCertificate={handleCertificate}
         // Props pour la sélection multiple
         isSelectionMode={isSelectionMode}
         selectedItems={selectedFiles}
@@ -338,6 +347,12 @@ const FilesPage = () => {
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         file={fileToShare}
+      />
+
+      <CertificateModal
+        file={fileToCertify}
+        isOpen={isCertificateModalOpen}
+        onClose={() => setIsCertificateModalOpen(false)}
       />
 
       <DeleteBatchModal

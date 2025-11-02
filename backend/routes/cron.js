@@ -17,11 +17,6 @@ router.get('/keep-alive', async (req, res) => {
     
     const responseTime = Date.now() - startTime;
     
-    // Log silencieux (seulement si debug activé)
-    if (process.env.DEBUG_CRON === 'true') {
-      console.log(`✅ [KEEP-ALIVE] DB ping réussi - ${responseTime}ms`);
-    }
-    
     res.status(200).json({
       status: 'ok',
       timestamp: new Date().toISOString(),

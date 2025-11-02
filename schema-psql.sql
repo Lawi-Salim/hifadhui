@@ -67,6 +67,7 @@ CREATE TABLE File (
     version INT NOT NULL DEFAULT 1,
     parent_file_id UUID REFERENCES file(id) ON DELETE SET NULL,
     is_latest BOOLEAN NOT NULL DEFAULT TRUE, -- numéro de version du fichier
+    is_public_verification BOOLEAN NOT NULL DEFAULT FALSE, -- Autoriser la vérification publique avec détails
     date_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     signature TEXT NOT NULL UNIQUE, -- obligatoire et unique
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
