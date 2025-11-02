@@ -3,6 +3,7 @@ import { Op, fn, col } from 'sequelize';
 import { sequelize } from '../config/database.js';
 import { Utilisateur, File, Dossier, FileShare, UserSession, ActivityLog, Message, Notification, Report, ModerationAction } from '../models/index.js';
 import { authenticateToken, authorizeAdmin } from '../middleware/auth.js';
+import { calculateUptime } from '../utils/uptimeHelper.js';
 import os from 'os';
 import fs from 'fs';
 import path from 'path';
@@ -1052,12 +1053,8 @@ router.get('/system/performance', [authenticateToken, authorizeAdmin], async (re
     await sequelize.authenticate();
     const dbResponseTime = Date.now() - dbStartTime;
     
-    // Calcul de l'uptime du serveur (approximatif)
-    const uptimeSeconds = process.uptime();
-    const days = Math.floor(uptimeSeconds / 86400);
-    const hours = Math.floor((uptimeSeconds % 86400) / 3600);
-    const minutes = Math.floor((uptimeSeconds % 3600) / 60);
-    const uptime = `${days}d ${hours}h ${minutes}m`;
+    // Calcul de l'uptime du serveur (adapté à Vercel)
+    const uptime = calculateUptime();
     
     // Test API response time
     const apiResponseTime = Date.now() - startTime;

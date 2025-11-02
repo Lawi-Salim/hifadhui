@@ -28,6 +28,7 @@ import notificationsRoutes from './routes/notifications.js';
 import userActivityRoutes from './routes/user/activity.js';
 import userProfileRoutes from './routes/user/profile.js';
 import adminUserActivityRoutes from './routes/admin/userActivity.js';
+import cronRoutes from './routes/cron.js';
 import { startAutomaticCleanup } from './utils/dataCleanup.js';
 import SchedulerService from './services/schedulerService.js';
 import emailService from './services/emailService.js';
@@ -163,6 +164,7 @@ app.use('/api/v1/contact', contactRoutes);
 app.use('/api/v1/messages', messagesRoutes);
 app.use('/api/v1/webhooks', webhooksRoutes);
 app.use('/api/v1/notifications', notificationsRoutes);
+app.use('/api/v1/cron', cronRoutes); // Routes cron pour keep-alive
 
 
 // Route pour les partages publics - servir l'app React directement

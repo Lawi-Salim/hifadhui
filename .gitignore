@@ -38,6 +38,9 @@ frontend/.env.*
 backend/services/template-mails/README.md
 backend/tasks/README.md
 frontend/src/components/Layout/ProviderIcon.md
+backend/EXTERNAL_KEEPALIVE_SETUP.md 
+backend/KEEP_ALIVE_SYSTEM.md 
+backend/VERCEL_UPTIME_CONFIG.md
 
 # Dossier de build de production
 /frontend/build
