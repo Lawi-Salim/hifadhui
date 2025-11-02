@@ -35,11 +35,19 @@
       "dest": "/frontend/static/$1"
     },
     {
+      "src": "/verify/static/(.*)",
+      "dest": "/frontend/static/$1"
+    },
+    {
       "src": "/admin/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|json|txt|woff|woff2|ttf|eot))",
       "dest": "/frontend/$1"
     },
     {
       "src": "/share/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|json|txt|woff|woff2|ttf|eot))",
+      "dest": "/frontend/$1"
+    },
+    {
+      "src": "/verify/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|json|txt|woff|woff2|ttf|eot))",
       "dest": "/frontend/$1"
     },
     {
@@ -63,6 +71,10 @@
       "dest": "/frontend/manifest.json"
     },
     {
+      "src": "/verify/manifest\\.json",
+      "dest": "/frontend/manifest.json"
+    },
+    {
       "src": "/favicon\\.png",
       "dest": "/frontend/favicon.png"
     },
@@ -76,6 +88,10 @@
     },
     {
       "src": "/admin/favicon\\.png",
+      "dest": "/frontend/favicon.png"
+    },
+    {
+      "src": "/verify/favicon\\.png",
       "dest": "/frontend/favicon.png"
     },
     {
