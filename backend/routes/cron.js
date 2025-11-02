@@ -6,18 +6,10 @@ const router = express.Router();
 /**
  * @route   GET /api/cron/keep-alive
  * @desc    Health check silencieux pour garder la DB active et les instances warm
- * @access  Public (mais sécurisé par CRON_SECRET)
+ * @access  Public
  */
 router.get('/keep-alive', async (req, res) => {
   try {
-    // Vérification de sécurité : CRON_SECRET pour éviter les abus
-    const cronSecret = req.headers['x-cron-secret'] || req.query.secret;
-    
-    if (process.env.CRON_SECRET && cronSecret !== process.env.CRON_SECRET) {
-      console.warn('⚠️ [KEEP-ALIVE] Tentative d\'accès non autorisée');
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     const startTime = Date.now();
     
     // Requête légère pour garder la DB active
