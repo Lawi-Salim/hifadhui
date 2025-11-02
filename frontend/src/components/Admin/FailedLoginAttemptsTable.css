@@ -176,19 +176,20 @@
   color: var(--text-secondary);
 }
 
-.ip-cell {
+/* Spécifique au tableau des tentatives échouées pour éviter conflit avec autres tableaux */
+.failed-login-table .ip-cell {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.ip-address {
+.failed-login-table .ip-address {
   font-family: 'Courier New', monospace;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.ip-type {
+.failed-login-table .ip-type {
   font-size: 12px;
   color: var(--text-secondary);
   text-transform: uppercase;
