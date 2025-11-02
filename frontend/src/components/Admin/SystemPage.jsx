@@ -149,24 +149,27 @@ const SystemPage = () => {
 
   return (
     <div className="admin-dashboard">
-      <div className="dashboard-header">
-        <button 
-          className="mobile-hamburger-menu"
-          onClick={() => {
-            const event = new CustomEvent('toggleSidebar');
-            window.dispatchEvent(event);
-          }}
-          aria-label="Toggle menu"
-        >
-          <FiMenu />
-        </button>
-        <div className="title-content">
-          <h1><FiServer className="page-icon" /> Système</h1>
-          <p>Dernière mise à jour : {lastUpdate.toLocaleTimeString('fr-FR')}</p>
+      <div className="messages-header">
+        <div className="header-title">
+          <button 
+            className="mobile-hamburger-menu"
+            onClick={() => {
+              const event = new CustomEvent('toggleSidebar');
+              window.dispatchEvent(event);
+            }}
+            aria-label="Toggle menu"
+          >
+            <FiMenu />
+          </button>
+          <div className="title-content">
+            <h1><FiServer className="page-icon" /> Système</h1>
+            <p>Dernière mise à jour : {lastUpdate.toLocaleTimeString('fr-FR')}</p>
+          </div>
         </div>
+        
         <div className="header-actions">
           <button 
-            className="refresh-btn"
+            className="btn btn-primary refresh-btn"
             onClick={fetchSystemData}
             disabled={loading}
           >

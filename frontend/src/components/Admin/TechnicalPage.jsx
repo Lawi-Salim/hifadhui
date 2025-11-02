@@ -16,7 +16,8 @@ import {
   FiMapPin,
   FiSearch,
   FiSmartphone,
-  FiMenu
+  FiMenu,
+  FiCalendar
 } from 'react-icons/fi';
 import SessionDetailModal from './SessionDetailModal';
 import './AdminDashboard.css';
@@ -204,20 +205,23 @@ const TechnicalPage = () => {
 
   return (
     <div className="admin-dashboard">
-      <div className="dashboard-header">
-        <button 
-          className="mobile-hamburger-menu"
-          onClick={() => {
-            const event = new CustomEvent('toggleSidebar');
-            window.dispatchEvent(event);
-          }}
-          aria-label="Toggle menu"
-        >
-          <FiMenu />
-        </button>
-        <div className="title-content">
-          <h1><FiMonitor className="page-icon" /> Données techniques</h1>
+      <div className="messages-header">
+        <div className="header-title">
+          <button 
+            className="mobile-hamburger-menu"
+            onClick={() => {
+              const event = new CustomEvent('toggleSidebar');
+              window.dispatchEvent(event);
+            }}
+            aria-label="Toggle menu"
+          >
+            <FiMenu />
+          </button>
+          <div className="title-content">
+            <h1><FiMonitor className="page-icon" /> Données techniques</h1>
+          </div>
         </div>
+        
         <div className="header-actions">
           <button 
             className="btn btn-secondary"
@@ -227,7 +231,7 @@ const TechnicalPage = () => {
             Exporter CSV
           </button>
           <button 
-            className="refresh-btn"
+            className="btn btn-primary"
             onClick={fetchTechnicalData}
             disabled={loading}
           >
@@ -299,73 +303,55 @@ const TechnicalPage = () => {
       </section>
 
       {/* Filtres et recherche */}
-      <section className="dashboard-section">
-        <h2><FiFilter /> Filtres et recherche</h2>
-        <div className="filters-container">
+      <div className="admin-filters-section">
+        <div className="filters-grid">
           <div className="filter-group">
-            <label>Période :</label>
-            <div className="filter-buttons">
-              <button 
-                className={`filter-btn ${selectedTimeRange === '24h' ? 'active' : ''}`}
-                onClick={() => setSelectedTimeRange('24h')}
-              >
-                24h
-              </button>
-              <button 
-                className={`filter-btn ${selectedTimeRange === '7d' ? 'active' : ''}`}
-                onClick={() => setSelectedTimeRange('7d')}
-              >
-                7 jours
-              </button>
-              <button 
-                className={`filter-btn ${selectedTimeRange === '30d' ? 'active' : ''}`}
-                onClick={() => setSelectedTimeRange('30d')}
-              >
-                30 jours
-              </button>
-            </div>
+            <label className="filter-label">
+              <FiCalendar className="filter-icon" />
+              Période
+            </label>
+            <select 
+              value={selectedTimeRange} 
+              onChange={(e) => setSelectedTimeRange(e.target.value)}
+              className="filter-select"
+            >
+              <option value="24h">24 heures</option>
+              <option value="7d">7 jours</option>
+              <option value="30d">30 jours</option>
+            </select>
           </div>
 
           <div className="filter-group">
-            <label>Type :</label>
-            <div className="filter-buttons">
-              <button 
-                className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
-                onClick={() => setFilter('all')}
-              >
-                Toutes
-              </button>
-              <button 
-                className={`filter-btn ${filter === 'suspicious' ? 'active' : ''}`}
-                onClick={() => setFilter('suspicious')}
-              >
-                <FiAlertTriangle />
-                Suspectes
-              </button>
-              <button 
-                className={`filter-btn ${filter === 'recent' ? 'active' : ''}`}
-                onClick={() => setFilter('recent')}
-              >
-                <FiClock />
-                Récentes
-              </button>
-            </div>
+            <label className="filter-label">
+              <FiFilter className="filter-icon" />
+              Type
+            </label>
+            <select 
+              value={filter} 
+              onChange={(e) => setFilter(e.target.value)}
+              className="filter-select"
+            >
+              <option value="all">Toutes</option>
+              <option value="suspicious">⚠️ Suspectes</option>
+              <option value="recent">🕐 Récentes</option>
+            </select>
           </div>
 
           <div className="filter-group">
-            <label>Recherche :</label>
-            <div className="search-input">
-              <FiSearch />
-              <input
-                type="text"
-                placeholder="IP, email, pays..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+            <label className="filter-label">
+              <FiSearch className="filter-icon" />
+              Recherche
+            </label>
+            <input
+              type="text"
+              placeholder="IP, email, pays..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="filter-select"
+            />
           </div>
         </div>
-      </section>
+      </div>
 
       {/* Onglets pour basculer entre connexions et tentatives non autorisées */}
       <section className="dashboard-section">

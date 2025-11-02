@@ -258,44 +258,6 @@ const MessagesPage = () => {
     setShowComposer(true);
   };
 
-  // Fonction de test pour simuler la réception d'un email (développement uniquement)
-  const handleTestReceiveEmail = async () => {
-    try {
-      const testEmailData = {
-        from: 'test.sender@example.com <Test Sender>',
-        to: 'mavuna@hifadhui.site',
-        subject: `Test Email Reçu - ${new Date().toLocaleString()}`,
-        text: 'Ceci est un email de test pour vérifier que la réception fonctionne correctement dans l\'interface admin.',
-        html: '<p>Ceci est un <strong>email de test</strong> pour vérifier que la réception fonctionne correctement dans l\'interface admin.</p><p>Timestamp: ' + new Date().toISOString() + '</p>'
-      };
-
-      const response = await fetch('/api/v1/webhooks/test/receive-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(testEmailData)
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        // Recharger les messages pour voir le nouveau message reçu
-        await loadMessages();
-        
-        // Basculer vers l'onglet "Reçus" pour voir le message
-        setActiveTab('received');
-        
-        alert(`✅ Email de test reçu avec succès!\nID: ${result.messageId}\nSujet: ${result.data.subject}`);
-      } else {
-        alert(`❌ Erreur: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Erreur lors du test de réception:', error);
-      alert(`❌ Erreur lors du test: ${error.message}`);
-    }
-  };
-
   // Fonction appelée après envoi d'un message
   const handleMessageSent = async () => {
     try {
@@ -492,34 +454,17 @@ const MessagesPage = () => {
         
         <div className="header-actions">
           <button 
-            className="btn btn-secondary"
-            onClick={() => {
-              // Actualiser les messages
-              window.location.reload();
-            }}
-          >
-            <FiRefreshCw /> Actualiser
-          </button>
-          <button 
             className="btn btn-primary"
             onClick={handleCompose}
           >
             <FiPlus /> Nouveau message
           </button>
-          
-          {process.env.NODE_ENV === 'development' && (
-            <button 
-              className="btn btn-secondary"
-              onClick={handleTestReceiveEmail}
-              style={{ marginLeft: '10px' }}
-              title="Simuler la réception d'un email"
-            >
-              <FiInbox /> Test Réception
-            </button>
-          )}
           <button 
-            className="btn btn-secondary"
-            onClick={loadMessages}
+            className="btn btn-primary"
+            onClick={() => {
+              // Actualiser les messages
+              window.location.reload();
+            }}
           >
             <FiRefreshCw /> Actualiser
           </button>

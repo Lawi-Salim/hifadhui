@@ -413,22 +413,25 @@ const RiskDashboard = () => {
   
   return (
     <div className="admin-dashboard">
-      <div className="dashboard-header">
-        <button 
-          className="mobile-hamburger-menu"
-          onClick={() => {
-            const event = new CustomEvent('toggleSidebar');
-            window.dispatchEvent(event);
-          }}
-          aria-label="Toggle menu"
-        >
-          <FiMenu />
-        </button>
-        <div className="title-content">
-          <h1><FiShield className="page-icon" /> Risque</h1>
+      <div className="messages-header">
+        <div className="header-title">
+          <button 
+            className="mobile-hamburger-menu"
+            onClick={() => {
+              const event = new CustomEvent('toggleSidebar');
+              window.dispatchEvent(event);
+            }}
+            aria-label="Toggle menu"
+          >
+            <FiMenu />
+          </button>
+          <div className="title-content">
+            <h1><FiShield className="page-icon" /> Risque</h1>
+          </div>
         </div>
+        
         <div className="header-actions">
-          <button className="refresh-btn" onClick={handleRefresh}>
+          <button className="btn btn-primary" onClick={handleRefresh}>
             <FiRefreshCw />
             Actualiser
           </button>

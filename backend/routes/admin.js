@@ -1647,16 +1647,18 @@ router.get('/technical', authenticateToken, authorizeAdmin, async (req, res) => 
     }
 
     // Récupérer les sessions utilisateur (connexions)
+    // Utiliser lastActivity au lieu de session_start car lastActivity est mise à jour
+    // à chaque connexion, même si une session existante est réutilisée
     const connections = await UserSession.findAll({
       where: {
-        session_start: { [Op.gte]: startDate }
+        lastActivity: { [Op.gte]: startDate }
       },
       include: [{
         model: Utilisateur,
         as: 'user',
         attributes: ['username', 'email']
       }],
-      order: [['session_start', 'DESC']],
+      order: [['lastActivity', 'DESC']],
       limit: parseInt(limit),
       offset: (parseInt(page) - 1) * parseInt(limit),
       raw: false // Garder les objets Sequelize pour accéder aux dataValues
@@ -1700,13 +1702,13 @@ router.get('/technical', authenticateToken, authorizeAdmin, async (req, res) => 
 
     // Statistiques générales
     const totalConnections = await UserSession.count({
-      where: { session_start: { [Op.gte]: startDate } }
+      where: { lastActivity: { [Op.gte]: startDate } }
     });
 
     const uniqueIPs = await UserSession.count({
       distinct: true,
       col: 'ip_address',
-      where: { session_start: { [Op.gte]: startDate } }
+      where: { lastActivity: { [Op.gte]: startDate } }
     });
 
     // Statistiques des tentatives d'emails non autorisés

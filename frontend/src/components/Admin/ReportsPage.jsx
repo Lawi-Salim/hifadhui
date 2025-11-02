@@ -704,23 +704,26 @@ const ReportsPage = () => {
 
   return (
     <div className="admin-dashboard">
-      <div className="dashboard-header">
-        <button 
-          className="mobile-hamburger-menu"
-          onClick={() => {
-            const event = new CustomEvent('toggleSidebar');
-            window.dispatchEvent(event);
-          }}
-          aria-label="Toggle menu"
-        >
-          <FiMenu />
-        </button>
-        <div className="title-content">
-          <h1><FiAlertTriangle className="page-icon" /> Modération & Signalements</h1>
+      <div className="messages-header">
+        <div className="header-title">
+          <button 
+            className="mobile-hamburger-menu"
+            onClick={() => {
+              const event = new CustomEvent('toggleSidebar');
+              window.dispatchEvent(event);
+            }}
+            aria-label="Toggle menu"
+          >
+            <FiMenu />
+          </button>
+          <div className="title-content">
+            <h1><FiAlertTriangle className="page-icon" /> Modération & Signalements</h1>
+          </div>
         </div>
+        
         <div className="header-actions">
           <button 
-            className="refresh-btn"
+            className="btn btn-primary"
             onClick={handleRefresh}
             disabled={getCurrentLoading()}
           >
@@ -797,93 +800,58 @@ const ReportsPage = () => {
       </section>
 
       {/* Filtres */}
-      <section className="dashboard-section">
-        <h2><FiFilter /> Filtres</h2>
-        <div className="filters-container">
+      <div className="admin-filters-section">
+        <div className="filters-grid">
           <div className="filter-group">
-            <label>Statut :</label>
-            <div className="filter-buttons">
-              <button 
-                className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
-                onClick={() => setFilter('all')}
-              >
-                Tous
-              </button>
-              <button 
-                className={`filter-btn ${filter === 'pending' ? 'active' : ''}`}
-                onClick={() => setFilter('pending')}
-              >
-                En attente
-              </button>
-              <button 
-                className={`filter-btn ${filter === 'resolved' ? 'active' : ''}`}
-                onClick={() => setFilter('resolved')}
-              >
-                Résolus
-              </button>
-            </div>
+            <label className="filter-label">
+              <FiFilter className="filter-icon" />
+              Statut
+            </label>
+            <select 
+              value={filter} 
+              onChange={(e) => setFilter(e.target.value)}
+              className="filter-select"
+            >
+              <option value="all">Tous</option>
+              <option value="pending">En attente</option>
+              <option value="resolved">Résolus</option>
+            </select>
           </div>
 
           <div className="filter-group">
-            <label>Type :</label>
-            <div className="filter-buttons">
-              <button 
-                className={`filter-btn ${typeFilter === 'all' ? 'active' : ''}`}
-                onClick={() => setTypeFilter('all')}
-              >
-                Tous types
-              </button>
-              <button 
-                className={`filter-btn ${typeFilter === 'inappropriate' ? 'active' : ''}`}
-                onClick={() => setTypeFilter('inappropriate')}
-              >
-                <FiAlertTriangle />
-                Inapproprié
-              </button>
-              <button 
-                className={`filter-btn ${typeFilter === 'spam' ? 'active' : ''}`}
-                onClick={() => setTypeFilter('spam')}
-              >
-                <FiMail />
-                Spam
-              </button>
-              <button 
-                className={`filter-btn ${typeFilter === 'copyright' ? 'active' : ''}`}
-                onClick={() => setTypeFilter('copyright')}
-              >
-                <FiShield />
-                Copyright
-              </button>
-            </div>
+            <label className="filter-label">
+              <FiAlertTriangle className="filter-icon" />
+              Type
+            </label>
+            <select 
+              value={typeFilter} 
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="filter-select"
+            >
+              <option value="all">Tous types</option>
+              <option value="inappropriate">⚠️ Inapproprié</option>
+              <option value="spam">📧 Spam</option>
+              <option value="copyright">🛡️ Copyright</option>
+            </select>
           </div>
 
           <div className="filter-group">
-            <label>Source :</label>
-            <div className="filter-buttons">
-              <button 
-                className={`filter-btn ${sourceFilter === 'all' ? 'active' : ''}`}
-                onClick={() => setSourceFilter('all')}
-              >
-                Toutes sources
-              </button>
-              <button 
-                className={`filter-btn ${sourceFilter === 'manual' ? 'active' : ''}`}
-                onClick={() => setSourceFilter('manual')}
-              >
-                <FiUser />
-                Manuels
-              </button>
-              <button 
-                className={`filter-btn ${sourceFilter === 'automatic' ? 'active' : ''}`}
-                onClick={() => setSourceFilter('automatic')}
-              >
-                <FiCpu />
-                Automatiques
-              </button>
-            </div>
+            <label className="filter-label">
+              <FiUser className="filter-icon" />
+              Source
+            </label>
+            <select 
+              value={sourceFilter} 
+              onChange={(e) => setSourceFilter(e.target.value)}
+              className="filter-select"
+            >
+              <option value="all">Toutes sources</option>
+              <option value="manual">👤 Manuels</option>
+              <option value="automatic">🤖 Automatiques</option>
+            </select>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* Onglets de modération */}
       <section className="dashboard-section">

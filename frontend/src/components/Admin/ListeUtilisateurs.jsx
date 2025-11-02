@@ -154,7 +154,7 @@ const ListeUtilisateurs = () => {
             <FiMenu />
           </button>
           <div className="title-content">
-            <h1 style={{ fontSize: '20px' }}>
+            <h1>
               <FiUsers className="page-icon" />
               Liste utilisateur
             </h1>

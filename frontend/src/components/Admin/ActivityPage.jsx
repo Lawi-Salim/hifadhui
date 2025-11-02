@@ -6,18 +6,22 @@ import './AdminDashboard.css';
 const ActivityPage = () => {
   return (
     <div className="admin-dashboard">
-      <div className="dashboard-header">
-        <button 
-          className="mobile-hamburger-menu"
-          onClick={() => {
-            const event = new CustomEvent('toggleSidebar');
-            window.dispatchEvent(event);
-          }}
-          aria-label="Toggle menu"
-        >
-          <FiMenu />
-        </button>
-        <h1><FiActivity className="page-icon" /> Logs d'activité</h1>
+      <div className="messages-header">
+        <div className="header-title">
+          <button 
+            className="mobile-hamburger-menu"
+            onClick={() => {
+              const event = new CustomEvent('toggleSidebar');
+              window.dispatchEvent(event);
+            }}
+            aria-label="Toggle menu"
+          >
+            <FiMenu />
+          </button>
+          <div className="title-content">
+            <h1><FiActivity className="page-icon" /> Logs d'activité</h1>
+          </div>
+        </div>
       </div>
 
       {/* Journal des activités récentes */}

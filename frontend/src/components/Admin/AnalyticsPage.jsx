@@ -186,23 +186,26 @@ const AnalyticsPage = () => {
 
   return (
     <div className="admin-dashboard">
-      <div className="dashboard-header">
-        <button 
-          className="mobile-hamburger-menu"
-          onClick={() => {
-            const event = new CustomEvent('toggleSidebar');
-            window.dispatchEvent(event);
-          }}
-          aria-label="Toggle menu"
-        >
-          <FiMenu />
-        </button>
-        <div className="title-content">
-          <h1><FiPieChart className="page-icon" /> Analytics</h1>
+      <div className="messages-header">
+        <div className="header-title">
+          <button 
+            className="mobile-hamburger-menu"
+            onClick={() => {
+              const event = new CustomEvent('toggleSidebar');
+              window.dispatchEvent(event);
+            }}
+            aria-label="Toggle menu"
+          >
+            <FiMenu />
+          </button>
+          <div className="title-content">
+            <h1><FiPieChart className="page-icon" /> Analytics</h1>
+          </div>
         </div>
+        
         <div className="header-actions">
           <button 
-            className="refresh-btn"
+            className="btn btn-primary"
             onClick={fetchReportData}
             disabled={loading}
           >
@@ -342,58 +345,71 @@ const AnalyticsPage = () => {
       </section>
 
       {/* Filtres et contrôles */}
-      <section className="dashboard-section">
-        <h2><FiFilter /> Filtres</h2>
-        <div className="filters-container">
+      <div className="admin-filters-section">
+        <div className="filters-grid">
           <div className="filter-group">
-            <label>Type de rapport :</label>
-            <div className="filter-buttons">
+            <label className="filter-label">
+              <FiBarChart2 className="filter-icon" />
+              Type de rapport
+            </label>
+            <select 
+              value={selectedReport} 
+              onChange={(e) => setSelectedReport(e.target.value)}
+              className="filter-select"
+            >
               {reportTypes.map(type => (
-                <button
-                  key={type.id}
-                  className={`filter-btn ${selectedReport === type.id ? 'active' : ''}`}
-                  onClick={() => setSelectedReport(type.id)}
-                >
-                  <type.icon />
+                <option key={type.id} value={type.id}>
                   {type.label}
-                </button>
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           <div className="filter-group">
-            <label>Période :</label>
-            <div className="filter-buttons">
+            <label className="filter-label">
+              <FiCalendar className="filter-icon" />
+              Période
+            </label>
+            <select 
+              value={selectedPeriod} 
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="filter-select"
+            >
               {periods.map(period => (
-                <button
-                  key={period.id}
-                  className={`filter-btn ${selectedPeriod === period.id ? 'active' : ''}`}
-                  onClick={() => setSelectedPeriod(period.id)}
-                >
+                <option key={period.id} value={period.id}>
                   {period.label}
-                </button>
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           <div className="filter-group">
-            <label>Plage de dates :</label>
-            <div className="date-inputs">
-              <input
-                type="date"
-                value={dateRange.start}
-                onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-              />
-              <span>à</span>
-              <input
-                type="date"
-                value={dateRange.end}
-                onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-              />
-            </div>
+            <label className="filter-label">
+              <FiCalendar className="filter-icon" />
+              Date début
+            </label>
+            <input
+              type="date"
+              value={dateRange.start}
+              onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+              className="filter-select"
+            />
+          </div>
+
+          <div className="filter-group">
+            <label className="filter-label">
+              <FiCalendar className="filter-icon" />
+              Date fin
+            </label>
+            <input
+              type="date"
+              value={dateRange.end}
+              onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+              className="filter-select"
+            />
           </div>
         </div>
-      </section>
+      </div>
 
       {/* Données détaillées */}
       <section className="dashboard-section">
