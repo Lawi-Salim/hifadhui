@@ -34,7 +34,8 @@ import {
   FaGlobeEurope,
   FaGlobeAsia,
   FaGlobeAfrica,
-  FaMicrosoft
+  FaMicrosoft,
+  FaEdge
 } from 'react-icons/fa';
 import SessionDetailModal from './SessionDetailModal';
 import './AdminDashboard.css';
@@ -190,7 +191,7 @@ const TechnicalPage = () => {
     if (browserLower.includes('chrome')) return <SiGooglechrome style={{ color: '#4285F4' }} />;
     if (browserLower.includes('firefox')) return <SiFirefox style={{ color: '#FF7139' }} />;
     if (browserLower.includes('safari')) return <SiSafari style={{ color: '#006CFF' }} />;
-    if (browserLower.includes('edge')) return <FaMicrosoft style={{ color: '#0078D7' }} />;
+    if (browserLower.includes('edge')) return <FaEdge style={{ color: '#0078D7' }} />;
     
     return <FiGlobe style={{ color: '#6B7280' }} />;
   };
