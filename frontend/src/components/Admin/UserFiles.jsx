@@ -194,6 +194,7 @@ const UserFiles = () => {
               storageKey="adminFilesViewMode"
               showPagination={false}
               showViewSwitcher={true}
+              showSelectionTools={false}
               className="inline-toolbar"
             />
           </div>

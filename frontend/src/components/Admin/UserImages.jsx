@@ -185,6 +185,7 @@ const UserImages = () => {
               storageKey="adminImagesViewMode"
               showPagination={false}
               showViewSwitcher={true}
+              showSelectionTools={false}
               className="inline-toolbar"
             />
           </div>
