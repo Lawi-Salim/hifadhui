@@ -35,7 +35,7 @@ const Sidebar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
-  const [totalNotificationsCount, setTotalNotificationsCount] = useState(0);
+  const [urgentNotificationsCount, setUrgentNotificationsCount] = useState(0);
   const sidebarRef = useRef(null);
 
   // Détecter si on est sur mobile/tablette et très petit écran
@@ -89,9 +89,10 @@ const Sidebar = () => {
           const messagesStats = await messagesService.getStats();
           setUnreadMessagesCount(messagesStats.unread || 0);
           
-          // Charger le total des notifications depuis le backend
+          // Charger les notifications urgentes (alertes + infos non lues)
           const notificationsStats = await notificationsService.getStats();
-          setTotalNotificationsCount(notificationsStats.total || 0);
+          const urgentCount = (notificationsStats.alertsUnread || 0) + (notificationsStats.infoUnread || 0);
+          setUrgentNotificationsCount(urgentCount);
         } catch (error) {
           console.error('Erreur lors du chargement des compteurs:', error);
         }
@@ -188,8 +189,8 @@ const Sidebar = () => {
                   {item.path === '/admin/messages' && unreadMessagesCount > 0 && (
                     <span className="notification-badge">{unreadMessagesCount}</span>
                   )}
-                  {item.path === '/admin/notifications' && totalNotificationsCount > 0 && (
-                    <span className="notification-badge">{totalNotificationsCount}</span>
+                  {item.path === '/admin/notifications' && urgentNotificationsCount > 0 && (
+                    <span className="notification-badge">{urgentNotificationsCount}</span>
                   )}
                 </span>
                 {(!isMobile || isExpanded) && <span className="nav-text">{item.label}</span>}

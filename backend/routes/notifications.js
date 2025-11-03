@@ -258,15 +258,6 @@ router.get('/stats', async (req, res) => {
       }
     });
 
-    console.log('📊 [BACKEND-STATS] Stats calculées:', {
-      total: stats.total,
-      unread: stats.unread,
-      alerts: stats.alerts,
-      alertsUnread: stats.alertsUnread,
-      info: stats.info,
-      infoUnread: stats.infoUnread
-    });
-
     res.json(stats);
   } catch (error) {
     console.error('Erreur lors de la récupération des stats:', error);

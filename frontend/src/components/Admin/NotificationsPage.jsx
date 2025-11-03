@@ -129,7 +129,6 @@ const NotificationsPage = () => {
       
       // Utiliser les statistiques retournées par l'API
       if (notificationsResponse.stats) {
-        console.log('📊 [NOTIF-STATS] Stats reçues du backend:', notificationsResponse.stats);
         setStats({
           unread: notificationsResponse.stats.unread || 0,
           alerts: notificationsResponse.stats.alerts || 0,
@@ -567,14 +566,12 @@ const NotificationsPage = () => {
           onClick={() => setActiveTab('all')}
         >
           <FiBell /> Toutes ({stats.total})
-          {stats.unread > 0 && <span className="tab-notification-badge">{stats.unread}</span>}
         </button>
         <button 
           className={`tab-btn ${activeTab === 'unread' ? 'active' : ''}`}
           onClick={() => setActiveTab('unread')}
         >
-          <FiBell /> Non lues ({stats.unread})
-          {stats.unread > 0 && <span className="tab-notification-badge">{stats.unread}</span>}
+          <FiBell /> Non lues ({stats.unread})  
         </button>
         <button 
           className={`tab-btn ${activeTab === 'alerts' ? 'active' : ''}`}
