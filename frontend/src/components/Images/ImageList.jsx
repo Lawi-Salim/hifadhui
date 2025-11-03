@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaPlus, FaFolderOpen, FaUpload } from 'react-icons/fa';
+import { FaPlus, FaFolderOpen, FaUpload, FaCalendar, FaDatabase } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';
 import api from '../../services/api';
 import ItemList from '../Common/ItemList';
@@ -16,12 +16,15 @@ import certificateService from '../../services/certificateService';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import { Link } from 'react-router-dom';
 import './Images.css';
+import '../Admin/AdminStyles.css'; // Import des styles admin pour les filtres
 import LoadingSpinner from '../Common/LoadingSpinner';
 
 const ImageList = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [selectedImage, setSelectedImage] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [periodFilter, setPeriodFilter] = useState('');
+  const [sizeFilter, setSizeFilter] = useState('');
 
   // Fonction pour calculer la position du menu avec hauteur dynamique
   const getMenuPosition = (buttonElement, optionsCount = 5) => {
@@ -38,7 +41,12 @@ const ImageList = () => {
   // Fonction pour récupérer les images avec le bon format pour useInfiniteScroll
   const fetchImagesForInfiniteScroll = async (params) => {
     const response = await api.get('/files', { 
-      params: { ...params, type: 'image' }
+      params: { 
+        ...params, 
+        type: 'image',
+        period: periodFilter || undefined,
+        sizeRange: sizeFilter || undefined
+      }
     });
     return response;
   };
@@ -243,6 +251,52 @@ const ImageList = () => {
             <Link to="/upload" className="btn btn-primary">
               <FaUpload /> Uploader une image
             </Link>
+          </div>
+        </div>
+
+        {/* Section des filtres */}
+        <div className="admin-filters-section">
+          <div className="filters-grid">
+            <div className="filter-group">
+              <label className="filter-label">
+                <FaCalendar className="filter-icon" />
+                Période
+              </label>
+              <select 
+                className="filter-select"
+                value={periodFilter}
+                onChange={(e) => {
+                  setPeriodFilter(e.target.value);
+                  refresh();
+                }}
+              >
+                <option value="">Toutes les dates</option>
+                <option value="today">Aujourd'hui</option>
+                <option value="week">Cette semaine</option>
+                <option value="month">Ce mois-ci</option>
+                <option value="year">Cette année</option>
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label className="filter-label">
+                <FaDatabase className="filter-icon" />
+                Taille
+              </label>
+              <select 
+                className="filter-select"
+                value={sizeFilter}
+                onChange={(e) => {
+                  setSizeFilter(e.target.value);
+                  refresh();
+                }}
+              >
+                <option value="">Toutes les tailles</option>
+                <option value="small">Petit (&lt; 1 MB)</option>
+                <option value="medium">Moyen (1-10 MB)</option>
+                <option value="large">Grand (&gt; 10 MB)</option>
+              </select>
+            </div>
           </div>
         </div>
 

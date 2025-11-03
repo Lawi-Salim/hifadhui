@@ -123,11 +123,12 @@
   background-color: #808b96; /* Couleur du curseur au survol */
 }
 
-/* Grid View - Utilise les styles d'ItemList */
+/* Grid View - Utilise les styles d'ItemList (style admin) */
 .dossiers-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 1rem;
+  padding: 1rem 0;
 }
 
 /* Styles pour les cartes modernes (comme dans Images.css) */

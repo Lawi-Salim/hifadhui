@@ -3,9 +3,9 @@ import { Document, Page, pdfjs } from 'react-pdf';
 // import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 // import 'react-pdf/dist/esm/Page/TextLayer.css';
 import { buildCloudinaryUrl } from '../../config/cloudinary';
-// import './PdfPreview.css'; // Fichier CSS manquant
+import './PdfPreview.css';
 
-const PdfPreview = ({ fileUrl, fileId, className }) => {
+const PdfPreview = ({ fileUrl, fileId, className, fullPage = false }) => {
   const [, setNumPages] = useState(null);
 
   // Tous les hooks doivent être appelés avant les returns conditionnels
@@ -39,7 +39,7 @@ const PdfPreview = ({ fileUrl, fileId, className }) => {
   }
 
   return (
-    <div className={`pdf-preview-container ${className || ''}`} style={{ width: '100%', height: '100%' }}>
+    <div className={`pdf-preview-wrapper ${className || ''}`}>
       <Document
         file={fullFileUrl}
         onLoadSuccess={onDocumentLoadSuccess}
@@ -47,11 +47,10 @@ const PdfPreview = ({ fileUrl, fileId, className }) => {
         error={<div className="pdf-error">Aperçu indisponible</div>}
         options={pdfOptions}
       >
-        {/* On affiche seulement la première page */}
+        {/* On affiche seulement la première page avec meilleure résolution */}
         <Page 
           pageNumber={1} 
-          scale={1.2}
-          width={200} // Largeur adaptée au container
+          width={fullPage ? 350 : 240} // Largeur : 350px pour fullPage (400px - 48px padding), 240px pour miniature
           renderTextLayer={false} 
           renderAnnotationLayer={false} 
         />

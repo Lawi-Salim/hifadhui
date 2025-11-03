@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import messagesService from '../../services/messagesService';
+import notificationsService from '../../services/notificationsService';
 import { 
   FiHome, 
   FiUpload, 
@@ -32,6 +34,8 @@ const Sidebar = () => {
   const location = useLocation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [totalNotificationsCount, setTotalNotificationsCount] = useState(0);
   const sidebarRef = useRef(null);
 
   // Détecter si on est sur mobile/tablette et très petit écran
@@ -75,6 +79,31 @@ const Sidebar = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isMobile]);
+
+  // Charger le nombre de messages non lus et total notifications (seulement pour admin)
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      const loadCounts = async () => {
+        try {
+          // Charger les messages non lus
+          const messagesStats = await messagesService.getStats();
+          setUnreadMessagesCount(messagesStats.unread || 0);
+          
+          // Charger le total des notifications depuis le backend
+          const notificationsStats = await notificationsService.getStats();
+          setTotalNotificationsCount(notificationsStats.total || 0);
+        } catch (error) {
+          console.error('Erreur lors du chargement des compteurs:', error);
+        }
+      };
+
+      loadCounts();
+      
+      // Actualiser toutes les 30 secondes
+      const interval = setInterval(loadCounts, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
 
   let menuItems;
@@ -154,7 +183,15 @@ const Sidebar = () => {
                 className={`nav-link ${isActive ? 'active' : ''}`}
                 onClick={(e) => handleNavClick(item, e)}
               >
-                <span className="nav-icon"><item.icon /></span>
+                <span className="nav-icon">
+                  <item.icon />
+                  {item.path === '/admin/messages' && unreadMessagesCount > 0 && (
+                    <span className="notification-badge">{unreadMessagesCount}</span>
+                  )}
+                  {item.path === '/admin/notifications' && totalNotificationsCount > 0 && (
+                    <span className="notification-badge">{totalNotificationsCount}</span>
+                  )}
+                </span>
                 {(!isMobile || isExpanded) && <span className="nav-text">{item.label}</span>}
               </Link>
             );

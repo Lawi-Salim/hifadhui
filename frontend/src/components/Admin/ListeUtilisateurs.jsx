@@ -7,7 +7,7 @@ import Pagination from '../Pagination';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { FiUsers, FiRefreshCw, FiEye, FiAlertTriangle, FiPause, FiTrash2, FiMenu } from 'react-icons/fi';
+import { FiUsers, FiRefreshCw, FiEye, FiMenu } from 'react-icons/fi';
 import UserDetailsModal from './UserDetailsModal';
 import './StyleAdmin.css';
 import './AdminDashboard.css';
@@ -18,12 +18,6 @@ const ListeUtilisateurs = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('warnings');
-  const [actionHistory, setActionHistory] = useState({
-    warnings: [],
-    suspensions: [],
-    deletions: []
-  });
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
   
@@ -55,76 +49,10 @@ const ListeUtilisateurs = () => {
   const handleActionComplete = () => {
     // Recharger les données après une action admin
     fetchUsers(currentPage);
-    loadActionHistory();
-  };
-
-  // Fonction pour charger l'historique des actions admin
-  const loadActionHistory = async () => {
-    try {
-      // TODO: Remplacer par un vrai appel API
-      // const response = await adminService.getActionHistory();
-      
-      // Données simulées pour la démonstration
-      setActionHistory({
-        warnings: [
-          {
-            id: 1,
-            user_id: 'user-1',
-            username: 'John Doe',
-            email: 'john@example.com',
-            reason: 'Contenu inapproprié dans les fichiers partagés',
-            admin_name: 'Admin',
-            created_at: new Date('2024-01-15'),
-            notification_sent: true
-          },
-          {
-            id: 2,
-            user_id: 'user-2',
-            username: 'Jane Smith',
-            email: 'jane@example.com',
-            reason: 'Utilisation excessive de l\'espace de stockage',
-            admin_name: 'Admin',
-            created_at: new Date('2024-01-10'),
-            notification_sent: true
-          }
-        ],
-        suspensions: [
-          {
-            id: 1,
-            user_id: 'user-3',
-            username: 'Bob Wilson',
-            email: 'bob@example.com',
-            reason: 'Violations répétées des conditions d\'utilisation',
-            admin_name: 'Admin',
-            created_at: new Date('2024-01-12'),
-            recovered_at: null,
-            status: 'active'
-          }
-        ],
-        deletions: [
-          {
-            id: 1,
-            user_id: 'user-4',
-            username: 'Alice Brown',
-            email: 'alice@example.com',
-            reason: 'Demande de suppression définitive pour violation grave',
-            admin_name: 'Admin',
-            created_at: new Date('2024-01-08'),
-            details: {
-              files_count: 25,
-              storage_used: '150MB'
-            }
-          }
-        ]
-      });
-    } catch (error) {
-      console.error('Erreur lors du chargement de l\'historique:', error);
-    }
   };
 
   useEffect(() => {
     fetchUsers(currentPage);
-    loadActionHistory();
   }, [currentPage]);
 
   if (loading) {
@@ -251,178 +179,6 @@ const ListeUtilisateurs = () => {
         )}
       </div>
 
-      {/* Section Actions Admin */}
-      <div className="dashboard-section">
-        <h3><FiUsers /> Historique des Actions Admin</h3>
-        
-        {/* Tabs Navigation */}
-        <div className="messages-tabs">
-          <button 
-            className={`tab-btn ${activeTab === 'warnings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('warnings')}
-          >
-            <FiAlertTriangle /> Avertissements ({actionHistory.warnings.length})
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'suspensions' ? 'active' : ''}`}
-            onClick={() => setActiveTab('suspensions')}
-          >
-            <FiPause /> Suspensions ({actionHistory.suspensions.length})
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'deletions' ? 'active' : ''}`}
-            onClick={() => setActiveTab('deletions')}
-          >
-            <FiTrash2 /> Suppressions ({actionHistory.deletions.length})
-          </button>
-        </div>
-
-        {/* Contenu des onglets */}
-        <div className="tab-content">
-          {activeTab === 'warnings' && (
-            <div className="action-history-container">
-              {actionHistory.warnings.length > 0 ? (
-                <div className="attempts-table-container">
-                  <table className="attempts-table">
-                    <thead>
-                      <tr>
-                        <th>Utilisateur</th>
-                        <th>Email</th>
-                        <th>Raison</th>
-                        <th>Date</th>
-                        <th>Admin</th>
-                        <th>Statut</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {actionHistory.warnings.map((warning) => (
-                        <tr key={warning.id}>
-                          <td className="username-cell">
-                            <span className="username">{warning.username}</span>
-                          </td>
-                          <td className="email-cell">{warning.email}</td>
-                          <td className="reason-cell">{warning.reason}</td>
-                          <td className="date-cell">
-                            {format(new Date(warning.created_at), 'd MMMM yyyy', { locale: fr })}
-                          </td>
-                          <td className="admin-cell">{warning.admin_name}</td>
-                          <td className="status-cell">
-                            <span className={`status-badge ${warning.notification_sent ? 'sent' : 'pending'}`}>
-                              {warning.notification_sent ? 'Envoyé' : 'En attente'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="no-data">
-                  <FiAlertTriangle style={{ fontSize: '2rem', marginBottom: '10px', color: 'var(--text-secondary)' }} />
-                  <h4 style={{ margin: '0 0 5px 0', color: 'var(--text-primary)' }}>Aucun avertissement</h4>
-                  <p style={{ margin: 0, color: 'var(--text-secondary)' }}>Aucun avertissement n'a été donné pour le moment.</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'suspensions' && (
-            <div className="action-history-container">
-              {actionHistory.suspensions.length > 0 ? (
-                <div className="attempts-table-container">
-                  <table className="attempts-table">
-                    <thead>
-                      <tr>
-                        <th>Utilisateur</th>
-                        <th>Email</th>
-                        <th>Raison</th>
-                        <th>Date suspension</th>
-                        <th>Admin</th>
-                        <th>Statut</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {actionHistory.suspensions.map((suspension) => (
-                        <tr key={suspension.id}>
-                          <td className="username-cell">
-                            <span className="username">{suspension.username}</span>
-                          </td>
-                          <td className="email-cell">{suspension.email}</td>
-                          <td className="reason-cell">{suspension.reason}</td>
-                          <td className="date-cell">
-                            {format(new Date(suspension.created_at), 'd MMMM yyyy', { locale: fr })}
-                          </td>
-                          <td className="admin-cell">{suspension.admin_name}</td>
-                          <td className="status-cell">
-                            <span className={`status-badge ${suspension.recovered_at ? 'recovered' : 'active'}`}>
-                              {suspension.recovered_at ? 'Récupéré' : 'Actif'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="no-data">
-                  <FiPause style={{ fontSize: '2rem', marginBottom: '10px', color: 'var(--text-secondary)' }} />
-                  <h4 style={{ margin: '0 0 5px 0', color: 'var(--text-primary)' }}>Aucune suspension</h4>
-                  <p style={{ margin: 0, color: 'var(--text-secondary)' }}>Aucune suspension n'a été appliquée pour le moment.</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'deletions' && (
-            <div className="action-history-container">
-              {actionHistory.deletions.length > 0 ? (
-                <div className="attempts-table-container">
-                  <table className="attempts-table">
-                    <thead>
-                      <tr>
-                        <th>Utilisateur</th>
-                        <th>Email</th>
-                        <th>Raison</th>
-                        <th>Date suppression</th>
-                        <th>Admin</th>
-                        <th>Détails</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {actionHistory.deletions.map((deletion) => (
-                        <tr key={deletion.id}>
-                          <td className="username-cell">
-                            <span className="username">{deletion.username}</span>
-                          </td>
-                          <td className="email-cell">{deletion.email}</td>
-                          <td className="reason-cell">{deletion.reason}</td>
-                          <td className="date-cell">
-                            {format(new Date(deletion.created_at), 'd MMMM yyyy', { locale: fr })}
-                          </td>
-                          <td className="admin-cell">{deletion.admin_name}</td>
-                          <td className="details-cell">
-                            {deletion.details && (
-                              <span className="details-info">
-                                {deletion.details.files_count} fichiers, {deletion.details.storage_used}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="no-data">
-                  <FiTrash2 style={{ fontSize: '2rem', marginBottom: '10px', color: 'var(--text-secondary)' }} />
-                  <h4 style={{ margin: '0 0 5px 0', color: 'var(--text-primary)' }}>Aucune suppression</h4>
-                  <p style={{ margin: 0, color: 'var(--text-secondary)' }}>Aucune suppression définitive n'a été effectuée pour le moment.</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* User Details Modal */}
       <UserDetailsModal

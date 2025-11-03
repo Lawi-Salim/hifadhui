@@ -138,11 +138,12 @@
   color: var(--text-secondary);
 }
 
-/* --- Styles Modernes pour la grille --- */
+/* --- Styles Modernes pour la grille (style admin) --- */
 .dossiers-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  padding: 1rem 0;
 }
 
 .image-card-modern {

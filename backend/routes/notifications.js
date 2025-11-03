@@ -190,6 +190,28 @@ router.get('/stats', async (req, res) => {
       stats.byPriority[priority] = await Notification.count({ where: { priority } });
     }
 
+    // Stats par catégorie (pour correspondre aux onglets du frontend)
+    // Alertes = notifications de sécurité OU priorité urgente/high
+    stats.alerts = await Notification.count({
+      where: {
+        [Op.or]: [
+          { type: 'security' },
+          { priority: 'urgent' },
+          { priority: 'high' }
+        ]
+      }
+    });
+
+    // Informations = notifications système avec priorité normale/low
+    stats.info = await Notification.count({
+      where: {
+        [Op.and]: [
+          { type: 'system' },
+          { priority: { [Op.in]: ['normal', 'low'] } }
+        ]
+      }
+    });
+
     res.json(stats);
   } catch (error) {
     console.error('Erreur lors de la récupération des stats:', error);

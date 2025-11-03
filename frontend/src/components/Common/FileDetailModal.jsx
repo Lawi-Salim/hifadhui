@@ -61,17 +61,11 @@ const FileDetailModal = ({ file, onClose, type = 'file', isOpen }) => {
                   className="modal-image-preview"
                   onContextMenu={(e) => e.preventDefault()}
                 />
-                <div className="watermark">
-                  {user.username}
-                </div>
               </>
             ) : isPdf ? (
-              <div style={{ width: '300px', height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                <PdfPreview fileUrl={displayData.file_url} fileId={file.id} />
-                <div className="watermark">
-                  {user.username}
-                </div>
-              </div>
+              <>
+                <PdfPreview fileUrl={displayData.file_url} fileId={file.id} fullPage={true} />
+              </>
             ) : (
               <div style={{ width: '300px', height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5', borderRadius: '8px' }}>
                 <p>L'aperçu n'est pas disponible pour ce type de fichier.</p>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaPlus, FaFolderOpen, FaUpload } from 'react-icons/fa';
+import { FaPlus, FaFolderOpen, FaUpload, FaCalendar, FaDatabase } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';
 import fileService from '../../services/fileService';
 import api from '../../services/api';
@@ -16,11 +16,14 @@ import BulkActionsManager from '../Common/BulkActionsManager';
 import { useDownloadZip, DownloadProgressIndicator } from '../Common/DownloadZip';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import './FileList.css';
+import '../Admin/AdminStyles.css'; // Import des styles admin pour les filtres
 import LoadingSpinner from '../Common/LoadingSpinner';
 
 const FilesPage = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [activeMenu, setActiveMenu] = useState(null);
+  const [periodFilter, setPeriodFilter] = useState('');
+  const [sizeFilter, setSizeFilter] = useState('');
 
   // Fonction pour calculer la position du menu avec hauteur dynamique
   const getMenuPosition = (buttonElement, optionsCount = 5) => {
@@ -48,6 +51,15 @@ const FilesPage = () => {
   const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
   const [fileToCertify, setFileToCertify] = useState(null);
   
+  // Fonction pour récupérer les fichiers avec filtres
+  const fetchFilesWithFilters = async (params) => {
+    return fileService.getFiles({
+      ...params,
+      period: periodFilter || undefined,
+      sizeRange: sizeFilter || undefined
+    });
+  };
+
   // Hook pour le scroll infini
   const {
     items: files,
@@ -57,7 +69,7 @@ const FilesPage = () => {
     totalCount,
     lastItemRef,
     refresh
-  } = useInfiniteScroll(fileService.getFiles, { limit: 20 });
+  } = useInfiniteScroll(fetchFilesWithFilters, { limit: 20 });
 
   // Hook pour le téléchargement ZIP
   const {
@@ -266,6 +278,52 @@ const FilesPage = () => {
             <Link to="/upload" className="btn btn-primary flex items-center gap-2">
               <FaUpload /> Uploader un fichier
             </Link>
+          </div>
+        </div>
+
+        {/* Section des filtres */}
+        <div className="admin-filters-section">
+          <div className="filters-grid">
+            <div className="filter-group">
+              <label className="filter-label">
+                <FaCalendar className="filter-icon" />
+                Période
+              </label>
+              <select 
+                className="filter-select"
+                value={periodFilter}
+                onChange={(e) => {
+                  setPeriodFilter(e.target.value);
+                  refresh();
+                }}
+              >
+                <option value="">Toutes les dates</option>
+                <option value="today">Aujourd'hui</option>
+                <option value="week">Cette semaine</option>
+                <option value="month">Ce mois-ci</option>
+                <option value="year">Cette année</option>
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label className="filter-label">
+                <FaDatabase className="filter-icon" />
+                Taille
+              </label>
+              <select 
+                className="filter-select"
+                value={sizeFilter}
+                onChange={(e) => {
+                  setSizeFilter(e.target.value);
+                  refresh();
+                }}
+              >
+                <option value="">Toutes les tailles</option>
+                <option value="small">Petit (&lt; 1 MB)</option>
+                <option value="medium">Moyen (1-10 MB)</option>
+                <option value="large">Grand (&gt; 10 MB)</option>
+              </select>
+            </div>
           </div>
         </div>
 

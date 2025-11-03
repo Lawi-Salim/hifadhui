@@ -610,6 +610,22 @@
   margin-bottom: -2px;
 }
 
+.tab-notification-badge {
+  background-color: var(--success-color);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin-left: 6px;
+}
+
 /* Messages Toolbar */
 .messages-toolbar {
   display: flex;

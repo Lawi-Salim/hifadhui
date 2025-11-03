@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import NotificationService from './notificationService.js';
+import cleanupService from './cleanupService.js';
 import { addSystemError } from '../routes/admin.js';
 class SchedulerService {
   
@@ -158,12 +159,147 @@ class SchedulerService {
       }
     });
 
+    // Suppression définitive des comptes expirés - tous les jours à 2h
+    cron.schedule('0 2 * * *', async () => {
+      const startTime = new Date();
+      console.log(`🗑️ [SCHEDULER] Suppression des comptes expirés... (${startTime.toISOString()})`);
+      
+      try {
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: Suppression comptes trop longue')), 300000) // 5 minutes max
+        );
+        
+        const results = await Promise.race([
+          cleanupService.deleteExpiredAccounts(),
+          timeoutPromise
+        ]);
+        
+        const duration = new Date() - startTime;
+        console.log(`✅ [SCHEDULER] Comptes expirés supprimés en ${duration}ms:`, {
+          deletedAccounts: results.deletedAccounts,
+          errors: results.errors?.length || 0
+        });
+        
+        // Enregistrer les erreurs s'il y en a
+        if (results.errors && results.errors.length > 0) {
+          addSystemError('cleanup_deletion_errors', `${results.errors.length} erreur(s) lors de la suppression de comptes`, {
+            severity: 'warning',
+            errors: results.errors,
+            task: 'delete_expired_accounts'
+          });
+        }
+        
+      } catch (error) {
+        const duration = new Date() - startTime;
+        console.error(`❌ [SCHEDULER] Erreur suppression comptes expirés (${duration}ms):`, error.message);
+        
+        addSystemError('cron_cleanup_deletion', `Erreur suppression comptes: ${error.message}`, {
+          duration,
+          severity: 'error',
+          task: 'delete_expired_accounts'
+        });
+        
+        if (!error.message.includes('Timeout')) {
+          await NotificationService.notifyCriticalError(
+            'Erreur lors de la suppression des comptes expirés',
+            error.stack,
+            { task: 'delete_expired_accounts', duration }
+          );
+        }
+      }
+    });
+
+    // Envoi de rappels de suppression - tous les jours à 9h
+    cron.schedule('0 9 * * *', async () => {
+      const startTime = new Date();
+      console.log(`📧 [SCHEDULER] Envoi des rappels de suppression... (${startTime.toISOString()})`);
+      
+      try {
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: Envoi rappels trop long')), 180000) // 3 minutes max
+        );
+        
+        const results = await Promise.race([
+          cleanupService.sendReminderEmails(),
+          timeoutPromise
+        ]);
+        
+        const duration = new Date() - startTime;
+        console.log(`✅ [SCHEDULER] Rappels envoyés en ${duration}ms:`, {
+          sentReminders: results.sentReminders,
+          errors: results.errors?.length || 0
+        });
+        
+        // Enregistrer les erreurs s'il y en a
+        if (results.errors && results.errors.length > 0) {
+          addSystemError('cleanup_reminder_errors', `${results.errors.length} erreur(s) lors de l'envoi de rappels`, {
+            severity: 'warning',
+            errors: results.errors,
+            task: 'send_reminder_emails'
+          });
+        }
+        
+      } catch (error) {
+        const duration = new Date() - startTime;
+        console.error(`❌ [SCHEDULER] Erreur envoi rappels (${duration}ms):`, error.message);
+        
+        addSystemError('cron_cleanup_reminders', `Erreur envoi rappels: ${error.message}`, {
+          duration,
+          severity: 'error',
+          task: 'send_reminder_emails'
+        });
+        
+        if (!error.message.includes('Timeout')) {
+          await NotificationService.notifyCriticalError(
+            'Erreur lors de l\'envoi des rappels de suppression',
+            error.stack,
+            { task: 'send_reminder_emails', duration }
+          );
+        }
+      }
+    });
+
+    // Nettoyage des tentatives emails non autorisés - tous les dimanches à 4h
+    cron.schedule('0 4 * * 0', async () => {
+      const startTime = new Date();
+      console.log(`🧹 [SCHEDULER] Nettoyage tentatives emails non autorisés... (${startTime.toISOString()})`);
+      
+      try {
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: Nettoyage tentatives trop long')), 60000) // 1 minute max
+        );
+        
+        const results = await Promise.race([
+          cleanupService.cleanupUnauthorizedEmailAttempts(),
+          timeoutPromise
+        ]);
+        
+        const duration = new Date() - startTime;
+        console.log(`✅ [SCHEDULER] Tentatives nettoyées en ${duration}ms:`, {
+          deletedAttempts: results.deletedAttempts
+        });
+        
+      } catch (error) {
+        const duration = new Date() - startTime;
+        console.error(`❌ [SCHEDULER] Erreur nettoyage tentatives (${duration}ms):`, error.message);
+        
+        addSystemError('cron_cleanup_attempts', `Erreur nettoyage tentatives: ${error.message}`, {
+          duration,
+          severity: 'warning',
+          task: 'cleanup_unauthorized_attempts'
+        });
+      }
+    });
+
     console.log('✅ [SCHEDULER] Tâches programmées initialisées :');
     console.log('   💾 Espace disque : toutes les heures');
     console.log('   😴 Utilisateurs inactifs : tous les jours à 3h');
     console.log('   📊 Stats hebdomadaires : lundis à 9h');
     console.log('   📊 Stats mensuelles : 1er du mois à 10h');
     console.log('   🔧 Maintenance : dimanches à 2h');
+    console.log('   🗑️ Suppression comptes expirés : tous les jours à 2h');
+    console.log('   📧 Rappels de suppression : tous les jours à 9h');
+    console.log('   🧹 Nettoyage tentatives emails : dimanches à 4h');
   }
 
   /**
@@ -204,6 +340,38 @@ class SchedulerService {
   static async scheduleMaintenance(date, duration, description) {
     console.log(`🔧 [SCHEDULER] Programmation d'une maintenance pour ${date}...`);
     return await NotificationService.notifyScheduledMaintenance(date, duration, description);
+  }
+
+  /**
+   * Déclencher manuellement la suppression des comptes expirés
+   */
+  static async triggerDeleteExpiredAccounts() {
+    console.log('🗑️ [SCHEDULER] Suppression manuelle des comptes expirés...');
+    return await cleanupService.deleteExpiredAccounts();
+  }
+
+  /**
+   * Déclencher manuellement l'envoi des rappels de suppression
+   */
+  static async triggerSendReminders() {
+    console.log('📧 [SCHEDULER] Envoi manuel des rappels de suppression...');
+    return await cleanupService.sendReminderEmails();
+  }
+
+  /**
+   * Déclencher manuellement le nettoyage des tentatives emails
+   */
+  static async triggerCleanupUnauthorizedAttempts() {
+    console.log('🧹 [SCHEDULER] Nettoyage manuel des tentatives emails...');
+    return await cleanupService.cleanupUnauthorizedEmailAttempts();
+  }
+
+  /**
+   * Déclencher toutes les tâches de nettoyage manuellement
+   */
+  static async triggerAllCleanupTasks() {
+    console.log('🧹 [SCHEDULER] Exécution manuelle de toutes les tâches de nettoyage...');
+    return await cleanupService.runAllCleanupTasks();
   }
 }
 

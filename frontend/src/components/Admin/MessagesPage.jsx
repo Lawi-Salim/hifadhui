@@ -548,6 +548,7 @@ const MessagesPage = () => {
           onClick={() => setActiveTab('received')}
         >
           <FiInbox /> Reçus ({stats.received || 0})
+          {stats.unread > 0 && <span className="tab-notification-badge">{stats.unread}</span>}
         </button>
         <button 
           className={`tab-btn ${activeTab === 'sent' ? 'active' : ''}`}

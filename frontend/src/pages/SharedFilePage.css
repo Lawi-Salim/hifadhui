@@ -87,7 +87,7 @@
 }
 
 .image-preview-container,
-.pdf-preview-container {
+.shared-pdf-container {
   position: relative;
   width: 100%;
   height: 100%;
@@ -136,6 +136,16 @@
   text-transform: uppercase;
   letter-spacing: 0.2em;
   backdrop-filter: blur(1px);
+}
+
+.watermark-logo {
+  width: 300px;
+  height: auto;
+  transform: rotate(-40deg);
+  user-select: none;
+  pointer-events: none;
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5))
+          drop-shadow(-2px -2px 4px rgba(0, 0, 0, 0.5));
 }
 
 .no-preview {

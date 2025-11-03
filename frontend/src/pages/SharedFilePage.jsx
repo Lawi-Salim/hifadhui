@@ -206,7 +206,7 @@ const SharedFilePage = () => {
               onContextMenu={(e) => e.preventDefault()}
             />
             <div className="watermark-overlay">
-              <span className="watermark-text">{file.owner}</span>
+              <img src="/hifadhui-name.svg" alt="Hifadhui" className="watermark-logo" />
             </div>
           </div>
         </div>
@@ -217,14 +217,15 @@ const SharedFilePage = () => {
       
       return (
         <div className="shared-file-preview">
-          <div className="pdf-preview-container">
+          <div className="shared-pdf-container">
             <PdfPreview 
               fileUrl={pdfUrl} 
               fileId={file.id}
+              fullPage={true}
               className="shared-pdf-preview"
             />
             <div className="watermark-overlay">
-              <span className="watermark-text">{file.owner}</span>
+              <img src="/hifadhui-name.svg" alt="Hifadhui" className="watermark-logo" />
             </div>
           </div>
         </div>
@@ -292,7 +293,7 @@ const SharedFilePage = () => {
             </div>
           </div>
           
-          <div className="share-metadata">
+          <div className="share-metadata" style={{ paddingTop: '10px' }}>
             <div className="metadata-item">
               <FiUser className="metadata-icon" />
               <span>Partagé par <strong>{share.shared_by}</strong></span>

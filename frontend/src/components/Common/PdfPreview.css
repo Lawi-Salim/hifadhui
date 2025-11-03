@@ -1,0 +1,20 @@
+/* Wrapper du PDF Preview - Nom unique pour éviter les conflits CSS */
+.pdf-preview-wrapper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  position: relative;
+}
+
+/* Messages de chargement et d'erreur */
+.pdf-loading,
+.pdf-error {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.875rem;
+}
+
+.pdf-error {
+  color: var(--error-color, #ef4444);
+}

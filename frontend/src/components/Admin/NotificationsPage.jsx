@@ -129,8 +129,8 @@ const NotificationsPage = () => {
       if (notificationsResponse.stats) {
         setStats({
           unread: notificationsResponse.stats.unread || 0,
-          alerts: notificationsResponse.stats.alerts || 0,  // Maintenant directement fourni par le backend
-          info: notificationsResponse.stats.info || 0,      // Maintenant directement fourni par le backend
+          alerts: notificationsResponse.stats.alerts || 0,
+          info: notificationsResponse.stats.info || 0,
           total: notificationsResponse.stats.total || 0
         });
       }
@@ -203,8 +203,8 @@ const NotificationsPage = () => {
       const statsResponse = await notificationsService.getStats();
       setStats({
         unread: statsResponse.unread || 0,
-        alerts: (statsResponse.byType?.security || 0) + (statsResponse.byPriority?.urgent || 0),
-        info: (statsResponse.byType?.system || 0) + (statsResponse.byType?.success || 0),
+        alerts: statsResponse.alerts || 0,
+        info: statsResponse.info || 0,
         total: statsResponse.total || 0
       });
       
@@ -239,8 +239,8 @@ const NotificationsPage = () => {
           const statsResponse = await notificationsService.getStats();
           setStats({
             unread: statsResponse.unread || 0,
-            alerts: (statsResponse.byType?.security || 0) + (statsResponse.byPriority?.urgent || 0),
-            info: (statsResponse.byType?.system || 0) + (statsResponse.byType?.success || 0),
+            alerts: statsResponse.alerts || 0,
+            info: statsResponse.info || 0,
             total: statsResponse.total || 0
           });
           
@@ -555,25 +555,29 @@ const NotificationsPage = () => {
           className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`}
           onClick={() => setActiveTab('all')}
         >
-          <FiBell /> Toutes ({stats.total})
+          <FiBell /> Toutes 
+          {stats.total > 0 && <span className="tab-notification-badge">{stats.total}</span>}
         </button>
         <button 
           className={`tab-btn ${activeTab === 'unread' ? 'active' : ''}`}
           onClick={() => setActiveTab('unread')}
         >
-          <FiBell /> Non lues ({stats.unread})
+          <FiBell /> Non lues 
+          {stats.unread > 0 && <span className="tab-notification-badge">{stats.unread}</span>}
         </button>
         <button 
           className={`tab-btn ${activeTab === 'alerts' ? 'active' : ''}`}
           onClick={() => setActiveTab('alerts')}
         >
-          <FiAlertTriangle /> Alertes ({stats.alerts})
+          <FiAlertTriangle /> Alertes 
+          {stats.alerts > 0 && <span className="tab-notification-badge">{stats.alerts}</span>}
         </button>
         <button 
           className={`tab-btn ${activeTab === 'info' ? 'active' : ''}`}
           onClick={() => setActiveTab('info')}
         >
-          <FiInfo /> Informations ({stats.info})
+          <FiInfo /> Informations 
+          {stats.info > 0 && <span className="tab-notification-badge">{stats.info}</span>}
         </button>
       </div>
 
