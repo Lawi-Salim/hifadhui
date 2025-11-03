@@ -54,7 +54,7 @@ const EmailComposer = ({
         ...prev,
         to: replyTo.senderEmail || '',
         subject: replyTo.subject?.startsWith('Re:') ? replyTo.subject : `Re: ${replyTo.subject}`,
-        content: `\n\n--- Message original ---\nDe: ${replyTo.senderName} <${replyTo.senderEmail}>\nDate: ${new Date(replyTo.createdAt).toLocaleString('fr-FR')}\nSujet: ${replyTo.subject}\n\n${replyTo.content}`
+        content: '' // Zone de texte vide pour la réponse
       }));
     }
   }, [replyTo]);
@@ -128,7 +128,10 @@ const EmailComposer = ({
 
   const handleSend = async () => {
     // Protection contre double clic
+    console.log('🔔 [FRONTEND] handleSend appelé, sendingInProgress:', sendingInProgress);
+    
     if (sendingInProgress) {
+      console.log('⚠️ [FRONTEND] Envoi déjà en cours, annulation');
       return;
     }
     
@@ -137,13 +140,14 @@ const EmailComposer = ({
       setValidationErrors(errors);
       return;
     }
-
+    
     setSendingInProgress(true);
     setIsSending(true);
     try {
       let result;
       
       if (replyTo) {
+        console.log('🔔 [FRONTEND] Envoi d\'une réponse au message:', replyTo.id);
         // Utiliser la route de réponse spécifique
         const replyData = {
           subject: formData.subject,

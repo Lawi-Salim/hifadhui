@@ -457,6 +457,8 @@ router.post('/:id/reply', async (req, res) => {
       priority = 'normal'
     } = req.body;
 
+    console.log(`🔔 [REPLY] Réception d'une demande de réponse au message ${id}`);
+
     // Récupérer le message original
     const originalMessage = await Message.findByPk(id);
     if (!originalMessage) {
