@@ -75,10 +75,12 @@ export const captureUserSession = async (req, user) => {
 
     // Parser simple du User-Agent
     const parseUserAgent = (ua) => {
-      const browser = ua.includes('Chrome') ? 'Chrome' :
+      // IMPORTANT : Vérifier Edge/Edg AVANT Chrome car Edge contient "Chrome" dans son UA
+      const browser = ua.includes('Edg/') || ua.includes('Edge/') ? 'Edge' :
+                     ua.includes('Chrome') ? 'Chrome' :
                      ua.includes('Firefox') ? 'Firefox' :
-                     ua.includes('Safari') ? 'Safari' :
-                     ua.includes('Edge') ? 'Edge' : 'Unknown';
+                     ua.includes('Safari') && !ua.includes('Chrome') ? 'Safari' : 
+                     'Unknown';
       
       // IMPORTANT : Vérifier Android et iOS AVANT Linux/Mac car ils contiennent aussi ces mots
       const os = ua.includes('Android') ? 'Android' :
