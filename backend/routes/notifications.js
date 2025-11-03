@@ -111,9 +111,30 @@ router.get('/', async (req, res) => {
           ]
         }
       }),
+      // Alertes NON LUES uniquement
+      Notification.count({ 
+        where: {
+          status: 'unread',
+          [Op.or]: [
+            { type: 'security' },
+            { priority: 'urgent' },
+            { priority: 'high' }
+          ]
+        }
+      }),
       // Informations (système avec priorité normale/low)
       Notification.count({ 
         where: {
+          [Op.and]: [
+            { type: 'system' },
+            { priority: { [Op.in]: ['normal', 'low'] } }
+          ]
+        }
+      }),
+      // Informations NON LUES uniquement
+      Notification.count({ 
+        where: {
+          status: 'unread',
           [Op.and]: [
             { type: 'system' },
             { priority: { [Op.in]: ['normal', 'low'] } }
@@ -140,11 +161,13 @@ router.get('/', async (req, res) => {
       stats: {
         total: stats[0],
         unread: stats[1],
-        alerts: stats[2],  // Alertes (sécurité + urgent/high)
-        info: stats[3],    // Informations (système normal/low)
+        alerts: stats[2],        // Alertes (sécurité + urgent/high)
+        alertsUnread: stats[3],  // Alertes NON LUES
+        info: stats[4],          // Informations (système normal/low)
+        infoUnread: stats[5],    // Informations NON LUES
         // Garder les anciennes stats pour compatibilité
-        security: stats[2], // Même que alerts pour l'instant
-        system: stats[3]    // Même que info pour l'instant
+        security: stats[2],      // Même que alerts pour l'instant
+        system: stats[4]         // Même que info pour l'instant
       }
     });
 
@@ -202,6 +225,18 @@ router.get('/stats', async (req, res) => {
       }
     });
 
+    // Alertes NON LUES uniquement
+    stats.alertsUnread = await Notification.count({
+      where: {
+        status: 'unread',
+        [Op.or]: [
+          { type: 'security' },
+          { priority: 'urgent' },
+          { priority: 'high' }
+        ]
+      }
+    });
+
     // Informations = notifications système avec priorité normale/low
     stats.info = await Notification.count({
       where: {
@@ -210,6 +245,26 @@ router.get('/stats', async (req, res) => {
           { priority: { [Op.in]: ['normal', 'low'] } }
         ]
       }
+    });
+
+    // Informations NON LUES uniquement
+    stats.infoUnread = await Notification.count({
+      where: {
+        status: 'unread',
+        [Op.and]: [
+          { type: 'system' },
+          { priority: { [Op.in]: ['normal', 'low'] } }
+        ]
+      }
+    });
+
+    console.log('📊 [BACKEND-STATS] Stats calculées:', {
+      total: stats.total,
+      unread: stats.unread,
+      alerts: stats.alerts,
+      alertsUnread: stats.alertsUnread,
+      info: stats.info,
+      infoUnread: stats.infoUnread
     });
 
     res.json(stats);

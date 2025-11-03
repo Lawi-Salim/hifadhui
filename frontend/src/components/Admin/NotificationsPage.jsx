@@ -34,7 +34,9 @@ const NotificationsPage = () => {
   const [stats, setStats] = useState({
     unread: 0,
     alerts: 0,
+    alertsUnread: 0,
     info: 0,
+    infoUnread: 0,
     total: 0
   });
   const [selectedNotification, setSelectedNotification] = useState(null);
@@ -127,10 +129,13 @@ const NotificationsPage = () => {
       
       // Utiliser les statistiques retournées par l'API
       if (notificationsResponse.stats) {
+        console.log('📊 [NOTIF-STATS] Stats reçues du backend:', notificationsResponse.stats);
         setStats({
           unread: notificationsResponse.stats.unread || 0,
           alerts: notificationsResponse.stats.alerts || 0,
+          alertsUnread: notificationsResponse.stats.alertsUnread || 0,
           info: notificationsResponse.stats.info || 0,
+          infoUnread: notificationsResponse.stats.infoUnread || 0,
           total: notificationsResponse.stats.total || 0
         });
       }
@@ -144,7 +149,9 @@ const NotificationsPage = () => {
       setStats({
         unread: 0,
         alerts: 0,
+        alertsUnread: 0,
         info: 0,
+        infoUnread: 0,
         total: 0
       });
       
@@ -204,7 +211,9 @@ const NotificationsPage = () => {
       setStats({
         unread: statsResponse.unread || 0,
         alerts: statsResponse.alerts || 0,
+        alertsUnread: statsResponse.alertsUnread || 0,
         info: statsResponse.info || 0,
+        infoUnread: statsResponse.infoUnread || 0,
         total: statsResponse.total || 0
       });
       
@@ -240,7 +249,9 @@ const NotificationsPage = () => {
           setStats({
             unread: statsResponse.unread || 0,
             alerts: statsResponse.alerts || 0,
+            alertsUnread: statsResponse.alertsUnread || 0,
             info: statsResponse.info || 0,
+            infoUnread: statsResponse.infoUnread || 0,
             total: statsResponse.total || 0
           });
           
@@ -555,29 +566,29 @@ const NotificationsPage = () => {
           className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`}
           onClick={() => setActiveTab('all')}
         >
-          <FiBell /> Toutes 
-          {stats.total > 0 && <span className="tab-notification-badge">{stats.total}</span>}
+          <FiBell /> Toutes ({stats.total})
+          {stats.unread > 0 && <span className="tab-notification-badge">{stats.unread}</span>}
         </button>
         <button 
           className={`tab-btn ${activeTab === 'unread' ? 'active' : ''}`}
           onClick={() => setActiveTab('unread')}
         >
-          <FiBell /> Non lues 
+          <FiBell /> Non lues ({stats.unread})
           {stats.unread > 0 && <span className="tab-notification-badge">{stats.unread}</span>}
         </button>
         <button 
           className={`tab-btn ${activeTab === 'alerts' ? 'active' : ''}`}
           onClick={() => setActiveTab('alerts')}
         >
-          <FiAlertTriangle /> Alertes 
-          {stats.alerts > 0 && <span className="tab-notification-badge">{stats.alerts}</span>}
+          <FiAlertTriangle /> Alertes ({stats.alerts})
+          {stats.alertsUnread > 0 && <span className="tab-notification-badge">{stats.alertsUnread}</span>}
         </button>
         <button 
           className={`tab-btn ${activeTab === 'info' ? 'active' : ''}`}
           onClick={() => setActiveTab('info')}
         >
-          <FiInfo /> Informations 
-          {stats.info > 0 && <span className="tab-notification-badge">{stats.info}</span>}
+          <FiInfo /> Informations ({stats.info})
+          {stats.infoUnread > 0 && <span className="tab-notification-badge">{stats.infoUnread}</span>}
         </button>
       </div>
 
@@ -716,6 +727,10 @@ const NotificationsPage = () => {
                     <FiTrash2 />
                   </button>
                 </div>
+                
+                {notification.status === 'unread' && (
+                  <div className="gmail-unread-indicator"></div>
+                )}
               </div>
             ))
           )}
