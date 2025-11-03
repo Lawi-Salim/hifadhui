@@ -75,8 +75,9 @@ export const captureUserSession = async (req, user) => {
 
     // Parser simple du User-Agent
     const parseUserAgent = (ua) => {
-      // IMPORTANT : Vérifier Edge/Edg AVANT Chrome car Edge contient "Chrome" dans son UA
+      // IMPORTANT : Vérifier Edge/Edg et Opera AVANT Chrome car ils contiennent "Chrome" dans leur UA
       const browser = ua.includes('Edg/') || ua.includes('Edge/') ? 'Edge' :
+                     ua.includes('OPR/') || ua.includes('Opera') ? 'Opera' :
                      ua.includes('Chrome') ? 'Chrome' :
                      ua.includes('Firefox') ? 'Firefox' :
                      ua.includes('Safari') && !ua.includes('Chrome') ? 'Safari' : 
@@ -103,6 +104,9 @@ export const captureUserSession = async (req, user) => {
         browserVersion = match ? match[1] : '';
       } else if (browser === 'Edge') {
         const match = ua.match(/Edg\/([0-9.]+)/);
+        browserVersion = match ? match[1] : '';
+      } else if (browser === 'Opera') {
+        const match = ua.match(/(?:OPR|Opera)\/([0-9.]+)/);
         browserVersion = match ? match[1] : '';
       }
 
