@@ -17,8 +17,25 @@ import {
   FiSearch,
   FiSmartphone,
   FiMenu,
-  FiCalendar
+  FiCalendar,
+  FiChrome,
+  FiTablet
 } from 'react-icons/fi';
+import { 
+  SiGooglechrome, 
+  SiFirefox, 
+  SiSafari, 
+  SiApple,
+  SiLinux,
+  SiAndroid
+} from 'react-icons/si';
+import { 
+  FaGlobeAmericas,
+  FaGlobeEurope,
+  FaGlobeAsia,
+  FaGlobeAfrica,
+  FaMicrosoft
+} from 'react-icons/fa';
 import SessionDetailModal from './SessionDetailModal';
 import './AdminDashboard.css';
 import LoadingSpinner from '../Common/LoadingSpinner';
@@ -149,39 +166,45 @@ const TechnicalPage = () => {
   };
 
   const getCountryFlag = (countryCode) => {
-    // Simulation d'emojis de drapeaux
-    const flags = {
-      'FR': '🇫🇷',
-      'US': '🇺🇸',
-      'GB': '🇬🇧',
-      'DE': '🇩🇪',
-      'CA': '🇨🇦',
-      'Unknown': '🌍'
+    // Icônes de globe selon la région
+    const icons = {
+      'FR': <FaGlobeEurope style={{ color: '#0055A4' }} />,
+      'US': <FaGlobeAmericas style={{ color: '#B22234' }} />,
+      'GB': <FaGlobeEurope style={{ color: '#012169' }} />,
+      'DE': <FaGlobeEurope style={{ color: '#000000' }} />,
+      'CA': <FaGlobeAmericas style={{ color: '#FF0000' }} />,
+      'CN': <FaGlobeAsia style={{ color: '#DE2910' }} />,
+      'JP': <FaGlobeAsia style={{ color: '#BC002D' }} />,
+      'IN': <FaGlobeAsia style={{ color: '#FF9933' }} />,
+      'BR': <FaGlobeAmericas style={{ color: '#009739' }} />,
+      'ZA': <FaGlobeAfrica style={{ color: '#007A4D' }} />,
+      'Unknown': <FiGlobe style={{ color: '#6B7280' }} />
     };
-    return flags[countryCode] || '🌍';
+    return icons[countryCode] || <FiGlobe style={{ color: '#6B7280' }} />;
   };
 
   const getBrowserIcon = (browser) => {
-    if (!browser) return '🌐';
-    switch (browser.toLowerCase()) {
-      case 'chrome': return '🌐';
-      case 'firefox': return '🦊';
-      case 'safari': return '🧭';
-      case 'edge': return '🔷';
-      default: return '🌐';
-    }
+    if (!browser) return <FiGlobe style={{ color: '#6B7280' }} />;
+    const browserLower = browser.toLowerCase();
+    
+    if (browserLower.includes('chrome')) return <SiGooglechrome style={{ color: '#4285F4' }} />;
+    if (browserLower.includes('firefox')) return <SiFirefox style={{ color: '#FF7139' }} />;
+    if (browserLower.includes('safari')) return <SiSafari style={{ color: '#006CFF' }} />;
+    if (browserLower.includes('edge')) return <FaMicrosoft style={{ color: '#0078D7' }} />;
+    
+    return <FiGlobe style={{ color: '#6B7280' }} />;
   };
 
   const getOSIcon = (os) => {
-    if (!os) return '💻';
-    switch (os.toLowerCase()) {
-      case 'windows': return '🪟';
-      case 'macos': return '🍎';
-      case 'linux': return '🐧';
-      case 'android': return '🤖';
-      case 'ios': return '📱';
-      default: return '💻';
-    }
+    if (!os) return <FiMonitor style={{ color: '#6B7280' }} />;
+    const osLower = os.toLowerCase();
+    
+    if (osLower.includes('windows')) return <FaMicrosoft style={{ color: '#0078D6' }} />;
+    if (osLower.includes('mac') || osLower.includes('ios')) return <SiApple style={{ color: '#000000' }} />;
+    if (osLower.includes('linux')) return <SiLinux style={{ color: '#FCC624' }} />;
+    if (osLower.includes('android')) return <SiAndroid style={{ color: '#3DDC84' }} />;
+    
+    return <FiMonitor style={{ color: '#6B7280' }} />;
   };
 
   const exportTechnicalData = (format) => {

@@ -109,8 +109,12 @@ const SessionDetailModal = ({ session, isOpen, onClose }) => {
             </h3>
             <div className="session-info-grid">
               <div className="info-item">
-                <label>Adresse IP</label>
+                <label>Adresse IPv4</label>
                 <p className="ip-address">{formatValue(session.ipAddress, 'IP non disponible')}</p>
+              </div>
+              <div className="info-item">
+                <label>Adresse IPv6</label>
+                <p className="ip-address">{formatValue(session.ipv6Address, 'IPv6 non disponible')}</p>
               </div>
               <div className="info-item">
                 <label>ISP</label>

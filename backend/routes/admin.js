@@ -1855,6 +1855,7 @@ router.get('/technical', authenticateToken, authorizeAdmin, async (req, res) => 
           userEmail: conn.user ? (conn.user.dataValues?.email || conn.user.email) : 'Anonyme',  // ✅ Ajouté : Frontend utilise userEmail pour la recherche
           userId: data.userId,                 // ✅ Ajouté : ID utilisateur pour SessionDetailModal
           ipAddress: data.ipAddress,           // ✅ RE-CORRIGÉ : Sequelize utilise les alias du modèle
+          ipv6Address: data.ipv6Address,       // ✅ Ajouté : Adresse IPv6 pour SessionDetailModal
           userAgent: data.userAgent,          // ✅ RE-CORRIGÉ : Sequelize utilise les alias du modèle
           createdAt: data.sessionStart,       // ✅ RE-CORRIGÉ : Sequelize utilise les alias du modèle
           timestamp: data.sessionStart,       // ✅ RE-CORRIGÉ : Sequelize utilise les alias du modèle

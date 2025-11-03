@@ -7,6 +7,11 @@ import { updateSessionWithIPData } from './ipGeolocation.js';
  */
 export const captureUserSession = async (req, user) => {
   try {
+    // Log pour tracer d'où vient l'appel
+    console.log('🔔 [SESSION-CAPTURE] Fonction appelée depuis:', new Error().stack.split('\n')[2].trim());
+    console.log('🔔 [SESSION-CAPTURE] User:', user?.email || user?.username);
+    console.log('🔔 [SESSION-CAPTURE] URL:', req.originalUrl || req.url);
+    
     // Récupérer l'IP réelle
     const getClientIP = (req) => {
       const forwarded = req.headers['x-forwarded-for'];
@@ -37,14 +42,35 @@ export const captureUserSession = async (req, user) => {
       return remoteAddress || 'unknown';
     };
 
-    const ipAddress = getClientIP(req);
+    let ipAddress = getClientIP(req);
+    let ipv6Address = null;
+    
+    // Séparer IPv4 et IPv6
+    if (ipAddress === '::1') {
+      // Si c'est IPv6 localhost, utiliser IPv4 comme principal et garder IPv6
+      ipv6Address = '::1';
+      ipAddress = '127.0.0.1';
+    } else if (ipAddress && ipAddress.includes(':') && !ipAddress.startsWith('::ffff:')) {
+      // Si c'est une vraie IPv6 (pas mapped IPv4), garder les deux
+      ipv6Address = ipAddress;
+      // Essayer de trouver l'IPv4 dans les headers
+      ipAddress = req.connection?.remoteAddress || ipAddress;
+    }
+    // Si c'est déjà IPv4 (127.0.0.1 ou autre), on garde tel quel
+    
     const userAgent = req.headers['user-agent'] || '';
 
     console.log('🔍 [SESSION] Capture session pour:', {
       userId: user.id,
       username: user.username,
       ipAddress,
-      userAgent: userAgent.substring(0, 100) + '...'
+      userAgent: userAgent.substring(0, 100) + '...',
+      headers: {
+        'x-forwarded-for': req.headers['x-forwarded-for'],
+        'x-real-ip': req.headers['x-real-ip'],
+        'connection-remote': req.connection?.remoteAddress,
+        'socket-remote': req.socket?.remoteAddress
+      }
     });
 
     // Parser simple du User-Agent
@@ -54,12 +80,13 @@ export const captureUserSession = async (req, user) => {
                      ua.includes('Safari') ? 'Safari' :
                      ua.includes('Edge') ? 'Edge' : 'Unknown';
       
-      const os = ua.includes('Windows NT 10.0') ? 'Windows 11' :
+      // IMPORTANT : Vérifier Android et iOS AVANT Linux/Mac car ils contiennent aussi ces mots
+      const os = ua.includes('Android') ? 'Android' :
+                 ua.includes('iPhone') || ua.includes('iPad') ? 'iOS' :
+                 ua.includes('Windows NT 10.0') ? 'Windows 11' :
                  ua.includes('Windows NT') ? 'Windows' :
                  ua.includes('Mac OS X') ? 'macOS' :
-                 ua.includes('Linux') ? 'Linux' :
-                 ua.includes('Android') ? 'Android' :
-                 ua.includes('iPhone') ? 'iOS' : 'Unknown';
+                 ua.includes('Linux') ? 'Linux' : 'Unknown';
 
       // Extraire la version du navigateur
       let browserVersion = '';
@@ -80,7 +107,26 @@ export const captureUserSession = async (req, user) => {
       return { browser, browserVersion, os };
     };
 
+    // Validation : Ne pas traiter si les données essentielles sont manquantes
+    if (!userAgent || userAgent.length < 10) {
+      console.warn('⚠️ [SESSION] User-Agent trop court ou manquant, session ignorée:', {
+        userId: user.id,
+        userAgent: userAgent || 'undefined',
+        userAgentLength: userAgent ? userAgent.length : 0
+      });
+      return;
+    }
+
     const { browser, browserVersion, os } = parseUserAgent(userAgent);
+    
+    // Validation : Ne pas créer de session si toutes les données sont "Unknown"
+    if (browser === 'Unknown' && os === 'Unknown') {
+      console.warn('⚠️ [SESSION] Données parsées invalides (tout Unknown), session ignorée:', {
+        userId: user.id,
+        userAgent: userAgent.substring(0, 100)
+      });
+      return;
+    }
     
     console.log('🔍 [SESSION] Données parsées:', {
       browser,
@@ -99,11 +145,12 @@ export const captureUserSession = async (req, user) => {
     });
 
     if (activeSession) {
-      // Mettre à jour la session existante
+      // Mettre à jour la session existante uniquement si les nouvelles données sont valides
       await activeSession.update({
         lastActivity: new Date(),
-        ipAddress: ipAddress, // Mettre à jour l'IP si elle a changé
-        userAgent: userAgent, // Mettre à jour le User-Agent si nécessaire
+        ipAddress: ipAddress || activeSession.ipAddress,
+        ipv6Address: ipv6Address || activeSession.ipv6Address,
+        userAgent: userAgent || activeSession.userAgent,
         browser: browser || activeSession.browser,
         browserVersion: browserVersion || activeSession.browserVersion,
         os: os || activeSession.os
@@ -119,19 +166,11 @@ export const captureUserSession = async (req, user) => {
 
     // Si pas de session active, créer une nouvelle
     console.log('🆕 [SESSION] Création d\'une nouvelle session pour:', user.username);
-      // Ne pas créer de session si les données essentielles sont manquantes
-      if (!userAgent || userAgent.length < 10) {
-        console.warn('⚠️ [SESSION] User-Agent trop court ou manquant, session ignorée:', {
-          userId: user.id,
-          userAgent: userAgent || 'undefined',
-          userAgentLength: userAgent ? userAgent.length : 0
-        });
-        return;
-      }
 
-      const sessionData = {
+    const sessionData = {
         userId: user.id,
         ipAddress: ipAddress,
+        ipv6Address: ipv6Address,
         userAgent: userAgent,
         browser: browser || 'Unknown',
         browserVersion: browserVersion || '',
