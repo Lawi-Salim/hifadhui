@@ -43,20 +43,11 @@ export const captureUserSession = async (req, user) => {
     };
 
     let ipAddress = getClientIP(req);
-    let ipv6Address = null;
     
-    // Séparer IPv4 et IPv6
+    // Convertir ::1 (IPv6 localhost) en 127.0.0.1 (IPv4 localhost)
     if (ipAddress === '::1') {
-      // Si c'est IPv6 localhost, utiliser IPv4 comme principal et garder IPv6
-      ipv6Address = '::1';
       ipAddress = '127.0.0.1';
-    } else if (ipAddress && ipAddress.includes(':') && !ipAddress.startsWith('::ffff:')) {
-      // Si c'est une vraie IPv6 (pas mapped IPv4), garder les deux
-      ipv6Address = ipAddress;
-      // Essayer de trouver l'IPv4 dans les headers
-      ipAddress = req.connection?.remoteAddress || ipAddress;
     }
-    // Si c'est déjà IPv4 (127.0.0.1 ou autre), on garde tel quel
     
     const userAgent = req.headers['user-agent'] || '';
 
@@ -91,6 +82,11 @@ export const captureUserSession = async (req, user) => {
                  ua.includes('Mac OS X') ? 'macOS' :
                  ua.includes('Linux') ? 'Linux' : 'Unknown';
 
+      // Détecter le type d'appareil
+      const device = ua.includes('Mobile') || ua.includes('Android') || ua.includes('iPhone') ? 'mobile' :
+                     ua.includes('iPad') || ua.includes('Tablet') ? 'tablet' :
+                     'desktop';
+
       // Extraire la version du navigateur
       let browserVersion = '';
       if (browser === 'Chrome') {
@@ -110,7 +106,7 @@ export const captureUserSession = async (req, user) => {
         browserVersion = match ? match[1] : '';
       }
 
-      return { browser, browserVersion, os };
+      return { browser, browserVersion, os, device };
     };
 
     // Validation : Ne pas traiter si les données essentielles sont manquantes
@@ -123,7 +119,7 @@ export const captureUserSession = async (req, user) => {
       return;
     }
 
-    const { browser, browserVersion, os } = parseUserAgent(userAgent);
+    const { browser, browserVersion, os, device } = parseUserAgent(userAgent);
     
     // Validation : Ne pas créer de session si toutes les données sont "Unknown"
     if (browser === 'Unknown' && os === 'Unknown') {
@@ -138,6 +134,7 @@ export const captureUserSession = async (req, user) => {
       browser,
       browserVersion,
       os,
+      device,
       userAgentLength: userAgent.length
     });
 
@@ -155,11 +152,11 @@ export const captureUserSession = async (req, user) => {
       await activeSession.update({
         lastActivity: new Date(),
         ipAddress: ipAddress || activeSession.ipAddress,
-        ipv6Address: ipv6Address || activeSession.ipv6Address,
         userAgent: userAgent || activeSession.userAgent,
         browser: browser || activeSession.browser,
         browserVersion: browserVersion || activeSession.browserVersion,
-        os: os || activeSession.os
+        os: os || activeSession.os,
+        device: device || activeSession.device
       });
       
       console.log('✅ [SESSION] Session existante mise à jour:', {
@@ -176,12 +173,11 @@ export const captureUserSession = async (req, user) => {
     const sessionData = {
         userId: user.id,
         ipAddress: ipAddress,
-        ipv6Address: ipv6Address,
         userAgent: userAgent,
         browser: browser || 'Unknown',
         browserVersion: browserVersion || '',
         os: os || 'Unknown',
-        device: 'desktop',
+        device: device || 'desktop',
         country: null,
         countryCode: null,
         city: null,

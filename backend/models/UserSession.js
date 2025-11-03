@@ -21,11 +21,6 @@ const UserSession = sequelize.define('UserSession', {
     allowNull: false,
     field: 'ip_address',
   },
-  ipv6Address: {
-    type: DataTypes.INET,
-    allowNull: true,
-    field: 'ipv6_address',
-  },
   userAgent: {
     type: DataTypes.TEXT,
     allowNull: true,

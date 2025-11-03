@@ -11,6 +11,14 @@ import {
   FiShield,
   FiX
 } from 'react-icons/fi';
+import { 
+  SiGooglechrome, 
+  SiFirefox, 
+  SiSafari, 
+  SiOpera,
+  SiAndroid
+} from 'react-icons/si';
+import { FaEdge } from 'react-icons/fa';
 import './SessionDetailModal.css';
 
 const SessionDetailModal = ({ session, isOpen, onClose }) => {
@@ -61,8 +69,18 @@ const SessionDetailModal = ({ session, isOpen, onClose }) => {
   };
 
   const getBrowserIcon = (browser) => {
-    // Vous pouvez ajouter des icônes spécifiques par navigateur
-    return <FiGlobe />;
+    if (!browser) return <FiGlobe style={{ marginRight: '8px' }} />;
+    const browserLower = browser.toLowerCase();
+    
+    const iconStyle = { marginRight: '8px', fontSize: '16px' };
+    
+    if (browserLower.includes('chrome')) return <SiGooglechrome style={{ ...iconStyle, color: '#4285F4' }} />;
+    if (browserLower.includes('firefox')) return <SiFirefox style={{ ...iconStyle, color: '#FF7139' }} />;
+    if (browserLower.includes('safari')) return <SiSafari style={{ ...iconStyle, color: '#006CFF' }} />;
+    if (browserLower.includes('edge')) return <FaEdge style={{ ...iconStyle, color: '#0078D7' }} />;
+    if (browserLower.includes('opera')) return <SiOpera style={{ ...iconStyle, color: '#FF1B2D' }} />;
+    
+    return <FiGlobe style={iconStyle} />;
   };
 
   return (
@@ -109,12 +127,8 @@ const SessionDetailModal = ({ session, isOpen, onClose }) => {
             </h3>
             <div className="session-info-grid">
               <div className="info-item">
-                <label>Adresse IPv4</label>
+                <label>Adresse IP</label>
                 <p className="ip-address">{formatValue(session.ipAddress, 'IP non disponible')}</p>
-              </div>
-              <div className="info-item">
-                <label>Adresse IPv6</label>
-                <p className="ip-address">{formatValue(session.ipv6Address, 'IPv6 non disponible')}</p>
               </div>
               <div className="info-item">
                 <label>ISP</label>
