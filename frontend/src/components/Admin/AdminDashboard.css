@@ -3891,6 +3891,25 @@
   margin: 0;
 }
 
+/* Carte Taux d'Utilisation avec bordure style tableau */
+.usage-rate-card .usage-rate-content {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  background: var(--bg-tertiary);
+}
+
+.usage-rate-card .big-stat {
+  font-size: 3rem;
+  margin: 0.5rem 0;
+}
+
+.usage-rate-card .stat-description {
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
 /* Tableau compact dans la colonne droite */
 .stats-right-column .empreintes-table {
   font-size: 0.8rem;

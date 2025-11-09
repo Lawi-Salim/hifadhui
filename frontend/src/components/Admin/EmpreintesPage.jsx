@@ -123,6 +123,7 @@ const EmpreintesPage = () => {
     try {
       setUsersLoading(true);
       const data = await empreinteAdminService.getEmpreintesUsers();
+      console.log('👥 Users reçus:', data.data);
       setUsers(data.data);
     } catch (error) {
       console.error('Erreur chargement users:', error);
@@ -427,51 +428,9 @@ const EmpreintesPage = () => {
               <LoadingSpinner message="Chargement des statistiques..." />
             ) : (
               <div className="stats-layout-grid">
-                {/* Colonne gauche : Top générateurs */}
+                {/* Colonne gauche : Top 10 Utilisateurs */}
                 <div className="stats-card">
-                  <h3><FiUsers /> Top 10 Générateurs</h3>
-                  {stats.topGenerateurs.length === 0 ? (
-                    <p className="text-muted">Aucune donnée disponible</p>
-                  ) : (
-                    <div className="empreintes-table-container">
-                      <table className="empreintes-table">
-                        <thead>
-                          <tr>
-                            <th>Utilisateur</th>
-                            <th>Email</th>
-                            <th>Nombre d'Empreintes</th>
-                          </tr>
-                        </thead>
-                      <tbody>
-                        {stats.topGenerateurs.map((gen, idx) => (
-                          <tr key={idx}>
-                            <td>{gen.owner?.username || 'N/A'}</td>
-                            <td>{gen.owner?.email || 'N/A'}</td>
-                            <td><strong>{gen.count}</strong></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  )}
-                </div>
-
-                {/* Colonne droite : 3 sections empilées */}
-                <div className="stats-right-column">
-                  {/* Taux d'utilisation */}
-                  <div className="stats-card">
-                    <h3><FiTrendingUp /> Taux d'Utilisation</h3>
-                    <div className="big-stat">
-                      {stats.global.tauxUtilisation}%
-                    </div>
-                    <p className="stat-description">
-                      {stats.global.utilisees} empreintes utilisées sur {stats.global.total}
-                    </p>
-                  </div>
-
-                  {/* Top utilisateurs (taux) */}
-                  <div className="stats-card">
-                  <h3><FiCheckCircle /> Top 10 Utilisateurs (Taux d'Utilisation)</h3>
+                  <h3><FiUsers /> Top 10 Utilisateurs (Taux d'Utilisation)</h3>
                   {stats.topUtilisateurs.length === 0 ? (
                     <p className="text-muted">Aucune donnée disponible (min 5 empreintes)</p>
                   ) : (
@@ -485,24 +444,59 @@ const EmpreintesPage = () => {
                             <th>Taux</th>
                           </tr>
                         </thead>
-                      <tbody>
-                        {stats.topUtilisateurs.map((user, idx) => (
-                          <tr key={idx}>
-                            <td>{user['owner.username'] || 'N/A'}</td>
-                            <td>{user.total}</td>
-                            <td>{user.utilisees}</td>
+                        <tbody>
+                          {stats.topUtilisateurs.map((user, idx) => (
+                            <tr key={idx}>
+                              <td>{user['owner.username'] || 'N/A'}</td>
+                              <td>{user.total}</td>
+                              <td>{user.utilisees}</td>
+                              <td>
+                                <span className={`badge ${user.tauxUtilisation >= 80 ? 'success' : user.tauxUtilisation >= 50 ? 'warning' : 'danger'}`}>
+                                  {user.tauxUtilisation}%
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Colonne droite : 2 sections empilées */}
+                <div className="stats-right-column">
+                  {/* Taux d'utilisation */}
+                  <div className="stats-card">
+                    <h3><FiTrendingUp /> Taux d'Utilisation</h3>
+                    <div className="empreintes-table-container">
+                      <table className="empreintes-table">
+                        <thead>
+                          <tr>
+                            <th>Métrique</th>
+                            <th>Valeur</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>Taux d'utilisation</td>
                             <td>
-                              <span className={`badge ${user.tauxUtilisation >= 80 ? 'success' : user.tauxUtilisation >= 50 ? 'warning' : 'danger'}`}>
-                                {user.tauxUtilisation}%
+                              <span className={`badge ${stats.global.tauxUtilisation >= 80 ? 'success' : stats.global.tauxUtilisation >= 50 ? 'warning' : 'danger'}`}>
+                                {stats.global.tauxUtilisation}%
                               </span>
                             </td>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                          <tr>
+                            <td>Empreintes utilisées</td>
+                            <td><strong>{stats.global.utilisees}</strong></td>
+                          </tr>
+                          <tr>
+                            <td>Total empreintes</td>
+                            <td><strong>{stats.global.total}</strong></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                  )}
-                </div>
 
                   {/* Tendances */}
                   <div className="stats-card">
@@ -510,13 +504,29 @@ const EmpreintesPage = () => {
                     {stats.tendances.empreintesParJour.length === 0 ? (
                       <p className="text-muted">Aucune donnée disponible</p>
                     ) : (
-                      <div className="compact-date-display">
-                        <div className="date-item">
-                          <span className="date-label">
-                            {new Date(stats.tendances.empreintesParJour[stats.tendances.empreintesParJour.length - 1]?.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
-                          </span>
-                          <span className="date-count">{stats.tendances.empreintesParJour.reduce((sum, d) => sum + d.count, 0)}</span>
-                        </div>
+                      <div className="empreintes-table-container">
+                        <table className="empreintes-table">
+                          <thead>
+                            <tr>
+                              <th>Date</th>
+                              <th>Nombre</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[...stats.tendances.empreintesParJour].reverse().map((day, idx) => (
+                              <tr key={idx}>
+                                <td>
+                                  {new Date(day.date).toLocaleDateString('fr-FR', { 
+                                    weekday: 'short',
+                                    day: '2-digit', 
+                                    month: 'short' 
+                                  })}
+                                </td>
+                                <td><strong>{day.count}</strong></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     )}
                   </div>
@@ -552,22 +562,24 @@ const EmpreintesPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((user) => (
-                      <tr key={user.id}>
-                        <td><strong>{user.username}</strong></td>
-                        <td>{user.email}</td>
-                        <td>
-                          <span className={`badge ${user.role === 'admin' ? 'danger' : 'primary'}`}>
-                            {user.role}
-                          </span>
-                        </td>
-                        <td><strong>{user.empreintes.total}</strong></td>
-                        <td>{user.empreintes.disponibles}</td>
-                        <td>{user.empreintes.utilisees}</td>
-                        <td>{user.empreintes.expirees}</td>
-                        <td>{formatDate(user.created_at)}</td>
-                      </tr>
-                    ))}
+                    {users
+                      .filter(user => user.role !== 'admin') // Exclure les admins
+                      .map((user) => (
+                        <tr key={user.id}>
+                          <td><strong>{user.username}</strong></td>
+                          <td>{user.email}</td>
+                          <td>
+                            <span className={`badge ${user.role === 'admin' ? 'danger' : 'primary'}`}>
+                              {user.role}
+                            </span>
+                          </td>
+                          <td><strong>{user.empreintes.total}</strong></td>
+                          <td>{user.empreintes.disponibles}</td>
+                          <td>{user.empreintes.utilisees}</td>
+                          <td>{user.empreintes.expirees}</td>
+                          <td>{formatDate(user.created_at)}</td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>

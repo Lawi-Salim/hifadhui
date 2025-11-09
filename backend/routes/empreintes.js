@@ -660,12 +660,15 @@ router.get('/admin/users', authenticateToken, isAdmin, extractRequestInfo, async
       const utilisees = await Empreinte.count({ where: { owner_id: user.id, status: 'utilise' } });
       const expirees = await Empreinte.count({ where: { owner_id: user.id, status: 'expire' } });
 
+      // Utiliser toJSON() pour obtenir toutes les propriétés
+      const userData = user.toJSON();
+
       return {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        created_at: user.created_at,
+        id: userData.id,
+        username: userData.username,
+        email: userData.email,
+        role: userData.role,
+        created_at: userData.createdAt || userData.created_at,
         empreintes: {
           total,
           disponibles,
