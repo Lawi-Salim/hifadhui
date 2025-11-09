@@ -25,23 +25,50 @@ const SharedFilePage = () => {
         
         console.log('🔍 [DEBUG Frontend] Token:', token, 'Already viewed:', alreadyViewed);
         
-        const response = await api.get(`/share/${token}`, {
-          headers: {
-            'X-Already-Viewed': alreadyViewed ? 'true' : 'false'
+        let response;
+        
+        // Déterminer si c'est un hash d'empreinte (64 caractères hex) ou un token de partage
+        if (token && token.length === 64 && /^[a-f0-9]+$/i.test(token)) {
+          // C'est un hash d'empreinte
+          console.log('🔍 [DEBUG Frontend] Hash d\'empreinte détecté');
+          response = await api.get(`/files/by-empreinte/${token}`);
+          
+          // Adapter la structure de la réponse pour correspondre au format attendu
+          if (response.data.success) {
+            const { file, empreinte } = response.data.data;
+            setFileData({
+              file: {
+                ...file,
+                productId: empreinte.productId,
+                empreinteHash: empreinte.hash,
+                empreinteSignature: empreinte.signature,
+                empreinteGeneratedAt: empreinte.generatedAt,
+                empreinteUsedAt: empreinte.usedAt
+              },
+              shareToken: null,
+              isEmpreinteShare: true
+            });
           }
-        });
-        
-        // Marquer comme vu pour cette session globale
-        if (!alreadyViewed) {
-          console.log('🔍 [DEBUG Frontend] Marquage comme vu pour token:', token);
-          localStorage.setItem(globalSessionKey, 'true');
-          localStorage.setItem(`${globalSessionKey}_timestamp`, Date.now().toString());
+        } else {
+          // C'est un token de partage classique
+          response = await api.get(`/share/${token}`, {
+            headers: {
+              'X-Already-Viewed': alreadyViewed ? 'true' : 'false'
+            }
+          });
+          
+          // Marquer comme vu pour cette session globale
+          if (!alreadyViewed) {
+            console.log('🔍 [DEBUG Frontend] Marquage comme vu pour token:', token);
+            localStorage.setItem(globalSessionKey, 'true');
+            localStorage.setItem(`${globalSessionKey}_timestamp`, Date.now().toString());
+          }
+          
+          console.log('Données reçues:', response.data); // Debug
+          setFileData(response.data);
         }
-        
-        console.log('Données reçues:', response.data); // Debug
-        setFileData(response.data);
       } catch (err) {
-        setError(err.response?.data?.error || 'Erreur lors du chargement du fichier');
+        setError(err.response?.data?.error || err.response?.data?.message || 'Erreur lors du chargement du fichier');
       } finally {
         setLoading(false);
       }
@@ -268,8 +295,15 @@ const SharedFilePage = () => {
     );
   }
 
-  const { file, share } = fileData;
-  const metadata = getFileMetadata(file, share);
+  const { file, share, isEmpreinteShare } = fileData;
+  const metadata = share ? getFileMetadata(file, share) : {
+    title: `📄 ${file?.filename || 'Fichier'} - Vérifié par empreinte`,
+    description: `Fichier vérifié via empreinte numérique Hifadhui. Preuve d'authenticité garantie.`,
+    image: `${window.location.origin}/favicon.png`,
+    url: window.location.href,
+    author: file?.owner || 'Hifadhui',
+    filename: file?.filename
+  };
 
   return (
     <div className="shared-file-page">
@@ -293,20 +327,36 @@ const SharedFilePage = () => {
             </div>
           </div>
           
-          <div className="share-metadata" style={{ paddingTop: '10px' }}>
-            <div className="metadata-item">
-              <FiUser className="metadata-icon" />
-              <span>Partagé par <strong>{share.shared_by}</strong></span>
+          {!isEmpreinteShare && share && (
+            <div className="share-metadata" style={{ paddingTop: '10px' }}>
+              <div className="metadata-item">
+                <FiUser className="metadata-icon" />
+                <span>Partagé par <strong>{share.shared_by}</strong></span>
+              </div>
+              <div className="metadata-item">
+                <FiClock className="metadata-icon" />
+                <span>Expire le {formatDate(share.expires_at)}</span>
+              </div>
+              <div className="metadata-item">
+                <FiEye className="metadata-icon" />
+                <span>{share.access_count} consultation{share.access_count > 1 ? 's' : ''}</span>
+              </div>
             </div>
-            <div className="metadata-item">
-              <FiClock className="metadata-icon" />
-              <span>Expire le {formatDate(share.expires_at)}</span>
+          )}
+          {isEmpreinteShare && (
+            <div className="share-metadata" style={{ paddingTop: '10px' }}>
+              <div className="metadata-item">
+                <FiUser className="metadata-icon" />
+                <span>Propriétaire: <strong>{file.owner}</strong></span>
+              </div>
+              {file.productId && (
+                <div className="metadata-item">
+                  <FiShield className="metadata-icon" />
+                  <span>Product ID: <strong>{file.productId}</strong></span>
+                </div>
+              )}
             </div>
-            <div className="metadata-item">
-              <FiEye className="metadata-icon" />
-              <span>{share.access_count} consultation{share.access_count > 1 ? 's' : ''}</span>
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="shared-content">
@@ -347,6 +397,15 @@ const SharedFilePage = () => {
                 <span>v{file.version}</span>
               </div>
               
+              {file.productId && (
+                <div className="detail-item empreinte-highlight">
+                  <label>Product ID (Empreinte) :</label>
+                  <span className="product-id-value">
+                    <strong>{file.productId}</strong>
+                  </span>
+                </div>
+              )}
+              
               <div className="detail-item">
                 <label>Hash SHA-256 :</label>
                 <span className="hash-value" title={file.hash}>
@@ -360,6 +419,20 @@ const SharedFilePage = () => {
                   {file.signature?.substring(0, 16)}...
                 </span>
               </div>
+              
+              {file.empreinteGeneratedAt && (
+                <div className="detail-item empreinte-info">
+                  <label>Empreinte générée le :</label>
+                  <span>{formatDate(file.empreinteGeneratedAt)}</span>
+                </div>
+              )}
+              
+              {file.empreinteUsedAt && (
+                <div className="detail-item empreinte-info">
+                  <label>Empreinte utilisée le :</label>
+                  <span>{formatDate(file.empreinteUsedAt)}</span>
+                </div>
+              )}
             </div>
 
           </div>
@@ -370,10 +443,11 @@ const SharedFilePage = () => {
           <div className="notice-content">
             <h4>Notice de sécurité</h4>
             <ul>
-              <li>Ce fichier est partagé uniquement pour consultation</li>
+              <li>Ce fichier est {isEmpreinteShare ? 'vérifié par empreinte numérique' : 'partagé'} uniquement pour consultation</li>
               <li>Le téléchargement n'est pas autorisé</li>
               <li>Le filigrane indique le propriétaire légitime</li>
-              <li>Ce lien expire automatiquement dans 24h ou à la fermeture de cette page</li>
+              {!isEmpreinteShare && <li>Ce lien expire automatiquement dans 24h ou à la fermeture de cette page</li>}
+              {isEmpreinteShare && <li>Cette empreinte garantit l'authenticité et la propriété du fichier</li>}
             </ul>
           </div>
         </div>

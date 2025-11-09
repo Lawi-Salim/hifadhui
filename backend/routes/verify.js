@@ -1,5 +1,6 @@
 import express from 'express';
 import { File, Utilisateur } from '../models/index.js';
+import Empreinte from '../models/Empreinte.js';
 import crypto from 'crypto';
 import multer from 'multer';
 
@@ -22,7 +23,7 @@ router.get('/:hash', async (req, res) => {
   try {
     const { hash } = req.params;
 
-    console.log(`🔍 [VERIFY] Vérification du hash: ${hash.substring(0, 16)}...`);
+    // console.log(`🔍 [VERIFY] Vérification du hash: ${hash.substring(0, 16)}...`);
 
     // Valider le format du hash (SHA-256 = 64 caractères hexadécimaux)
     if (!/^[a-f0-9]{64}$/i.test(hash)) {
@@ -73,7 +74,7 @@ router.get('/:hash', async (req, res) => {
       response.message = 'Ce fichier existe dans notre base de données mais le propriétaire a choisi de garder les détails confidentiels.';
     }
 
-    console.log(`✅ [VERIFY] Fichier vérifié: ${file.filename}`);
+    // console.log(`✅ [VERIFY] Fichier vérifié: ${file.filename}`);
     res.json(response);
 
   } catch (error) {
@@ -247,6 +248,92 @@ router.post('/hash', async (req, res) => {
     res.status(500).json({ 
       verified: false,
       error: 'Erreur lors de la vérification'
+    });
+  }
+});
+
+/**
+ * @route   GET /api/v1/verify/product-id/:productId
+ * @desc    Vérifier l'authenticité d'un fichier par son Product ID
+ * @access  Public
+ */
+router.get('/product-id/:productId', async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    console.log(`🔍 [VERIFY] Vérification du Product ID: ${productId}`);
+
+    // Rechercher l'empreinte par Product ID
+    const empreinte = await Empreinte.findOne({
+      where: { product_id: productId.toUpperCase() }
+    });
+
+    if (!empreinte) {
+      console.log(`❌ [VERIFY] Product ID non trouvé: ${productId}`);
+      return res.json({
+        verified: false,
+        message: 'Aucune empreinte correspondant à ce Product ID n\'a été trouvée dans notre base de données.'
+      });
+    }
+
+    // Vérifier si l'empreinte est associée à un fichier
+    if (!empreinte.file_id) {
+      return res.json({
+        verified: false,
+        message: 'Cette empreinte n\'est pas encore associée à un fichier.'
+      });
+    }
+
+    // Rechercher le fichier associé
+    const file = await File.findByPk(empreinte.file_id, {
+      include: [{
+        model: Utilisateur,
+        as: 'fileUser',
+        attributes: ['username', 'email']
+      }]
+    });
+
+    if (!file) {
+      return res.json({
+        verified: false,
+        message: 'Le fichier associé à cette empreinte n\'a pas été trouvé.'
+      });
+    }
+
+    // Préparer la réponse
+    const response = {
+      verified: true,
+      productId: empreinte.product_id,
+      hash: file.hash,
+      signature: file.signature,
+      uploadDate: file.date_upload,
+      empreinteGeneratedAt: empreinte.generated_at,
+      empreinteUsedAt: empreinte.used_at
+    };
+
+    // Si la vérification publique est autorisée, inclure plus de détails
+    if (file.is_public_verification) {
+      response.filename = file.filename;
+      response.size = file.size;
+      response.mimetype = file.mimetype;
+      response.owner = {
+        name: file.fileUser.username,
+        email: file.fileUser.email
+      };
+    } else {
+      // Mode anonyme : informations minimales
+      response.filename = '****** (confidentiel)';
+      response.message = 'Ce fichier existe dans notre base de données mais le propriétaire a choisi de garder les détails confidentiels.';
+    }
+
+    console.log(`✅ [VERIFY] Fichier vérifié via Product ID: ${productId}`);
+    res.json(response);
+
+  } catch (error) {
+    console.error('❌ [VERIFY] Erreur lors de la vérification par Product ID:', error);
+    res.status(500).json({ 
+      verified: false,
+      error: 'Une erreur est survenue lors de la vérification'
     });
   }
 });

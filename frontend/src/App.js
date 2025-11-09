@@ -34,10 +34,12 @@ import RiskDashboard from './components/Admin/RiskDashboard.jsx';
 import TechnicalPage from './components/Admin/TechnicalPage.jsx';
 import MessagesPage from './components/Admin/MessagesPage.jsx';
 import NotificationsPage from './components/Admin/NotificationsPage.jsx';
+import EmpreintesPage from './components/Admin/EmpreintesPage.jsx';
 import UserImages from './components/Admin/UserImages.jsx';
 import UserFiles from './components/Admin/UserFiles.jsx';
 import AdminRoute from './components/routes/AdminRoute.jsx';
 import VerifyPage from './pages/VerifyPage.jsx';
+import GenerateEmpreintes from './pages/GenerateEmpreintes.jsx';
 import './App.css';
 
 // Composant pour protéger les routes
@@ -151,6 +153,11 @@ function AppContent() {
               <FileUpload />
             </PrivateRoute>
           } />
+          <Route path="/empreintes" element={
+            <PrivateRoute>
+              <GenerateEmpreintes />
+            </PrivateRoute>
+          } />
           <Route path="/images" element={
             <PrivateRoute>
               <Images />
@@ -192,6 +199,7 @@ function AppContent() {
             <Route path="/admin/analytics" element={<AnalyticsPage />} />
             <Route path="/admin/risk" element={<RiskDashboard />} />
             <Route path="/admin/reports" element={<ReportsPage />} />
+            <Route path="/admin/empreintes" element={<EmpreintesPage />} />
             <Route path="/admin/technical" element={<TechnicalPage />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />

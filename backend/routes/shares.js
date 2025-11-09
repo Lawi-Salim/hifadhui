@@ -2,7 +2,7 @@ import express from 'express';
 import crypto from 'crypto';
 import { body, validationResult } from 'express-validator';
 import { Op } from 'sequelize';
-import { File, FileShare, Utilisateur, ActivityLog } from '../models/index.js';
+import { File, FileShare, Utilisateur, ActivityLog, Empreinte } from '../models/index.js';
 import { authenticateToken } from '../middleware/auth.js';
 import fs from 'fs';
 import path from 'path';
@@ -123,6 +123,11 @@ router.get('/:token', async (req, res) => {
               as: 'fileUser',
               attributes: ['username']
             },
+            {
+              model: Empreinte,
+              as: 'empreinte',
+              attributes: ['product_id', 'status']
+            }
           ]
         },
         {
@@ -157,6 +162,7 @@ router.get('/:token', async (req, res) => {
         mimetype: fileShare.file.mimetype,
         hash: fileShare.file.hash,
         signature: fileShare.file.signature,
+        product_id: fileShare.file.empreinte?.product_id || null,
         date_upload: fileShare.file.date_upload,
         version: fileShare.file.version,
         owner: fileShare.file.fileUser.username,

@@ -11,6 +11,8 @@ import MessageAttachment from './MessageAttachment.js';
 import Notification from './Notification.js';
 import Report from './Report.js';
 import ModerationAction from './ModerationAction.js';
+import Empreinte from './Empreinte.js';
+import EmpreinteLog from './EmpreinteLog.js';
 
 // Définition des associations
 
@@ -73,6 +75,43 @@ File.belongsTo(Dossier, {
   as: 'fileDossier'  // Le dossier contenant le fichier
 });
 
+// Relations File <-> Empreinte
+File.hasOne(Empreinte, {
+  foreignKey: 'file_id',
+  as: 'empreinte',
+  onDelete: 'CASCADE'
+});
+
+Empreinte.belongsTo(File, {
+  foreignKey: 'file_id',
+  as: 'file'
+});
+
+Empreinte.belongsTo(Utilisateur, {
+  foreignKey: 'owner_id',
+  as: 'owner'
+});
+
+Utilisateur.hasMany(Empreinte, {
+  foreignKey: 'owner_id',
+  as: 'empreintes'
+});
+
+// Relations EmpreinteLog
+EmpreinteLog.belongsTo(Utilisateur, {
+  foreignKey: 'admin_id',
+  as: 'admin'
+});
+
+EmpreinteLog.belongsTo(Utilisateur, {
+  foreignKey: 'target_user_id',
+  as: 'targetUser'
+});
+
+EmpreinteLog.belongsTo(Empreinte, {
+  foreignKey: 'empreinte_id',
+  as: 'empreinte'
+});
 
 // 5. Relations ActivityLog
 ActivityLog.belongsTo(Utilisateur, {
@@ -235,5 +274,7 @@ export {
   MessageAttachment,
   Notification,
   Report,
-  ModerationAction
+  ModerationAction,
+  Empreinte,
+  EmpreinteLog
 };

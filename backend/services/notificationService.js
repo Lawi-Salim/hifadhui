@@ -43,7 +43,7 @@ class NotificationService {
         });
       }
 
-      console.log(`✅ [NOTIFICATION] Admins notifiés du nouvel utilisateur: ${newUser.username}`);
+      // console.log(`✅ [NOTIFICATION] Admins notifiés du nouvel utilisateur: ${newUser.username}`);
     } catch (error) {
       console.error('❌ [NOTIFICATION] Erreur notification nouvel utilisateur:', error);
     }

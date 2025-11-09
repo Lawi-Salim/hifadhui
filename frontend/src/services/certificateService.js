@@ -91,6 +91,21 @@ const certificateService = {
   },
 
   /**
+   * Vérifier un fichier par son Product ID
+   * @param {string} productId - Product ID de l'empreinte
+   * @returns {Promise<Object>} - Résultat de la vérification
+   */
+  async verifyByProductId(productId) {
+    try {
+      const response = await api.get(`/verify/product-id/${productId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la vérification par Product ID:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Télécharger le certificat et déclencher le téléchargement dans le navigateur
    * @param {string} fileId - ID du fichier
    * @param {string} filename - Nom du fichier original

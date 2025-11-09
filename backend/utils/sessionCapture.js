@@ -7,10 +7,10 @@ import { updateSessionWithIPData } from './ipGeolocation.js';
  */
 export const captureUserSession = async (req, user) => {
   try {
-    // Log pour tracer d'où vient l'appel
-    console.log('🔔 [SESSION-CAPTURE] Fonction appelée depuis:', new Error().stack.split('\n')[2].trim());
-    console.log('🔔 [SESSION-CAPTURE] User:', user?.email || user?.username);
-    console.log('🔔 [SESSION-CAPTURE] URL:', req.originalUrl || req.url);
+    // Log pour tracer d'où vient l'appel (désactivé)
+    // console.log('🔔 [SESSION-CAPTURE] Fonction appelée depuis:', new Error().stack.split('\n')[2].trim());
+    // console.log('🔔 [SESSION-CAPTURE] User:', user?.email || user?.username);
+    // console.log('🔔 [SESSION-CAPTURE] URL:', req.originalUrl || req.url);
     
     // Récupérer l'IP réelle
     const getClientIP = (req) => {
@@ -51,18 +51,18 @@ export const captureUserSession = async (req, user) => {
     
     const userAgent = req.headers['user-agent'] || '';
 
-    console.log('🔍 [SESSION] Capture session pour:', {
-      userId: user.id,
-      username: user.username,
-      ipAddress,
-      userAgent: userAgent.substring(0, 100) + '...',
-      headers: {
-        'x-forwarded-for': req.headers['x-forwarded-for'],
-        'x-real-ip': req.headers['x-real-ip'],
-        'connection-remote': req.connection?.remoteAddress,
-        'socket-remote': req.socket?.remoteAddress
-      }
-    });
+    // console.log('🔍 [SESSION] Capture session pour:', {
+    //   userId: user.id,
+    //   username: user.username,
+    //   ipAddress,
+    //   userAgent: userAgent.substring(0, 100) + '...',
+    //   headers: {
+    //     'x-forwarded-for': req.headers['x-forwarded-for'],
+    //     'x-real-ip': req.headers['x-real-ip'],
+    //     'connection-remote': req.connection?.remoteAddress,
+    //     'socket-remote': req.socket?.remoteAddress
+    //   }
+    // });
 
     // Parser simple du User-Agent
     const parseUserAgent = (ua) => {
@@ -130,13 +130,13 @@ export const captureUserSession = async (req, user) => {
       return;
     }
     
-    console.log('🔍 [SESSION] Données parsées:', {
-      browser,
-      browserVersion,
-      os,
-      device,
-      userAgentLength: userAgent.length
-    });
+    // console.log('🔍 [SESSION] Données parsées:', {
+    //   browser,
+    //   browserVersion,
+    //   os,
+    //   device,
+    //   userAgentLength: userAgent.length
+    // });
 
     // Chercher une session active existante pour cet utilisateur
     const activeSession = await UserSession.findOne({
@@ -159,16 +159,16 @@ export const captureUserSession = async (req, user) => {
         device: device || activeSession.device
       });
       
-      console.log('✅ [SESSION] Session existante mise à jour:', {
-        sessionId: activeSession.id,
-        userId: user.id,
-        lastActivity: new Date().toISOString()
-      });
+      // console.log('✅ [SESSION] Session existante mise à jour:', {
+      //   sessionId: activeSession.id,
+      //   userId: user.id,
+      //   lastActivity: new Date().toISOString()
+      // });
       return;
     }
 
     // Si pas de session active, créer une nouvelle
-    console.log('🆕 [SESSION] Création d\'une nouvelle session pour:', user.username);
+    // console.log('🆕 [SESSION] Création d\'une nouvelle session pour:', user.username);
 
     const sessionData = {
         userId: user.id,
@@ -207,11 +207,11 @@ export const captureUserSession = async (req, user) => {
 
       const session = await UserSession.create(sessionData);
 
-      console.log(`🔍 [LOGIN SESSION] Session créée pour ${user.email}:`);
-      console.log(`   🌐 IP: ${ipAddress}`);
-      console.log(`   🖥️  Navigateur: ${browser} ${browserVersion}`);
-      console.log(`   💻 OS: ${os}`);
-      console.log(`   🆔 Session ID: ${session.id}`);
+      // console.log(`🔍 [LOGIN SESSION] Session créée pour ${user.email}:`);
+      // console.log(`   🌐 IP: ${ipAddress}`);
+      // console.log(`   🖥️  Navigateur: ${browser} ${browserVersion}`);
+      // console.log(`   💻 OS: ${os}`);
+      // console.log(`   🆔 Session ID: ${session.id}`);
 
       // Enrichir avec les données de géolocalisation en arrière-plan
       updateSessionWithIPData(session, ipAddress).catch(error => {

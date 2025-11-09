@@ -26,6 +26,7 @@ import {
   FiMail,
   FiBell
 } from 'react-icons/fi';
+import { FaFingerprint } from 'react-icons/fa';
 import UserMenu from './UserMenu';
 import './Sidebar.css';
 
@@ -123,6 +124,7 @@ const Sidebar = () => {
       { path: '/admin/analytics', label: 'Analytics', icon: FiPieChart },
       { path: '/admin/risk', label: 'Surveillance Risques', icon: FiShield },
       { path: '/admin/reports', label: 'Signalements', icon: FiAlertTriangle },
+      { path: '/admin/empreintes', label: 'Empreintes', icon: FaFingerprint },
       { path: '/admin/technical', label: 'Données techniques', icon: FiMonitor }
     ];
   } else {
@@ -130,6 +132,7 @@ const Sidebar = () => {
     menuItems = [
       { path: '/dashboard', label: 'Tableau de bord', icon: FiBarChart2 },
       { path: '/upload', label: 'Uploader', icon: FiUpload },
+      { path: '/empreintes', label: 'Empreintes', icon: FaFingerprint },
       { path: '/files', label: 'PDFs', icon: FiFileText },
       { path: '/dossiers', label: 'Mes Dossiers', icon: FiFolder },
       { path: '/images', label: 'Images', icon: FiImage },

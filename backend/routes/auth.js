@@ -90,12 +90,12 @@ router.post('/register', registerValidation, async (req, res) => {
     const { username, email, password } = req.body;
 
     // Validation du domaine email
-    console.log(`🔍 [REGISTER] Tentative d'inscription avec email: ${email} depuis IP: ${req.ip}`);
+    // console.log(`🔍 [REGISTER] Tentative d'inscription avec email: ${email} depuis IP: ${req.ip}`);
     try {
       await validateEmail(email, req.ip, req.get('User-Agent'), 'register');
-      console.log(`✅ [REGISTER] Email ${email} autorisé`);
+      // console.log(`✅ [REGISTER] Email ${email} autorisé`);
     } catch (domainError) {
-      console.log(`❌ [REGISTER] Email ${email} refusé: ${domainError.message}`);
+      // console.log(`❌ [REGISTER] Email ${email} refusé: ${domainError.message}`);
       return res.status(400).json({
         error: domainError.message
       });

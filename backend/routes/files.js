@@ -1,6 +1,7 @@
 import express from 'express';
 import { Op } from 'sequelize';
 import { File, Dossier, ActivityLog, Utilisateur } from '../models/index.js';
+import Empreinte from '../models/Empreinte.js';
 import { sequelize } from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { upload, handleUploadError } from '../middleware/upload.js';
@@ -19,6 +20,106 @@ const router = express.Router();
 
 // Route pour récupérer les informations de quota
 router.get('/quota', authenticateToken, getQuotaInfo);
+
+// ========================================
+// GET /api/v1/files/by-empreinte/:hash
+// Récupérer les détails d'un fichier via le hash de l'empreinte (PUBLIC)
+// ========================================
+router.get('/by-empreinte/:hash', async (req, res) => {
+  try {
+    const { hash } = req.params;
+
+    console.log(`🔍 [FILE BY EMPREINTE] Recherche fichier avec hash: ${hash}`);
+
+    // Trouver l'empreinte
+    const empreinte = await Empreinte.findOne({
+      where: { hash_pregenere: hash }
+    });
+
+    if (!empreinte) {
+      return res.status(404).json({
+        success: false,
+        message: 'Empreinte introuvable'
+      });
+    }
+
+    // Vérifier si l'empreinte est associée à un fichier
+    if (!empreinte.file_id) {
+      return res.status(404).json({
+        success: false,
+        message: 'Aucun fichier associé à cette empreinte'
+      });
+    }
+
+    // Récupérer le fichier avec ses relations
+    const file = await File.findByPk(empreinte.file_id, {
+      include: [
+        {
+          model: Utilisateur,
+          as: 'fileUser',
+          attributes: ['id', 'username', 'email']
+        },
+        {
+          model: Dossier,
+          as: 'fileDossier',
+          required: false
+        }
+      ]
+    });
+
+    if (!file) {
+      return res.status(404).json({
+        success: false,
+        message: 'Fichier introuvable'
+      });
+    }
+
+    // Calculer le chemin complet du dossier
+    let fullPath = 'Racine';
+    if (file.fileDossier) {
+      fullPath = await file.fileDossier.getFullPath();
+    }
+
+    console.log(`✅ [FILE BY EMPREINTE] Fichier trouvé: ${file.filename}`);
+
+    res.json({
+      success: true,
+      data: {
+        file: {
+          id: file.id,
+          filename: file.filename,
+          mimetype: file.mimetype,
+          size: file.size,
+          hash: file.hash,
+          signature: file.signature,
+          date_upload: file.date_upload,
+          file_url: file.file_url,
+          dossier: file.fileDossier ? {
+            id: file.fileDossier.id,
+            nom: file.fileDossier.name_original || file.fileDossier.name,
+            fullPath: fullPath
+          } : null,
+          owner: file.fileUser.username
+        },
+        empreinte: {
+          productId: empreinte.product_id,
+          hash: empreinte.hash_pregenere,
+          signature: empreinte.signature_pregeneree,
+          generatedAt: empreinte.generated_at,
+          usedAt: empreinte.used_at
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [FILE BY EMPREINTE] Erreur:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération du fichier',
+      error: error.message
+    });
+  }
+});
 
 // Fonction pour corriger l'encodage des caractères spéciaux français mal encodés
 const fixEncoding = (text) => {
@@ -100,7 +201,7 @@ const createSlug = (text) => {
 };
 
 // Fonction pour traiter un fichier unique (création en BDD)
-const processSingleFile = async (fileData, user, req, dossierId = null, options = { logActivity: true }) => {
+const processSingleFile = async (fileData, user, req, dossierId = null, options = { logActivity: true, empreinte: null }) => {
   const { originalname, path: filePath, size, mimetype } = fileData;
   
   // Si aucun dossier spécifié, utiliser le dossier système par défaut
@@ -124,12 +225,27 @@ const processSingleFile = async (fileData, user, req, dossierId = null, options 
   }
   
 
-  const timestamp = Date.now();
-  const fileHash = crypto.createHash('sha256').update(filePath + timestamp).digest('hex');
-  const signatureData = `${originalname}-${user.id}-${timestamp}`;
-  const signature = crypto.createHash('sha256').update(signatureData).digest('hex');
+  // Utiliser l'empreinte pré-générée si fournie, sinon générer hash/signature
+  let fileHash, signature, empreinteId = null;
+  
+  if (options.empreinte) {
+    // Utiliser les données de l'empreinte pré-générée
+    fileHash = options.empreinte.hash_pregenere;
+    signature = options.empreinte.signature_pregeneree;
+    empreinteId = options.empreinte.id;
+    
+    console.log(`🔖 [UPLOAD] Utilisation empreinte pré-générée: ${options.empreinte.product_id}`);
+  } else {
+    // Générer hash et signature comme avant (ancien système)
+    const timestamp = Date.now();
+    fileHash = crypto.createHash('sha256').update(filePath + timestamp).digest('hex');
+    const signatureData = `${originalname}-${user.id}-${timestamp}`;
+    signature = crypto.createHash('sha256').update(signatureData).digest('hex');
+    
+    console.log('⚠️ [UPLOAD] Aucune empreinte disponible - Génération hash/signature temporaire');
+  }
 
-    const file = await File.create({
+  const file = await File.create({
     dossier_id: dossierId,
     filename: originalname,
     file_url,
@@ -137,9 +253,16 @@ const processSingleFile = async (fileData, user, req, dossierId = null, options 
     size: size,
     hash: fileHash,
     signature: signature,
+    empreinte_id: empreinteId,
     owner_id: user.id,
     version: 1
   });
+  
+  // Si une empreinte a été utilisée, la marquer comme utilisée
+  if (options.empreinte) {
+    await Empreinte.markAsUsed(options.empreinte.id, file.id);
+    console.log(`✅ [UPLOAD] Empreinte ${options.empreinte.product_id} associée au fichier ${file.id}`);
+  }
 
 
   let action_type = 'FILE_UPLOAD';
@@ -195,9 +318,30 @@ router.post('/upload', authenticateToken, checkUploadQuota, behaviorMonitor, upl
       });
     }
 
-    // Fichier individuel - traiter directement
+    // Vérifier les empreintes disponibles
+    console.log(`🔍 [UPLOAD] Vérification empreintes disponibles pour user ${req.user.id}`);
+    const empreintesDisponibles = await Empreinte.getAvailableEmpreintes(req.user.id, 1);
+    
+    if (empreintesDisponibles.length === 0) {
+      console.log('⚠️ [UPLOAD] Aucune empreinte disponible - Upload refusé');
+      return res.status(400).json({
+        error: 'Aucune empreinte disponible',
+        message: 'Vous devez générer des empreintes avant d\'uploader des fichiers',
+        code: 'NO_EMPREINTE_AVAILABLE'
+      });
+    }
+
+    // Utiliser la première empreinte disponible
+    const empreinte = empreintesDisponibles[0];
+    console.log(`✅ [UPLOAD] Empreinte disponible trouvée: ${empreinte.product_id}`);
+
+    // Fichier individuel - traiter directement avec l'empreinte
     const { dossier_id } = req.body;
-    const file = await processSingleFile(req.file, req.user, req, dossier_id);
+    const file = await processSingleFile(req.file, req.user, req, dossier_id, { 
+      logActivity: true, 
+      empreinte 
+    });
+    
     res.status(201).json({
       message: 'Fichier uploadé avec succès',
       file: {
@@ -205,6 +349,8 @@ router.post('/upload', authenticateToken, checkUploadQuota, behaviorMonitor, upl
         filename: file.filename,
         hash: file.hash,
         signature: file.signature,
+        product_id: empreinte.product_id,
+        empreinte_id: file.empreinte_id,
         date_upload: file.date_upload,
         version: file.version
       }
@@ -274,7 +420,7 @@ router.post('/zip-preview', authenticateToken, uploadLocal.upload.single('docume
 });
 
 // Route spécifique pour uploader des fichiers ZIP
-router.post('/upload-zip', authenticateToken, behaviorMonitor, uploadLocal.upload.single('document'), async (req, res) => {
+router.post('/upload-zip', authenticateToken, checkUploadQuota, behaviorMonitor, uploadLocal.upload.single('document'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Aucun fichier fourni' });
@@ -290,6 +436,39 @@ router.post('/upload-zip', authenticateToken, behaviorMonitor, uploadLocal.uploa
       });
     }
 
+    // Lire le fichier ZIP pour compter les fichiers valides
+    const zipData = req.file.buffer ? req.file.buffer : fs.readFileSync(filePath);
+    const zip = new AdmZip(zipData);
+    const zipEntries = zip.getEntries();
+    
+    // Compter les fichiers valides (images et PDFs)
+    let validFileCount = 0;
+    for (const zipEntry of zipEntries) {
+      if (zipEntry.isDirectory) continue;
+      const extension = path.extname(zipEntry.entryName).toLowerCase();
+      if (['.pdf', '.jpg', '.jpeg', '.png'].includes(extension)) {
+        validFileCount++;
+      }
+    }
+    
+    console.log(`🔍 [UPLOAD-ZIP] ${validFileCount} fichier(s) valide(s) détecté(s) dans le ZIP`);
+    
+    // Vérifier qu'il y a assez d'empreintes disponibles
+    const empreintesDisponibles = await Empreinte.getAvailableEmpreintes(req.user.id, validFileCount);
+    
+    if (empreintesDisponibles.length < validFileCount) {
+      console.log(`⚠️ [UPLOAD-ZIP] Empreintes insuffisantes: ${empreintesDisponibles.length}/${validFileCount}`);
+      return res.status(400).json({
+        error: 'Empreintes insuffisantes',
+        message: `Le ZIP contient ${validFileCount} fichier(s) mais vous n'avez que ${empreintesDisponibles.length} empreinte(s) disponible(s)`,
+        required: validFileCount,
+        available: empreintesDisponibles.length,
+        code: 'INSUFFICIENT_EMPREINTES'
+      });
+    }
+    
+    console.log(`✅ [UPLOAD-ZIP] ${empreintesDisponibles.length} empreinte(s) disponible(s) - Upload autorisé`);
+
     // Créer un dossier basé sur le nom du ZIP dans le dossier système
     const systemRoot = await Dossier.getSystemRoot();
     const originalDossierName = path.basename(req.file.originalname, path.extname(req.file.originalname));
@@ -299,14 +478,11 @@ router.post('/upload-zip', authenticateToken, behaviorMonitor, uploadLocal.uploa
       defaults: { name: dossierName, name_original: fixEncoding(originalDossierName), owner_id: req.user.id, parent_id: systemRoot.id },
     });
 
-    // Lire le fichier ZIP (mémoire en prod via multer.memoryStorage, disque en dev)
-    const zipData = req.file.buffer ? req.file.buffer : fs.readFileSync(filePath);
-    const zip = new AdmZip(zipData);
-    const zipEntries = zip.getEntries();
     const processedFiles = [];
     const uploadsDir = filePath ? path.dirname(filePath) : '/tmp';
     let extractedImageCount = 0;
     let extractedPdfCount = 0;
+    let empreinteIndex = 0;
 
     // Traitement ZIP normal sans streaming
 
@@ -377,8 +553,17 @@ router.post('/upload-zip', authenticateToken, behaviorMonitor, uploadLocal.uploa
           mimetype: fileMimeType
         };
 
-        // Traiter le fichier sans logger d'activité individuelle
-        const processedFile = await processSingleFile(fileDataObject, req.user, req, newDossier.id, { logActivity: false });
+        // Utiliser l'empreinte correspondante
+        const currentEmpreinte = empreintesDisponibles[empreinteIndex];
+        empreinteIndex++;
+        
+        console.log(`🔖 [UPLOAD-ZIP] Fichier ${empreinteIndex}/${validFileCount} - Empreinte: ${currentEmpreinte.product_id}`);
+
+        // Traiter le fichier avec l'empreinte
+        const processedFile = await processSingleFile(fileDataObject, req.user, req, newDossier.id, { 
+          logActivity: false,
+          empreinte: currentEmpreinte
+        });
         processedFiles.push(processedFile);
       }
 
@@ -464,11 +649,19 @@ router.get('/', authenticateToken, async (req, res) => {
 
     const { count, rows: files } = await File.findAndCountAll({
       where: whereClause,
-      include: [{
-        model: Dossier,
-        as: 'fileDossier',
-        required: false
-      }],
+      include: [
+        {
+          model: Dossier,
+          as: 'fileDossier',
+          required: false
+        },
+        {
+          model: Empreinte,
+          as: 'empreinte',
+          attributes: ['product_id', 'status'],
+          required: false
+        }
+      ],
       order: [['date_upload', 'DESC']],
       limit: limit,
       offset: offset
@@ -734,6 +927,9 @@ router.delete('/batch-delete', authenticateToken, async (req, res) => {
     console.log(`🗑️ [BATCH DELETE] Root file IDs: ${rootFileIds.join(', ')}`);
 
 
+    // Note : Les empreintes seront automatiquement supprimées via ON DELETE CASCADE
+    // Pas besoin de suppression manuelle
+
     for (const file of filesToDelete) {
       console.log(`🗑️ [FILE DELETE] Début suppression fichier ${file.id} (${file.filename})`);
       
@@ -820,6 +1016,8 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     const rootFileId = file.parent_file_id || file.id;
     console.log(`🗑️ [FILE DELETE] Root file ID: ${rootFileId}`);
 
+    // Note : L'empreinte sera automatiquement supprimée via ON DELETE CASCADE
+    // Pas besoin de suppression manuelle
 
     // Supprimer toutes les versions du fichier
     await File.destroy({
@@ -1022,5 +1220,6 @@ router.get('/pdf/:fileId', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
+
 
 export default router;

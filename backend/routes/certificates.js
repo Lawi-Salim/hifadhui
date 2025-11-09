@@ -73,7 +73,7 @@ router.get('/:fileId/preview', authenticateToken, async (req, res) => {
     const { fileId } = req.params;
     const userId = req.user.id;
 
-    console.log(`👁️ [CERTIFICATE-PREVIEW] Demande de preview pour fichier: ${fileId}`);
+    // console.log(`👁️ [CERTIFICATE-PREVIEW] Demande de preview pour fichier: ${fileId}`);
 
     // Récupérer le fichier
     const file = await File.findOne({
@@ -97,7 +97,7 @@ router.get('/:fileId/preview', authenticateToken, async (req, res) => {
     // Générer les métadonnées
     const metadata = certificateService.generateCertificateMetadata(file, file.fileUser);
 
-    console.log(`✅ [CERTIFICATE-PREVIEW] Métadonnées générées pour: ${fileId}`);
+    // console.log(`✅ [CERTIFICATE-PREVIEW] Métadonnées générées pour: ${fileId}`);
     res.json(metadata);
 
   } catch (error) {

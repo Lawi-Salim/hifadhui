@@ -42,8 +42,21 @@ backend/KEEP_ALIVE_SYSTEM.md
 backend/VERCEL_UPTIME_CONFIG.md
 
 frontend/src/components/Layout/ProviderIcon.md
+frontend/src/components/Empreintes/EmpreinteCard.README.md
+frontend/src/components/Common/QRCodeDisplay.README.md
+ADMIN_EMPREINTES_BACKEND.md 
+ADMIN_EMPREINTES_COMPLET.md 
+ADMIN_EMPREINTES_FRONTEND.md
 TACHES_AUTOMATIQUES.md
 Commandes-git.md
+EMPREINTE_CASCADE_FIX.md
+EMPREINTE.md
+QRCODE_UNIFICATION.md
+SESSION_EMPREINTES_RECAP.md
+SUGGESTIONS_EMPREINTES.md
+
+create-empreinte-logs.sql 
+add-table-empreinte.sql
 
 # Dossier de build de production
 /frontend/build

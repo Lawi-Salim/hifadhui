@@ -3851,6 +3851,125 @@
   margin-bottom: 20px;
 }
 
+/* Layout pour les stats : tableau à gauche, 3 sections à droite */
+.stats-layout-grid {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 20px;
+  align-items: start;
+}
+
+.stats-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Cartes compactes dans la colonne droite */
+.stats-right-column .stats-card {
+  padding: 1rem;
+}
+
+.stats-right-column .stats-card h3 {
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stats-right-column .big-stat {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 0.5rem 0;
+}
+
+.stats-right-column .stat-description {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Tableau compact dans la colonne droite */
+.stats-right-column .empreintes-table {
+  font-size: 0.8rem;
+}
+
+.stats-right-column .empreintes-table th,
+.stats-right-column .empreintes-table td {
+  padding: 0.5rem;
+}
+
+/* Section date compacte */
+.compact-date-display {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.date-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  border-left: 3px solid var(--primary-color);
+}
+
+.date-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.date-count {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+/* Badges pour les taux */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.badge.success {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.badge.warning {
+  background: rgba(251, 146, 60, 0.15);
+  color: #fb923c;
+}
+
+.badge.danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.badge.primary {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+@media (max-width: 1200px) {
+  .stats-layout-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-right-column .stats-card {
+    padding: 1.5rem;
+  }
+}
+
 .unauthorized-stat-item {
   display: flex;
   justify-content: space-between;

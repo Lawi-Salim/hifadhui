@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { FiShield, FiUpload, FiShare2, FiEye, FiLock, FiCheck } from 'react-icons/fi';
+import { FaFingerprint } from 'react-icons/fa';
 import PublicNavbar from '../components/Layout/PublicNavbar';
 import Footer from '../components/Layout/Footer';
 import './HomePage.css';
@@ -15,6 +16,11 @@ const HomePage = () => {
       icon: <FiShield />,
       title: "Sécurité Maximale",
       description: "Vos documents sont protégés par un système de hachage SHA-256 et des signatures numériques."
+    },
+    {
+      icon: <FaFingerprint />,
+      title: "Empreintes Numériques",
+      description: "Générez des Product ID uniques avec QR Code pour une traçabilité et authenticité garanties."
     },
     {
       icon: <FiUpload />,

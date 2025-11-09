@@ -1,0 +1,104 @@
+/* ========================================
+   QRCodeDisplay - Composant unifié QR Code
+   ======================================== */
+
+.qrcode-display-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.qrcode-display-canvas-wrapper {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: inline-block;
+}
+
+.qrcode-display-canvas {
+  display: block;
+  border-radius: 4px;
+}
+
+.qrcode-display-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.qrcode-display-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.qrcode-display-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.qrcode-display-btn-copy {
+  background: var(--primary-color, #2563eb);
+  color: white;
+}
+
+.qrcode-display-btn-copy:hover:not(:disabled) {
+  background: var(--primary-hover, #1d4ed8);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.qrcode-display-btn-download {
+  background: var(--success-color, #10b981);
+  color: white;
+}
+
+.qrcode-display-btn-download:hover:not(:disabled) {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.qrcode-display-error {
+  padding: 20px;
+  text-align: center;
+  color: var(--error-color, #dc2626);
+  background: rgba(220, 38, 38, 0.1);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+/* Mode sombre */
+@media (prefers-color-scheme: dark) {
+  .qrcode-display-canvas-wrapper {
+    background: #1e293b;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  .qrcode-display-error {
+    background: rgba(220, 38, 38, 0.2);
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .qrcode-display-canvas-wrapper {
+    padding: 12px;
+  }
+  
+  .qrcode-display-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}

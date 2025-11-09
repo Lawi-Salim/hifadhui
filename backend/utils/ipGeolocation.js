@@ -9,7 +9,7 @@
  * @returns {Object} - Informations de géolocalisation
  */
 export const enrichIPData = async (ipAddress) => {
-  console.log(`🌍 [IP GEO] Début enrichissement pour IP: ${ipAddress}`);
+  // console.log(`🌍 [IP GEO] Début enrichissement pour IP: ${ipAddress}`);
   
   // Ignorer les IPs locales
   if (!ipAddress || 
@@ -28,12 +28,12 @@ export const enrichIPData = async (ipAddress) => {
       isp: 'Local Network'
     };
     
-    console.log(`🏠 [IP GEO] IP locale détectée:`, localData);
+    // console.log(`🏠 [IP GEO] IP locale détectée:`, localData);
     return localData;
   }
 
   try {
-    console.log(`🔍 [IP GEO] Appel API pour ${ipAddress}...`);
+    // console.log(`🔍 [IP GEO] Appel API pour ${ipAddress}...`);
     
     // Utilisation de l'API gratuite ip-api.com (100 requêtes/minute)
     const response = await fetch(`http://ip-api.com/json/${ipAddress}?fields=status,message,country,countryCode,region,regionName,city,timezone,isp,query`);
@@ -43,7 +43,7 @@ export const enrichIPData = async (ipAddress) => {
     }
     
     const data = await response.json();
-    console.log(`📡 [IP GEO] Réponse API:`, data);
+    // console.log(`📡 [IP GEO] Réponse API:`, data);
     
     if (data.status === 'fail') {
       console.warn(`❌ Géolocalisation échouée pour ${ipAddress}:`, data.message);
@@ -59,7 +59,7 @@ export const enrichIPData = async (ipAddress) => {
       isp: data.isp || 'Unknown'
     };
 
-    console.log(`✅ [IP GEO] Données enrichies:`, enrichedData);
+    // console.log(`✅ [IP GEO] Données enrichies:`, enrichedData);
     return enrichedData;
 
   } catch (error) {
@@ -98,11 +98,11 @@ export const updateSessionWithIPData = async (session, ipAddress) => {
       isp: ipData.isp
     });
 
-    console.log(`🌍 [IP GEO] Données enrichies pour ${ipAddress}:`, {
-      country: ipData.country,
-      city: ipData.city,
-      isp: ipData.isp
-    });
+    // console.log(`🌍 [IP GEO] Données enrichies pour ${ipAddress}:`, {
+    //   country: ipData.country,
+    //   city: ipData.city,
+    //   isp: ipData.isp
+    // });
 
     return ipData;
   } catch (error) {

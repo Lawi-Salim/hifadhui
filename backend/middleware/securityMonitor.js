@@ -140,7 +140,7 @@ class SecurityMonitor {
       }
     }
     
-    console.log(`🧹 [SECURITY] Nettoyage des tentatives: ${failedAttempts.size} IPs surveillées`);
+    // console.log(`🧹 [SECURITY] Nettoyage des tentatives: ${failedAttempts.size} IPs surveillées`);
   }
 
   /**

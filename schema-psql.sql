@@ -9,6 +9,8 @@ DROP TABLE IF EXISTS MessageAttachments CASCADE;
 DROP TABLE IF EXISTS Messages CASCADE;
 DROP TABLE IF EXISTS UserSessions CASCADE;
 DROP TABLE IF EXISTS FileShares CASCADE;
+DROP TABLE IF EXISTS EmpreinteLogs CASCADE;
+DROP TABLE IF EXISTS Empreintes CASCADE;
 DROP TABLE IF EXISTS File CASCADE;
 DROP TABLE IF EXISTS Dossier CASCADE;
 DROP TABLE IF EXISTS ActivityLogs CASCADE;
@@ -53,6 +55,41 @@ CREATE TABLE Dossier (
 );
 
 -- ========================================
+-- TABLE : Empreintes (Pré-génération pour preuve de propriété)
+-- ========================================
+CREATE TABLE Empreintes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    
+    -- Identifiant unique du produit (Format: HFD-LW-XXXXXX-YYYYYY)
+    product_id VARCHAR(50) UNIQUE NOT NULL, -- ex: HFD-LW-000001-123456
+    
+    -- Composants du product_id
+    prefix VARCHAR(10) NOT NULL DEFAULT 'HFD', -- Hifadhui
+    owner_code VARCHAR(10) NOT NULL, -- ex: LW (surnom utilisateur)
+    sequence_number INT NOT NULL, -- XXXXXX (numéro séquentiel)
+    random_number INT NOT NULL, -- YYYYYY (nombre aléatoire)
+    
+    -- Empreintes cryptographiques pré-générées
+    hash_pregenere CHAR(64) UNIQUE NOT NULL, -- SHA-256 pré-généré
+    signature_pregeneree TEXT UNIQUE NOT NULL, -- Signature pré-générée
+    qr_code_data TEXT NOT NULL, -- Données du QR code (URL de vérification)
+    qr_code_url TEXT, -- URL Cloudinary du QR code généré (image)
+    
+    -- Statut et association
+    status VARCHAR(20) DEFAULT 'disponible' CHECK (status IN ('disponible', 'utilise', 'expire')),
+    file_id UUID, -- Sera lié après création de File
+    owner_id UUID NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE,
+    
+    -- Métadonnées
+    generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    used_at TIMESTAMP NULL, -- Date d'utilisation (quand associé à un fichier)
+    expires_at TIMESTAMP NULL, -- Expiration si non utilisé (ex: 30 jours)
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========================================
 -- TABLE : File
 -- ========================================
 CREATE TABLE File (
@@ -70,9 +107,19 @@ CREATE TABLE File (
     is_public_verification BOOLEAN NOT NULL DEFAULT FALSE, -- Autoriser la vérification publique avec détails
     date_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     signature TEXT NOT NULL UNIQUE, -- obligatoire et unique
+    empreinte_id UUID REFERENCES Empreintes(id) ON DELETE SET NULL, -- Lien vers l'empreinte pré-générée
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ========================================
+-- CONTRAINTES CROISÉES (après création des tables)
+-- ========================================
+-- Ajouter la contrainte file_id sur Empreintes maintenant que File existe
+ALTER TABLE Empreintes 
+ADD CONSTRAINT empreintes_file_id_fkey 
+FOREIGN KEY (file_id) 
+REFERENCES File(id) 
+ON DELETE CASCADE;
 
 -- ========================================
 -- TABLE : ActivityLogs
@@ -257,11 +304,37 @@ CREATE TABLE ModerationActions (
 );
 
 -- ========================================
+-- TABLE : EmpreinteLogs (Logs des actions admin sur empreintes)
+-- ========================================
+CREATE TABLE EmpreinteLogs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    admin_id UUID NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE,
+    action VARCHAR(50) NOT NULL CHECK (action IN ('view_all', 'view_details', 'view_stats', 'export', 'view_user_empreintes')),
+    empreinte_id UUID REFERENCES Empreintes(id) ON DELETE SET NULL,
+    target_user_id UUID REFERENCES Utilisateur(id) ON DELETE SET NULL,
+    metadata JSONB, -- Données supplémentaires (filtres utilisés, nombre de résultats, etc.)
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========================================
 -- INDEXES (performance)
 -- ========================================
 
 -- Index pour les fichiers
 CREATE INDEX idx_file_owner_id ON File(owner_id);
+CREATE INDEX idx_file_empreinte_id ON File(empreinte_id);
+
+-- Index pour les empreintes
+CREATE INDEX idx_empreintes_owner_id ON Empreintes(owner_id);
+CREATE INDEX idx_empreintes_status ON Empreintes(status);
+CREATE INDEX idx_empreintes_product_id ON Empreintes(product_id);
+CREATE INDEX idx_empreintes_file_id ON Empreintes(file_id);
+CREATE INDEX idx_empreintes_owner_status ON Empreintes(owner_id, status);
+CREATE INDEX idx_empreintes_sequence ON Empreintes(owner_id, sequence_number);
+CREATE INDEX idx_empreintes_expires_at ON Empreintes(expires_at);
 
 -- Index pour les dossiers 
 CREATE INDEX idx_dossier_parent_id ON Dossier(parent_id);
@@ -359,6 +432,12 @@ CREATE UNIQUE INDEX idx_dossier_sous_dossier_unique_nom ON Dossier(owner_id, par
 -- Index pour le dossier système racine
 CREATE INDEX idx_dossier_system_root ON Dossier(is_system_root) WHERE is_system_root = TRUE;
 
+-- Index pour EmpreinteLogs
+CREATE INDEX idx_empreinte_logs_admin ON EmpreinteLogs(admin_id);
+CREATE INDEX idx_empreinte_logs_action ON EmpreinteLogs(action);
+CREATE INDEX idx_empreinte_logs_target_user ON EmpreinteLogs(target_user_id);
+CREATE INDEX idx_empreinte_logs_created ON EmpreinteLogs(created_at);
+
 -- ========================================
 -- TRIGGERS
 -- ========================================
@@ -383,6 +462,10 @@ BEFORE UPDATE ON File
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 
+CREATE TRIGGER trg_empreintes_updated
+BEFORE UPDATE ON Empreintes
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_dossier_updated
 BEFORE UPDATE ON Dossier
@@ -421,6 +504,11 @@ EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_moderation_actions_updated
 BEFORE UPDATE ON ModerationActions
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_empreinte_logs_updated
+BEFORE UPDATE ON EmpreinteLogs
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 

@@ -13,9 +13,10 @@ const VerifyPage = () => {
   const { hash: urlHash } = useParams();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('file'); // 'file' ou 'hash'
+  const [activeTab, setActiveTab] = useState('file'); // 'file', 'hash' ou 'productId'
   const [file, setFile] = useState(null);
   const [hashInput, setHashInput] = useState(urlHash || '');
+  const [productIdInput, setProductIdInput] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -86,6 +87,32 @@ const VerifyPage = () => {
     verifyHash(hashInput);
   };
 
+  const verifyProductId = async (productId) => {
+    if (!productId || productId.trim() === '') {
+      setError('Veuillez entrer un Product ID');
+      return;
+    }
+
+    try {
+      setVerifying(true);
+      setError(null);
+      setResult(null);
+
+      const data = await certificateService.verifyByProductId(productId);
+      setResult(data);
+
+    } catch (err) {
+      console.error('Erreur vérification:', err);
+      setError('Erreur lors de la vérification du Product ID');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleVerifyProductId = () => {
+    verifyProductId(productIdInput);
+  };
+
   const formatFileSize = (bytes) => {
     if (!bytes) return '0 B';
     const units = ['B', 'KB', 'MB', 'GB'];
@@ -105,6 +132,7 @@ const VerifyPage = () => {
   const resetVerification = () => {
     setFile(null);
     setHashInput('');
+    setProductIdInput('');
     setResult(null);
     setError(null);
     if (urlHash) {
@@ -137,6 +165,12 @@ const VerifyPage = () => {
             onClick={() => setActiveTab('hash')}
           >
             <FaSearch /> Vérifier par hash
+          </button>
+          <button
+            className={`verify-tab ${activeTab === 'productId' ? 'active' : ''}`}
+            onClick={() => setActiveTab('productId')}
+          >
+            <FaSearch /> Vérifier par Product ID
           </button>
         </div>
 
@@ -186,7 +220,7 @@ const VerifyPage = () => {
                 )}
               </button>
             </div>
-          ) : (
+          ) : activeTab === 'hash' ? (
             <div className="verify-method">
               <h3 className="verify-method-title">Entrer le hash SHA-256</h3>
               <p className="verify-method-description">
@@ -214,6 +248,37 @@ const VerifyPage = () => {
                 ) : (
                   <>
                     <FaSearch /> Vérifier le hash
+                  </>
+                )}
+              </button>
+            </div>
+          ) : (
+            <div className="verify-method">
+              <h3 className="verify-method-title">Entrer le Product ID</h3>
+              <p className="verify-method-description">
+                Saisissez le Product ID de l'empreinte (format: HFD-LW-XXXXXX-YYYYYY).
+              </p>
+
+              <input
+                type="text"
+                className="verify-hash-input"
+                placeholder="Ex: HFD-LW-000001-ABC123"
+                value={productIdInput}
+                onChange={(e) => setProductIdInput(e.target.value.toUpperCase())}
+              />
+
+              <button
+                className="verify-submit-btn"
+                onClick={handleVerifyProductId}
+                disabled={!productIdInput || verifying}
+              >
+                {verifying ? (
+                  <>
+                    <FaSpinner className="spinning" /> Vérification en cours...
+                  </>
+                ) : (
+                  <>
+                    <FaSearch /> Vérifier le Product ID
                   </>
                 )}
               </button>

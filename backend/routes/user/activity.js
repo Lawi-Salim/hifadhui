@@ -10,11 +10,11 @@ const router = express.Router();
 // POST /api/v1/user/activity - Enregistrer l'activité utilisateur
 router.post('/activity', authenticateToken, async (req, res) => {
   try {
-    console.log('📊 [ACTIVITY] Réception activité utilisateur:', {
-      userId: req.user.id,
-      type: req.body.type,
-      timestamp: req.body.timestamp
-    });
+    // console.log('📊 [ACTIVITY] Réception activité utilisateur:', {
+    //   userId: req.user.id,
+    //   type: req.body.type,
+    //   timestamp: req.body.timestamp
+    // });
     
     const { type, timestamp, userAgent, url, reason } = req.body;
     const userId = req.user.id;
@@ -53,7 +53,7 @@ router.post('/activity', authenticateToken, async (req, res) => {
       );
     }
 
-    console.log('✅ [ACTIVITY] Activité enregistrée avec succès pour:', req.user.username);
+    // console.log('✅ [ACTIVITY] Activité enregistrée avec succès pour:', req.user.username);
     
     res.json({ 
       success: true, 

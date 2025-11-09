@@ -31,9 +31,11 @@ import adminUserActivityRoutes from './routes/admin/userActivity.js';
 import cronRoutes from './routes/cron.js';
 import certificatesRoutes from './routes/certificates.js';
 import verifyRoutes from './routes/verify.js';
+import empreintesRoutes from './routes/empreintes.js';
 import { startAutomaticCleanup } from './utils/dataCleanup.js';
 import SchedulerService from './services/schedulerService.js';
 import emailService from './services/emailService.js';
+import empreinteCleanupService from './services/empreinteCleanupService.js';
 
 // Importation des modèles et associations depuis l'index des modèles
 import passport from './config/passport.js';
@@ -169,6 +171,7 @@ app.use('/api/v1/notifications', notificationsRoutes);
 app.use('/api/v1/cron', cronRoutes); // Routes cron pour keep-alive
 app.use('/api/v1/certificates', certificatesRoutes); // Routes certificats d'authenticité
 app.use('/api/v1/verify', verifyRoutes); // Routes de vérification publique
+app.use('/api/v1/empreintes', empreintesRoutes); // Routes empreintes pré-générées
 
 
 // Route pour les partages publics - servir l'app React directement
@@ -408,6 +411,9 @@ if (process.env.VERCEL) {
         
         // Initialiser les tâches programmées de notifications
         SchedulerService.init();
+        
+        // Démarrer le service de nettoyage des empreintes
+        empreinteCleanupService.start();
       });
     } catch (error) {
       console.error('❌ Erreur de démarrage:', error.message);
