@@ -32,8 +32,8 @@ const GenerateEmpreintes = () => {
   const [selectedEmpreinte, setSelectedEmpreinte] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [qrCodeCache, setQrCodeCache] = useState({}); // Cache des QR Codes par ID d'empreinte
-  const [count, setCount] = useState(10);
-  const [expirationDays, setExpirationDays] = useState(30);
+  const [count, setCount] = useState(1);
+  const [expirationDays, setExpirationDays] = useState(7);
   const [filter, setFilter] = useState('all');
   const { toasts, showSuccess, showError, showWarning, removeToast } = useToast();
   const [selectedEmpreintes, setSelectedEmpreintes] = useState([]);

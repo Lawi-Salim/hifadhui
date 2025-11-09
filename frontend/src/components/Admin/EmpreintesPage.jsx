@@ -431,21 +431,25 @@ const EmpreintesPage = () => {
                 {/* Colonne gauche : Top 10 Utilisateurs */}
                 <div className="stats-card">
                   <h3><FiUsers /> Top 10 Utilisateurs (Taux d'Utilisation)</h3>
-                  {stats.topUtilisateurs.length === 0 ? (
-                    <p className="text-muted">Aucune donnée disponible (min 5 empreintes)</p>
-                  ) : (
-                    <div className="empreintes-table-container">
-                      <table className="empreintes-table">
-                        <thead>
+                  <div className="empreintes-table-container">
+                    <table className="empreintes-table">
+                      <thead>
+                        <tr>
+                          <th>Utilisateur</th>
+                          <th>Total</th>
+                          <th>Utilisées</th>
+                          <th>Taux</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {stats.topUtilisateurs.length === 0 ? (
                           <tr>
-                            <th>Utilisateur</th>
-                            <th>Total</th>
-                            <th>Utilisées</th>
-                            <th>Taux</th>
+                            <td colSpan="4" className="text-center text-muted">
+                              Aucune donnée disponible (min 5 empreintes)
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody>
-                          {stats.topUtilisateurs.map((user, idx) => (
+                        ) : (
+                          stats.topUtilisateurs.map((user, idx) => (
                             <tr key={idx}>
                               <td>{user['owner.username'] || 'N/A'}</td>
                               <td>{user.total}</td>
@@ -456,11 +460,11 @@ const EmpreintesPage = () => {
                                 </span>
                               </td>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
                 {/* Colonne droite : 2 sections empilées */}
@@ -501,19 +505,23 @@ const EmpreintesPage = () => {
                   {/* Tendances */}
                   <div className="stats-card">
                     <h3><FiBarChart2 /> Empreintes Générées (7 derniers jours)</h3>
-                    {stats.tendances.empreintesParJour.length === 0 ? (
-                      <p className="text-muted">Aucune donnée disponible</p>
-                    ) : (
-                      <div className="empreintes-table-container">
-                        <table className="empreintes-table">
-                          <thead>
+                    <div className="empreintes-table-container">
+                      <table className="empreintes-table">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>Nombre</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {stats.tendances.empreintesParJour.length === 0 ? (
                             <tr>
-                              <th>Date</th>
-                              <th>Nombre</th>
+                              <td colSpan="2" className="text-center text-muted">
+                                Aucune donnée disponible
+                              </td>
                             </tr>
-                          </thead>
-                          <tbody>
-                            {[...stats.tendances.empreintesParJour].reverse().map((day, idx) => (
+                          ) : (
+                            [...stats.tendances.empreintesParJour].reverse().map((day, idx) => (
                               <tr key={idx}>
                                 <td>
                                   {new Date(day.date).toLocaleDateString('fr-FR', { 
@@ -524,11 +532,11 @@ const EmpreintesPage = () => {
                                 </td>
                                 <td><strong>{day.count}</strong></td>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -3949,6 +3949,16 @@
   color: var(--primary-color);
 }
 
+/* Centrer le texte dans les tableaux */
+.text-center {
+  text-align: center;
+}
+
+.text-muted {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 /* Badges pour les taux */
 .badge {
   display: inline-block;

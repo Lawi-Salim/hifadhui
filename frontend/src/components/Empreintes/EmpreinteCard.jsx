@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import QRCode from 'qrcode';
+import html2canvas from 'html2canvas';
 import { FaDownload } from 'react-icons/fa';
 import './EmpreinteCard.css';
 
@@ -36,73 +37,26 @@ const EmpreinteCard = ({ empreinte, onDownload }) => {
 
   const handleDownload = async () => {
     try {
-      // Créer un canvas temporaire pour la carte complète
-      const tempCanvas = document.createElement('canvas');
-      const ctx = tempCanvas.getContext('2d');
-
-      // Dimensions compactes (QR code + Product ID côte à côte)
-      const width = 410;
-      const height = 170;
-      tempCanvas.width = width;
-      tempCanvas.height = height;
-
-      // Fond dégradé bleu-gris (inspiré de l'image 3)
-      const gradient = ctx.createLinearGradient(0, 0, width, height);
-      gradient.addColorStop(0, '#5a6c7d');
-      gradient.addColorStop(0.5, '#4a5c6d');
-      gradient.addColorStop(1, '#3a4c5d');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
-
-      // Motif décoratif subtil (cercles en bas à droite)
-      // Correspondant au CSS ajusté par l'utilisateur
+      // Capturer l'élément HTML avec son CSS en utilisant html2canvas
+      const cardElement = cardRef.current;
       
-      // Petit cercle ::before
-      // CSS: bottom: -10px, right: -50px, width: 130px (rayon: 65px)
-      const smallCircleX = width + 50;  // right: -50px
-      const smallCircleY = height + 10; // bottom: -10px
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-      ctx.lineWidth = 30;
-      ctx.beginPath();
-      ctx.arc(smallCircleX, smallCircleY, 65, 0, Math.PI * 2);
-      ctx.stroke();
+      if (!cardElement) {
+        throw new Error('Élément de carte introuvable');
+      }
 
-      // Grand cercle ::after
-      // CSS: bottom: -50px, right: -35px, width: 200px (rayon: 100px)
-      const largeCircleX = width + 35;  // right: -35px
-      const largeCircleY = height + 50; // bottom: -50px
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
-      ctx.lineWidth = 35;
-      ctx.beginPath();
-      ctx.arc(largeCircleX, largeCircleY, 100, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // QR Code à gauche (padding 15px comme dans le CSS)
-      const qrCanvas = canvasRef.current;
-      const qrSize = 140;
-      const qrX = 15;
-      const qrY = (height - qrSize) / 2;
-
-      // Dessiner le QR code directement sur le fond (sans fond blanc)
-      ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
-
-      // Product ID à droite (gap de 20px comme dans le CSS)
-      const textX = qrX + qrSize + 20;
-      const textY = height / 2;
-
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-      ctx.font = '14px Arial';
-      ctx.textAlign = 'left';
-      ctx.fillText('PRODUCT ID', textX, textY - 20);
-
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-      ctx.font = 'bold 16px monospace';
-      ctx.fillText(empreinte.product_id, textX, textY + 10);
+      // Générer le canvas à partir de l'élément HTML
+      const canvas = await html2canvas(cardElement, {
+        backgroundColor: null,
+        scale: 2, // Qualité HD (2x la résolution)
+        logging: false,
+        useCORS: true,
+        allowTaint: true
+      });
 
       // Télécharger l'image
       const link = document.createElement('a');
       link.download = `hifadhui-${empreinte.product_id}.png`;
-      link.href = tempCanvas.toDataURL('image/png');
+      link.href = canvas.toDataURL('image/png');
       link.click();
 
       if (onDownload) {
