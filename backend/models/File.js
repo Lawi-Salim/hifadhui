@@ -65,27 +65,6 @@ const File = sequelize.define('File', {
       key: 'id'
     }
   },
-  version: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 1,
-    validate: {
-      min: 1
-    }
-  },
-  parent_file_id: {
-    type: DataTypes.UUID,
-    allowNull: true,
-    references: {
-      model: 'file',
-      key: 'id'
-    }
-  },
-  is_latest: {
-    type: DataTypes.BOOLEAN,
-    allowNull: false,
-    defaultValue: true
-  },
   is_public_verification: {
     type: DataTypes.BOOLEAN,
     allowNull: false,

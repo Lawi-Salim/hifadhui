@@ -189,8 +189,7 @@ const Dashboard = () => {
                               : file.filename}
                           </div>
                           <div className="recent-file-meta">
-                            Uploadé le {formatDate(file.date_upload)} • 
-                            Version {file.version}
+                            Uploadé le {formatDate(file.date_upload)}
                           </div>
                         </div>
                       </div>

@@ -170,9 +170,7 @@ router.post('/copy', authenticateToken, async (req, res) => {
               hash: uniqueHash,
               signature: uniqueSignature,
               owner_id: req.user.id,
-              dossier_id: targetDossierId,
-              version: 1,
-              is_latest: true
+              dossier_id: targetDossierId
             });
 
             copiedCount++;

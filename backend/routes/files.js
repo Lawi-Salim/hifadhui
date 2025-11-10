@@ -254,8 +254,7 @@ const processSingleFile = async (fileData, user, req, dossierId = null, options 
     hash: fileHash,
     signature: signature,
     empreinte_id: empreinteId,
-    owner_id: user.id,
-    version: 1
+    owner_id: user.id
   });
   
   // Si une empreinte a été utilisée, la marquer comme utilisée
@@ -849,13 +848,12 @@ router.put('/:id',
       const file = await File.findOne({
         where: { 
           id: req.params.id,
-          owner_id: req.user.id,
-          is_latest: true  // Ne renommer que la version courante
+          owner_id: req.user.id
         }
       });
 
       if (!file) {
-        return res.status(404).json({ error: 'Fichier non trouvé ou version non courante' });
+        return res.status(404).json({ error: 'Fichier non trouvé' });
       }
 
       // Vérifier si un fichier avec le même nom existe déjà dans le même dossier
@@ -922,18 +920,11 @@ router.delete('/batch-delete', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Aucun fichier trouvé ou vous n\'avez pas la permission.' });
     }
 
-    // Collecter tous les root_file_id pour traitement
-    const rootFileIds = filesToDelete.map(file => file.parent_file_id || file.id);
-    console.log(`🗑️ [BATCH DELETE] Root file IDs: ${rootFileIds.join(', ')}`);
-
-
     // Note : Les empreintes seront automatiquement supprimées via ON DELETE CASCADE
     // Pas besoin de suppression manuelle
 
     for (const file of filesToDelete) {
       console.log(`🗑️ [FILE DELETE] Début suppression fichier ${file.id} (${file.filename})`);
-      
-      const currentRootFileId = file.parent_file_id || file.id;
       
       // Supprimer de Cloudinary en utilisant la fonction utilitaire
       try {
@@ -945,7 +936,7 @@ router.delete('/batch-delete', authenticateToken, async (req, res) => {
         // On continue même si la suppression Cloudinary échoue pour ne pas bloquer le processus
       }
 
-      // 3. Enregistrer l'activité de suppression pour le fichier racine
+      // Enregistrer l'activité de suppression
       let fileType = 'other';
       if (file.mimetype.startsWith('image/')) fileType = 'image';
       else if (file.mimetype === 'application/pdf') fileType = 'pdf';
@@ -955,7 +946,7 @@ router.delete('/batch-delete', authenticateToken, async (req, res) => {
         actionType: 'FILE_DELETE',
         details: { 
           filename: file.filename,
-          fileId: currentRootFileId, // Logger l'ID du fichier racine
+          fileId: file.id,
           fileType: fileType
         }
       }, { transaction: t });
@@ -964,10 +955,7 @@ router.delete('/batch-delete', authenticateToken, async (req, res) => {
     // Supprimer tous les fichiers de la base de données en une seule opération
     await File.destroy({
       where: {
-        [Op.or]: [
-          { id: rootFileIds },
-          { parent_file_id: rootFileIds }
-        ],
+        id: fileIds,
         owner_id: userId
       },
       transaction: t
@@ -1012,20 +1000,13 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       // On continue même si la suppression Cloudinary échoue
     }
 
-    // Déterminer le root_file_id de manière robuste
-    const rootFileId = file.parent_file_id || file.id;
-    console.log(`🗑️ [FILE DELETE] Root file ID: ${rootFileId}`);
-
     // Note : L'empreinte sera automatiquement supprimée via ON DELETE CASCADE
     // Pas besoin de suppression manuelle
 
-    // Supprimer toutes les versions du fichier
+    // Supprimer le fichier
     await File.destroy({
       where: {
-        [Op.or]: [
-          { id: rootFileId },
-          { parent_file_id: rootFileId }
-        ],
+        id: file.id,
         owner_id: req.user.id
       },
       transaction
@@ -1107,84 +1088,6 @@ router.post('/:id/verify', authenticateToken, async (req, res) => {
     res.status(500).json({
       error: 'Erreur lors de la vérification du fichier'
     });
-  }
-});
-
-// Route pour uploader une nouvelle version d'un fichier
-router.post('/:id/version', authenticateToken, upload.single('document'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'Aucun fichier fourni' });
-    }
-
-    const originalFile = await File.findOne({
-      where: { id: req.params.id, owner_id: req.user.id, is_latest: true },
-    });
-
-    if (!originalFile) {
-      return res.status(404).json({ error: 'Fichier original non trouvé ou déjà versionné' });
-    }
-
-    // Marquer l'ancienne version
-    await originalFile.update({ is_latest: false });
-
-    const { originalname, filename, path: file_path, size, mimetype } = req.file;
-    const file_url = `/uploads/${filename}`;
-
-    const timestamp = Date.now();
-    const fileHash = crypto.createHash('sha256').update(file_path + timestamp).digest('hex');
-    const signature = crypto.createHash('sha256').update(`${originalname}-${req.user.id}-${timestamp}`).digest('hex');
-
-    const newVersion = await File.create({
-      filename: originalname,
-      file_url,
-      mimetype,
-      hash: fileHash,
-      signature,
-      owner_id: req.user.id,
-      version: originalFile.version + 1,
-      parent_file_id: originalFile.id,
-      is_latest: true,
-    });
-
-    res.status(201).json({ message: 'Nouvelle version uploadée avec succès', file: newVersion });
-
-  } catch (error) {
-    console.error('Erreur versioning:', error);
-    res.status(500).json({ error: 'Erreur lors de la création de la nouvelle version' });
-  }
-});
-
-// Route pour récupérer l'historique d'un fichier
-router.get('/:id/history', authenticateToken, async (req, res) => {
-  try {
-    const currentFile = await File.findOne({ 
-      where: { id: req.params.id, owner_id: req.user.id }
-    });
-
-    if (!currentFile) {
-      return res.status(404).json({ error: 'Fichier non trouvé' });
-    }
-
-    // Déterminer l'ID du fichier racine (la v1)
-    const rootFileId = currentFile.parent_file_id || currentFile.id;
-
-    const history = await File.findAll({
-      where: {
-        [Op.or]: [
-          { id: rootFileId },
-          { parent_file_id: rootFileId }
-        ],
-        owner_id: req.user.id
-      },
-      order: [['version', 'DESC']]
-    });
-
-    res.json(history);
-
-  } catch (error) {
-    console.error('Erreur historique fichier:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération de l\'historique' });
   }
 });
 

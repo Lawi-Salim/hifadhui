@@ -392,11 +392,6 @@ const SharedFilePage = () => {
                 <span>{formatDate(file.date_upload)}</span>
               </div>
               
-              <div className="detail-item">
-                <label>Version :</label>
-                <span>v{file.version}</span>
-              </div>
-              
               {file.productId && (
                 <div className="detail-item empreinte-highlight">
                   <label>Product ID (Empreinte) :</label>
