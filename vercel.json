@@ -95,7 +95,11 @@
       "dest": "/frontend/favicon.png"
     },
     {
-      "src": "/share/(.*)",
+      "src": "/share/favicon\\.png",
+      "dest": "/frontend/favicon.png"
+    },
+    {
+      "src": "/share/([a-f0-9]{64})",
       "dest": "backend/server.js"
     },
     {
