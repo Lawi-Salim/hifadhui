@@ -290,7 +290,7 @@ const processSingleFile = async (fileData, user, req, dossierId = null, options 
 router.get('/stats', authenticateToken, async (req, res) => {
   try {
     const totalFiles = await File.count({
-      where: { owner_id: req.user.id, is_latest: true },
+      where: { owner_id: req.user.id },
     });
 
     res.json({ totalFiles });
@@ -350,8 +350,7 @@ router.post('/upload', authenticateToken, checkUploadQuota, behaviorMonitor, upl
         signature: file.signature,
         product_id: empreinte.product_id,
         empreinte_id: file.empreinte_id,
-        date_upload: file.date_upload,
-        version: file.version
+        date_upload: file.date_upload
       }
     });
   } catch (error) {
@@ -622,7 +621,7 @@ router.get('/', authenticateToken, async (req, res) => {
     
     const offset = (page - 1) * limit;
     
-    const whereClause = { owner_id: req.user.id, is_latest: true };
+    const whereClause = { owner_id: req.user.id };
 
     if (type === 'image') {
       whereClause.mimetype = { [Op.like]: 'image/%' };
