@@ -172,7 +172,7 @@ app.use('/api/v1/empreintes', empreintesRoutes); // Routes empreintes pré-gén�
 
 
 // Route pour les partages publics - servir l'app React directement
-app.get('/share/:token', async (req, res) => {
+app.get('/share/:token', async (req, res, next) => {
   const token = req.params.token;
   const userAgent = req.get('User-Agent') || '';
   
@@ -318,11 +318,12 @@ app.get('/share/:token', async (req, res) => {
       `);
     }
   } else {
-    // Pour les utilisateurs normaux, servir l'app React
+    // Pour les utilisateurs normaux
     if (process.env.NODE_ENV === 'production') {
-      res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+      // En production, laisser passer vers le catch-all qui servira le HTML
+      next();
     } else {
-      // En développement, rediriger vers le serveur de développement React
+      // En développement, rediriger vers le serveur React
       res.redirect(`http://localhost:3000/share/${req.params.token}`);
     }
   }
