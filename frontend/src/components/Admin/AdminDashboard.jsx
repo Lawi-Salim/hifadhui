@@ -49,8 +49,7 @@ const AdminDashboard = () => {
       totalFiles: 0,
       totalImages: 0,
       totalPdfs: 0,
-      totalStorage: 0,
-      activeShares: 0
+      totalStorage: 0
     },
     charts: {
       userRegistrations: [],
@@ -60,8 +59,7 @@ const AdminDashboard = () => {
     },
     alerts: {
       gracePeriodUsers: [],
-      systemErrors: [],
-      expiredShares: []
+      systemErrors: []
     },
     realTime: {
       onlineUsers: 0,
@@ -262,22 +260,11 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <div className="metric-card">
-          <div className="metric-icon shares">
-            <FiShare2 />
-          </div>
-          <div className="metric-content">
-            <h3>Partages</h3>
-            <div className="metric-value">{formatNumber(dashboardData.metrics.activeShares)}</div>
-            <div className="metric-subtitle">Liens actifs</div>
-          </div>
-        </div>
       </section>
 
       {/* Alertes système */}
       {(dashboardData.alerts.gracePeriodUsers.length > 0 || 
-        dashboardData.alerts.systemErrors.length > 0 || 
-        dashboardData.alerts.expiredShares.length > 0) && (
+        dashboardData.alerts.systemErrors.length > 0) && (
         <section className="alerts-section">
           <h2><FiAlertTriangle /> Alertes système</h2>
           <div className="alerts-grid">
@@ -294,14 +281,6 @@ const AdminDashboard = () => {
                 <h4>Erreurs système</h4>
                 <p>{dashboardData.alerts.systemErrors.length} erreur(s) récente(s)</p>
                 <button className="alert-action">Voir logs</button>
-              </div>
-            )}
-            
-            {dashboardData.alerts.expiredShares.length > 0 && (
-              <div className="alert-card info">
-                <h4>Partages expirés</h4>
-                <p>{dashboardData.alerts.expiredShares.length} partage(s) à nettoyer</p>
-                <button className="alert-action">Nettoyer</button>
               </div>
             )}
           </div>

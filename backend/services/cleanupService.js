@@ -58,7 +58,6 @@ class CleanupService {
           // - Dossiers (owner_id référence Utilisateur)
           // - ActivityLogs (user_id référence Utilisateur)
           // - PasswordResetTokens (user_id référence Utilisateur)
-          // - FileShares (created_by référence Utilisateur)
           
           await user.destroy({ transaction });
           

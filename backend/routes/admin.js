@@ -497,13 +497,6 @@ router.get('/dashboard/metrics', [authenticateToken, authorizeAdmin], async (req
     });
     const totalStorage = parseInt(storageResult?.totalStorage || 0);
     
-    // Compter les partages actifs
-    const activeShares = await FileShare.count({
-      where: {
-        expires_at: { [Op.gt]: new Date() } // Partages non expirés
-      }
-    });
-    
     res.json({
       totalUsers,
       activeUsers,
@@ -511,8 +504,7 @@ router.get('/dashboard/metrics', [authenticateToken, authorizeAdmin], async (req
       totalFiles,
       totalImages,
       totalPdfs,
-      totalStorage,
-      activeShares
+      totalStorage
     });
     
   } catch (error) {
@@ -698,33 +690,12 @@ router.get('/dashboard/alerts', [authenticateToken, authorizeAdmin], async (req,
       order: [['deletion_scheduled_at', 'ASC']]
     });
     
-    // Partages expirés dans les dernières 24h
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const expiredShares = await FileShare.findAll({
-      where: {
-        expires_at: {
-          [Op.and]: [
-            { [Op.lt]: new Date() }, // Expirés
-            { [Op.gte]: yesterday }  // Dans les dernières 24h
-          ]
-        }
-      },
-      include: [{
-        model: File,
-        as: 'file',
-        attributes: ['filename']
-      }],
-      limit: 10,
-      order: [['expires_at', 'DESC']]
-    });
-    
     // Erreurs système récentes (simulation - à adapter selon vos logs)
     const systemErrors = [];
     
     res.json({
       gracePeriodUsers,
-      systemErrors,
-      expiredShares
+      systemErrors
     });
     
   } catch (error) {
