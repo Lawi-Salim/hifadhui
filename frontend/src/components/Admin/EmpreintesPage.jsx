@@ -68,9 +68,10 @@ const EmpreintesPage = () => {
   const [selectedEmpreinte, setSelectedEmpreinte] = useState(null);
   const [detailsModal, setDetailsModal] = useState(false);
 
-  // Charger les stats au montage initial
+  // Charger les stats et users au montage initial
   useEffect(() => {
     fetchStats();
+    fetchUsers(); // Charger les users pour avoir le bon compteur
   }, []);
 
   // Charger les données au montage et quand les filtres changent
@@ -292,7 +293,7 @@ const EmpreintesPage = () => {
             onClick={() => setActiveTab('users')}
           >
             <FiUsers />
-            Par Utilisateur ({users.length})
+            Par Utilisateur ({users.filter(u => u.role !== 'admin').length})
           </button>
         </div>
 
@@ -375,7 +376,14 @@ const EmpreintesPage = () => {
                             {emp.file ? (
                               <div className="file-cell">
                                 <FiFile />
-                                <span>{emp.file.filename}</span>
+                                <a 
+                                  href={`/share/${emp.hash_pregenere}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  style={{ color: 'var(--primary-color)', textDecoration: 'none' }}
+                                >
+                                  {emp.file.filename}
+                                </a>
                               </div>
                             ) : (
                               <span className="text-muted">Non associé</span>
@@ -636,20 +644,32 @@ const EmpreintesPage = () => {
                 </div>
                 <div className="detail-item">
                   <label>Utilisé le</label>
-                  <span>{formatDate(selectedEmpreinte.used_at)}</span>
+                  <span>
+                    {selectedEmpreinte.used_at 
+                      ? formatDate(selectedEmpreinte.used_at) 
+                      : <span className="text-muted">Empreinte non utilisée</span>
+                    }
+                  </span>
                 </div>
                 <div className="detail-item">
                   <label>Expire le</label>
                   <span>{formatDate(selectedEmpreinte.expires_at)}</span>
                 </div>
-                {selectedEmpreinte.file && (
+                {selectedEmpreinte.file ? (
                   <>
                     <div className="detail-item full-width">
                       <label>Fichier Associé</label>
                       <div className="file-info">
                         <FiFile />
                         <div>
-                          <strong>{selectedEmpreinte.file.filename}</strong>
+                          <a 
+                            href={`/share/${selectedEmpreinte.hash_pregenere}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ color: 'var(--primary-color)', textDecoration: 'none' }}
+                          >
+                            <strong>{selectedEmpreinte.file.filename}</strong>
+                          </a>
                           <br />
                           <small>
                             {selectedEmpreinte.file.mimetype} • 
@@ -660,6 +680,11 @@ const EmpreintesPage = () => {
                       </div>
                     </div>
                   </>
+                ) : (
+                  <div className="detail-item full-width">
+                    <label>Fichier Associé</label>
+                    <span className="text-muted">Aucun fichier lié à cette empreinte</span>
+                  </div>
                 )}
               </div>
             </div>

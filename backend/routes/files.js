@@ -658,7 +658,7 @@ router.get('/', authenticateToken, async (req, res) => {
         {
           model: Empreinte,
           as: 'empreinte',
-          attributes: ['product_id', 'status'],
+          attributes: ['product_id', 'status', 'hash_pregenere', 'expires_at'],
           required: false
         }
       ],

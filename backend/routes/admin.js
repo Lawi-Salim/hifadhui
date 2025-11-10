@@ -1,7 +1,7 @@
 import express from 'express';
 import { Op, fn, col } from 'sequelize';
 import { sequelize } from '../config/database.js';
-import { Utilisateur, File, Dossier, FileShare, UserSession, ActivityLog, Message, Notification, Report, ModerationAction } from '../models/index.js';
+import { Utilisateur, File, Dossier, UserSession, ActivityLog, Message, Notification, Report, ModerationAction } from '../models/index.js';
 import { authenticateToken, authorizeAdmin } from '../middleware/auth.js';
 import { calculateUptime } from '../utils/uptimeHelper.js';
 import os from 'os';

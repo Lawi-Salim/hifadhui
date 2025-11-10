@@ -3,7 +3,6 @@ import Utilisateur from './Utilisateur.js';
 import File from './File.js';
 import Dossier from './Dossier.js';
 import ActivityLog from './ActivityLog.js';
-import FileShare from './FileShare.js';
 import PasswordResetToken from './PasswordResetToken.js';
 import UserSession from './UserSession.js';
 import Message from './Message.js';
@@ -119,40 +118,19 @@ ActivityLog.belongsTo(Utilisateur, {
   as: 'user'
 });
 
-// 6. Relations FileShare
-Utilisateur.hasMany(FileShare, {
-  foreignKey: 'created_by',
-  as: 'userShares'
-});
-
-File.hasMany(FileShare, {
-  foreignKey: 'file_id',
-  as: 'fileShares'
-});
-
-FileShare.belongsTo(Utilisateur, {
-  foreignKey: 'created_by',
-  as: 'creator'
-});
-
-FileShare.belongsTo(File, {
-  foreignKey: 'file_id',
-  as: 'file'
-});
-
-// 7. Relations PasswordResetToken
+// 6. Relations PasswordResetToken
 PasswordResetToken.belongsTo(Utilisateur, {
   foreignKey: 'user_id',
   as: 'user'
 });
 
-// 8. Relations UserSession
+// 7. Relations UserSession
 UserSession.belongsTo(Utilisateur, {
   foreignKey: 'userId',
   as: 'user'
 });
 
-// 9. Relations Messages
+// 8. Relations Messages
 Message.hasMany(MessageAttachment, {
   foreignKey: 'messageId',
   as: 'attachments'
@@ -267,7 +245,6 @@ export {
   File,
   Dossier,
   ActivityLog,
-  FileShare,
   PasswordResetToken,
   UserSession,
   Message,

@@ -19,7 +19,6 @@ import { createAdmin } from './scripts/create-admin.js';
 import adminRoutes from './routes/admin.js';
 import fileRoutes from './routes/files.js';
 import dossierRoutes from './routes/dossiers.js';
-import shareRoutes from './routes/shares.js';
 import bulkActionsRoutes from './routes/bulkActions.js';
 import contactRoutes from './routes/contact.js';
 import messagesRoutes from './routes/messages.js';
@@ -160,10 +159,8 @@ app.use('/api/v1/admin/users', adminUserActivityRoutes); // Routes d'activité a
 app.use('/api/v1/user', userActivityRoutes); // Routes d'activité utilisateur
 app.use('/api/v1/user/profile', userProfileRoutes); // Routes de profil utilisateur
 app.use('/api/v1/files', fileRoutes);
-app.use('/api/v1/files', shareRoutes); // Routes de partage sous /files (publiques)
 app.use('/api/v1/dossiers', dossierRoutes);
 app.use('/api/v1/bulk-actions', bulkActionsRoutes);
-app.use('/api/v1/share', shareRoutes); // Route publique pour accéder aux fichiers partagés
 app.use('/api/v1/contact', contactRoutes);
 app.use('/api/v1/messages', messagesRoutes);
 app.use('/api/v1/webhooks', webhooksRoutes);
@@ -185,39 +182,45 @@ app.get('/share/:token', async (req, res) => {
   if (isCrawler) {
     // Pour les crawlers, servir du HTML avec métadonnées Open Graph
     try {
-      // Utiliser la logique de la route shares pour récupérer les données
+      // Utiliser la logique des empreintes pour récupérer les données
       const { Op } = await import('sequelize');
-      const { File, FileShare, Utilisateur } = await import('./models/index.js');
+      const { File, Empreinte, Utilisateur } = await import('./models/index.js');
       
-      const fileShare = await FileShare.findOne({
-        where: {
-          token: token,
-          is_active: true,
-          expires_at: {
-            [Op.gt]: new Date()
-          }
-        },
-        include: [
-          {
-            model: File,
-            as: 'file',
-            include: [
-              {
-                model: Utilisateur,
-                as: 'fileUser',
-                attributes: ['username']
-              },
-            ]
+      // Déterminer si c'est un hash d'empreinte (64 caractères hex)
+      const isEmpreinteHash = token && token.length === 64 && /^[a-f0-9]+$/i.test(token);
+      
+      let file = null;
+      let owner = null;
+      
+      if (isEmpreinteHash) {
+        // Rechercher par hash d'empreinte
+        const empreinte = await Empreinte.findOne({
+          where: {
+            hash_pregenere: token,
+            status: { [Op.in]: ['disponible', 'utilisee'] },
+            expires_at: { [Op.gt]: new Date() }
           },
-          {
-            model: Utilisateur,
-            as: 'creator',
-            attributes: ['username']
-          }
-        ]
-      });
+          include: [
+            {
+              model: File,
+              as: 'file',
+              required: false
+            },
+            {
+              model: Utilisateur,
+              as: 'owner',
+              attributes: ['username']
+            }
+          ]
+        });
+        
+        if (empreinte) {
+          file = empreinte.file;
+          owner = empreinte.owner;
+        }
+      }
 
-      if (!fileShare) {
+      if (!file) {
         return res.status(404).send(`
           <!DOCTYPE html>
           <html>
@@ -234,8 +237,8 @@ app.get('/share/:token', async (req, res) => {
       }
 
       // Générer les métadonnées
-      const isImage = fileShare.file.mimetype?.startsWith('image/');
-      const isPdf = fileShare.file.filename?.toLowerCase().endsWith('.pdf');
+      const isImage = file.mimetype?.startsWith('image/');
+      const isPdf = file.filename?.toLowerCase().endsWith('.pdf');
       
       let fileType = 'fichier';
       let fileIcon = '📄';
@@ -248,8 +251,8 @@ app.get('/share/:token', async (req, res) => {
         fileIcon = '📄';
       }
 
-      const title = `${fileIcon} ${fileShare.file.filename} - Partagé par ${fileShare.creator?.username || 'Utilisateur'}`;
-      const description = `${fileType} partagé via Hifadhui par ${fileShare.creator?.username || 'Utilisateur'}. Fichier sécurisé avec preuve de propriété.`;
+      const title = `${fileIcon} ${file.filename} - Partagé par ${owner?.username || 'Utilisateur'}`;
+      const description = `${fileType} partagé via Hifadhui par ${owner?.username || 'Utilisateur'}. Fichier sécurisé avec preuve de propriété.`;
       const shareUrl = `${process.env.FRONTEND_URL || 'https://hifadhui.site'}/share/${token}`;
       const imageUrl = `${process.env.FRONTEND_URL || 'https://hifadhui.site'}/favicon.png`;
 
