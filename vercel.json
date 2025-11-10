@@ -19,6 +19,10 @@
       "dest": "backend/server.js"
     },
     {
+      "src": "/share/([a-f0-9]{64})",
+      "dest": "backend/server.js"
+    },
+    {
       "src": "/static/(.*)",
       "dest": "/frontend/static/$1"
     },
@@ -93,14 +97,6 @@
     {
       "src": "/verify/favicon\\.png",
       "dest": "/frontend/favicon.png"
-    },
-    {
-      "src": "/share/favicon\\.png",
-      "dest": "/frontend/favicon.png"
-    },
-    {
-      "src": "/share/([a-f0-9]{64})",
-      "dest": "backend/server.js"
     },
     {
       "src": "/(.*)",
