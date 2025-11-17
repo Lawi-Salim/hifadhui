@@ -102,8 +102,8 @@ const addWatermarkToImage = async (imageBlob, productId) => {
     // Styles de base (la taille exacte sera ajustée dynamiquement après chargement de l'image)
     textSpan.style.fontWeight = 'bold';
     // Blanc un peu plus transparent pour diminuer le contraste tout en restant visible
-    textSpan.style.color = 'rgba(255,255,255,0.7)';
-    textSpan.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8), -2px -2px 4px rgba(0,0,0,0.8), 2px -2px 4px rgba(0,0,0,0.8), -2px 2px 4px rgba(0,0,0,0.8)';
+    textSpan.style.color = 'rgba(255, 255, 255, 0.12)';
+    textSpan.style.textShadow = '2px 2px 4px rgba(65, 52, 52, 0.8), -2px -2px 4px rgba(0,0,0,0.8), 2px -2px 4px rgba(0,0,0,0.8), -2px 2px 4px rgba(0,0,0,0.8)';
     textSpan.style.transform = 'rotate(-45deg)';
     textSpan.style.whiteSpace = 'nowrap';
     textSpan.style.letterSpacing = '0.2em';
