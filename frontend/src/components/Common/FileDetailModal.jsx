@@ -2,6 +2,7 @@ import React from 'react';
 import { FaTimes, FaDownload, FaEye, FaCalendar, FaFileAlt, FaImage, FaFilePdf } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import PdfPreview from './PdfPreview';
+import ImageWithWatermark from './ImageWithWatermark';
 import { buildCloudinaryUrl } from '../../config/cloudinary';
 // import './FileDetailModal.css'; // Fichier CSS manquant
 import '../Images/Images.css';
@@ -55,11 +56,13 @@ const FileDetailModal = ({ file, onClose, type = 'file', isOpen }) => {
           <div className="modal-image-container">
             {isImage ? (
               <>
-                <img 
-                  src={getImageUrl(displayData.file_url)} 
-                  alt={displayData.filename} 
+                <ImageWithWatermark
+                  imageUrl={getImageUrl(displayData.file_url)}
+                  productId={displayData.empreinte?.product_id}
+                  alt={displayData.filename}
                   className="modal-image-preview"
                   onContextMenu={(e) => e.preventDefault()}
+                  file={displayData}
                 />
               </>
             ) : isPdf ? (
@@ -78,7 +81,7 @@ const FileDetailModal = ({ file, onClose, type = 'file', isOpen }) => {
               <dl className="details-list">
                 <dt>Nom:</dt><dd title={displayData.filename}>{truncateFilename(displayData.filename)}</dd>
                 <dt>Type:</dt><dd>{displayData.mimetype}</dd>
-                <dt>Version:</dt><dd>{displayData.version || 1}</dd>
+                <dt>Product ID:</dt><dd>{displayData.empreinte?.product_id}</dd>
                 <dt>Date d'upload:</dt><dd>{formatDate(displayData.date_upload)}</dd>
                 <dt>Taille:</dt><dd>{displayData.size ? `${(displayData.size / 1024).toFixed(2)} KB` : 'Non disponible'}</dd>
                 <dt>Emplacement:</dt><dd>{displayData.dossier?.fullPath || displayData.dossier?.name_original || displayData.dossier?.name || 'Racine'}</dd>

@@ -16,7 +16,8 @@ const VerifyPage = () => {
   const [activeTab, setActiveTab] = useState('file'); // 'file', 'hash' ou 'productId'
   const [file, setFile] = useState(null);
   const [hashInput, setHashInput] = useState(urlHash || '');
-  const [productIdInput, setProductIdInput] = useState('');
+  const PRODUCT_ID_PREFIX = 'HFD-LW-';
+  const [productIdInput, setProductIdInput] = useState(PRODUCT_ID_PREFIX);
   const [verifying, setVerifying] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -132,7 +133,7 @@ const VerifyPage = () => {
   const resetVerification = () => {
     setFile(null);
     setHashInput('');
-    setProductIdInput('');
+    setProductIdInput(PRODUCT_ID_PREFIX);
     setResult(null);
     setError(null);
     if (urlHash) {
@@ -264,13 +265,35 @@ const VerifyPage = () => {
                 className="verify-hash-input"
                 placeholder="Ex: HFD-LW-000001-ABC123"
                 value={productIdInput}
-                onChange={(e) => setProductIdInput(e.target.value.toUpperCase())}
+                onChange={(e) => {
+                  const raw = e.target.value.toUpperCase();
+                  // Extraire la partie après le préfixe et ne garder que les chiffres
+                  let digits = raw.replace(/^HFD-LW-?/, '').replace(/[^0-9]/g, '');
+
+                  // Limiter à 12 chiffres (6 séquentiel + 6 aléatoire)
+                  if (digits.length > 12) {
+                    digits = digits.slice(0, 12);
+                  }
+
+                  // Insérer automatiquement le tiret après les 6 premiers chiffres
+                  let formattedSuffix;
+                  if (digits.length <= 6) {
+                    formattedSuffix = digits;
+                  } else {
+                    formattedSuffix = digits.slice(0, 6) + '-' + digits.slice(6);
+                  }
+
+                  setProductIdInput(PRODUCT_ID_PREFIX + formattedSuffix);
+                }}
               />
 
               <button
                 className="verify-submit-btn"
                 onClick={handleVerifyProductId}
-                disabled={!productIdInput || verifying}
+                disabled={
+                  // Actif seulement quand les 12 chiffres du suffixe sont saisis
+                  productIdInput.replace(/^HFD-LW-?/, '').replace(/-/g, '').length !== 12 || verifying
+                }
               >
                 {verifying ? (
                   <>

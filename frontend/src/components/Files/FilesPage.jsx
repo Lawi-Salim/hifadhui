@@ -3,6 +3,7 @@ import { FaPlus, FaFolderOpen, FaUpload, FaCalendar, FaDatabase } from 'react-ic
 import { FiMenu } from 'react-icons/fi';
 import fileService from '../../services/fileService';
 import api from '../../services/api';
+import downloadService from '../../services/downloadService';
 import ItemList from '../Common/ItemList';
 import DeleteFileModal from '../Common/DeleteFileModal';
 import RenameFileModal from '../Common/RenameFileModal';
@@ -92,25 +93,31 @@ const FilesPage = () => {
     }
   };
 
-  const handleDownload = async (file) => {
+  const handleDownload = async (file, { withWatermark = false } = {}) => {
+    if (!file) return;
+
+    // Déterminer si c'est une image avec un Product ID disponible
+    const isImage = file.mimetype && file.mimetype.startsWith('image/');
+    const hasProductId = !!file.empreinte?.product_id;
+
+    console.log('[FilesPage.handleDownload] called', {
+      withWatermark,
+      isImage,
+      hasProductId,
+      mimetype: file.mimetype,
+      productId: file.empreinte?.product_id,
+      file
+    });
+
     try {
-      const response = await api.get(`/files/${file.id}/download`, {
-        responseType: 'blob'
-      });
-      
-      // Créer un blob URL pour le téléchargement
-      const blob = new Blob([response.data], { type: file.mimetype });
-      const url = window.URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = file.filename;
-      document.body.appendChild(link);
-      link.click();
-      
-      // Nettoyer
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      if (withWatermark && (!isImage || !hasProductId)) {
+        // Sécurité : si on demande un filigrane mais que ce n'est pas une image ou pas de product_id,
+        // on retombe sur un téléchargement standard sans filigrane
+        await downloadService.downloadSingleFile(file, { withWatermark: false });
+        return;
+      }
+
+      await downloadService.downloadSingleFile(file, { withWatermark: withWatermark && isImage && hasProductId });
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
       // Optionnel: afficher un message d'erreur à l'utilisateur
@@ -179,7 +186,8 @@ const FilesPage = () => {
     const selectedFileObjects = files.filter(file => selectedFiles.includes(file.id));
 
     try {
-      await handleDownloadZip(selectedFileObjects, 
+      await handleDownloadZip(
+        selectedFileObjects,
         (result) => {
           console.log(`${result.fileCount} fichier(s) téléchargé(s) dans ${result.fileName}`);
           // Optionnel: quitter le mode sélection après téléchargement
@@ -188,10 +196,35 @@ const FilesPage = () => {
         },
         (error) => {
           console.error(`Erreur lors du téléchargement: ${error}`);
-        }
+        },
+        { withWatermark: false }
       );
     } catch (error) {
       console.error('Erreur téléchargement ZIP:', error);
+    }
+  };
+
+  // Téléchargement ZIP avec filigrane (pour les fichiers sélectionnés, watermark seulement sur les images)
+  const handleBatchDownloadWithWatermark = async () => {
+    if (selectedFiles.length === 0) return;
+
+    const selectedFileObjects = files.filter(file => selectedFiles.includes(file.id));
+
+    try {
+      await handleDownloadZip(
+        selectedFileObjects,
+        (result) => {
+          console.log(`${result.fileCount} fichier(s) téléchargé(s) dans ${result.fileName} (avec filigrane)`);
+          setIsSelectionMode(false);
+          setSelectedFiles([]);
+        },
+        (error) => {
+          console.error(`Erreur lors du téléchargement avec filigrane: ${error}`);
+        },
+        { withWatermark: true }
+      );
+    } catch (error) {
+      console.error('Erreur téléchargement ZIP avec filigrane:', error);
     }
   };
 
@@ -255,6 +288,7 @@ const FilesPage = () => {
       onItemsUpdated={refresh}
       onSelectAll={handleSelectAll}
       totalItems={files.length}
+      onBulkDownloadWithWatermark={handleBatchDownloadWithWatermark}
     >
       <div className="container">
         <div className="flex justify-between items-center mb-6">

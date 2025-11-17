@@ -20,7 +20,7 @@ const useDownloadZip = () => {
    * @param {Function} onSuccess - Callback appelé en cas de succès (optionnel)
    * @param {Function} onError - Callback appelé en cas d'erreur (optionnel)
    */
-  const handleDownloadZip = async (selectedItems, onSuccess = null, onError = null) => {
+  const handleDownloadZip = async (selectedItems, onSuccess = null, onError = null, options = {}) => {
     if (!selectedItems || selectedItems.length === 0) {
       const error = 'Aucun élément sélectionné pour le téléchargement';
       progressBar.setProgressError(error);
@@ -44,7 +44,7 @@ const useDownloadZip = () => {
             progressBar.updateCurrentItem(currentItem?.filename || `Fichier ${current + 1}`);
           }
         }
-      );
+      , options);
 
       if (onSuccess) {
         onSuccess(result);

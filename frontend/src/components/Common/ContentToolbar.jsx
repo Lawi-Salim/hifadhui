@@ -29,7 +29,7 @@ const ContentToolbar =({
         <div className="toolbar-left">
           {showSelectionTools && (
             <>
-            <div 
+              <div 
                 className={`download ${selectedCount > 0 ? 'enabled' : 'disabled'}`} 
                 title={selectedCount > 0 ? `Télécharger ${selectedCount} élément(s) en ZIP` : 'Télécharger en ZIP (aucun élément sélectionné)'}
                 onClick={() => {

@@ -196,17 +196,39 @@ const ImageList = () => {
     if (selectedImages.length === 0) return;
 
     try {
-      await handleDownloadZip(selectedImages, 
+      await handleDownloadZip(
+        selectedImages,
         (result) => {
           // Optionnel: quitter le mode sélection après téléchargement
           setIsSelectionMode(false);
           setSelectedImages([]);
         },
         (error) => {
-        }
+        },
+        { withWatermark: false }
       );
     } catch (error) {
       console.error('Erreur téléchargement ZIP:', error);
+    }
+  };
+
+  // Téléchargement ZIP avec filigrane (watermark seulement sur les images avec Product ID)
+  const handleBatchDownloadWithWatermark = async () => {
+    if (selectedImages.length === 0) return;
+
+    try {
+      await handleDownloadZip(
+        selectedImages,
+        (result) => {
+          setIsSelectionMode(false);
+          setSelectedImages([]);
+        },
+        (error) => {
+        },
+        { withWatermark: true }
+      );
+    } catch (error) {
+      console.error('Erreur téléchargement ZIP avec filigrane:', error);
     }
   };
 
@@ -228,6 +250,7 @@ const ImageList = () => {
       onItemsUpdated={refresh}
       onSelectAll={handleSelectAll}
       totalItems={images.length}
+      onBulkDownloadWithWatermark={handleBatchDownloadWithWatermark}
     >
       <div className="container">
         <div className="flex justify-between items-center mb-6">

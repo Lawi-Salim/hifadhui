@@ -4,7 +4,7 @@ import './ActionMenu.css';
 
 const ActionMenu = ({ 
   onShow,
-  onDownload, 
+  onDownload,
   onShare, 
   onRename, 
   onUpload, 
@@ -16,7 +16,14 @@ const ActionMenu = ({
   if (!isOpen) return null;
 
   // Calculer le nombre d'options disponibles pour ajuster la hauteur
-  const optionsCount = [onDownload, onShare, onCertificate, onRename, onUpload, onDelete].filter(Boolean).length;
+  const optionsCount = [
+    onDownload,
+    onShare,
+    onCertificate,
+    onRename,
+    onUpload,
+    onDelete
+  ].filter(Boolean).length;
   const menuHeight = optionsCount * 48 + 16; // 48px par option + padding
 
   return (
