@@ -47,7 +47,7 @@ const FileUpload = () => {
 
   const handleFile = async (file) => {
     // Vérifications
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 10 * 1024 * 1024; // 10MB
     const allowedTypes = [
       'image/jpeg',
       'image/png',
@@ -60,7 +60,7 @@ const FileUpload = () => {
     if (file.size > maxSize) {
       setMessage({
         type: 'error',
-        text: 'Le fichier est trop volumineux. Taille maximale: 5MB'
+        text: 'Le fichier est trop volumineux. Taille maximale: 10MB'
       });
       return;
     }
@@ -296,7 +296,7 @@ const FileUpload = () => {
               </div>
               
               <div className="upload-subtext">
-                Formats acceptés: JPG, PNG, SVG, PDF, ZIP (max. 5MB) <br /> Veuillez rester sur cette page jusqu'à la fin de l'upload.
+                Formats acceptés: JPG, PNG, SVG, PDF, ZIP (max. 10MB) <br /> Veuillez rester sur cette page jusqu'à la fin de l'upload.
               </div>
 
               {globalProgressBar.isActive && (

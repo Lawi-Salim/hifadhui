@@ -44,11 +44,11 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete, dossierId }) => {
   };
 
   const handleFile = async (file) => {
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 10 * 1024 * 1024; // 10MB
     const allowedTypes = ['image/jpeg', 'image/png', 'image/svg+xml', 'application/pdf'];
 
     if (file.size > maxSize) {
-      setMessage({ type: 'error', text: 'Fichier trop volumineux (max 5MB).' });
+      setMessage({ type: 'error', text: 'Fichier trop volumineux (max 10MB).' });
       return;
     }
     if (!allowedTypes.includes(file.type)) {
@@ -117,7 +117,7 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete, dossierId }) => {
         <div className="upload-text">
           {uploadProgressBar.isActive ? `Upload en cours... ${uploadProgressBar.progress}%` : 'Cliquez ou glissez-déposez'}
         </div>
-        <div className="upload-subtext">Formats acceptés: JPG, PNG, SVG, PDF (max. 5MB) <br />Les dossiers zip ne sont pas acceptés ici. </div>
+        <div className="upload-subtext">Formats acceptés: JPG, PNG, SVG, PDF (max. 10MB) <br />Les dossiers zip ne sont pas acceptés ici. </div>
         {uploadProgressBar.isActive && (
           <div style={{ marginTop: '1rem' }}>
             <ProgressBar
