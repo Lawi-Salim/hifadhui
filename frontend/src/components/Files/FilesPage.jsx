@@ -305,7 +305,7 @@ const FilesPage = () => {
             </button>
             <div className="title-content">
               <h1 className="text-2xl font-bold">Mes Fichiers</h1>
-              <p className="text-secondary">Vous avez {totalCount || 0} fichier(s) au total.</p>
+              <p className="text-secondary">Vous avez {files.length || 0}/{totalCount || 0} fichier(s) chargés.</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -366,10 +366,6 @@ const FilesPage = () => {
           <h2 className="text-lg font-semibold">Fichiers sécurisés</h2>
         </div>
         <div className="header-right">
-          <div className="text-sm text-secondary">
-            {files.length} / {totalCount} fichiers chargés
-          </div>
-          
           <ContentToolbar
             viewMode={viewMode}
             setViewMode={setViewMode}

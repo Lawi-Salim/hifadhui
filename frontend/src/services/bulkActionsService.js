@@ -78,11 +78,22 @@ class BulkActionsService {
   }
 }
 
+// Instance unique utilisée par toute l'application
+const service = new BulkActionsService();
+
+// Export par défaut avec toutes les méthodes utiles + alias batch*
 const bulkActionsService = {
-  batchDelete: BulkActionsService.prototype.deleteItems,
-  batchDownload: null,
-  batchMove: BulkActionsService.prototype.moveItems,
-  batchCopy: BulkActionsService.prototype.copyItems
+  moveItems: (...args) => service.moveItems(...args),
+  copyItems: (...args) => service.copyItems(...args),
+  deleteItems: (...args) => service.deleteItems(...args),
+  getFoldersForSelection: (...args) => service.getFoldersForSelection(...args),
+  checkConflicts: (...args) => service.checkConflicts(...args),
+
+  // Alias historiques utilisés pour les actions en lot
+  batchDelete: (...args) => service.deleteItems(...args),
+  batchMove: (...args) => service.moveItems(...args),
+  batchCopy: (...args) => service.copyItems(...args),
+  batchDownload: null
 };
 
 export default bulkActionsService;

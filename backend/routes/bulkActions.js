@@ -1,5 +1,6 @@
 import express from 'express';
 import { Op } from 'sequelize';
+import crypto from 'crypto';
 import { File, Dossier, ActivityLog, Utilisateur } from '../models/index.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { deleteCloudinaryFile } from '../utils/cloudinaryStructure.js';

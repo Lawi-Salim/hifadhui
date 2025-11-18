@@ -13,7 +13,6 @@ const BulkActionsManager = ({
   onItemsUpdated,
   onSelectAll,
   totalItems = 0, // Nombre total d'éléments disponibles
-  onBulkDownloadWithWatermark,
   children
 }) => {
   const [showMoveModal, setShowMoveModal] = useState(false);
@@ -69,23 +68,13 @@ const BulkActionsManager = ({
           </div>
           
           <div className="bulk-actions-buttons">
-            {onBulkDownloadWithWatermark && itemType === 'image' ? (
-              <button 
-                onClick={onBulkDownloadWithWatermark}
-                className="btn btn-secondary bulk-action-btn"
-                title="Télécharger avec filigrane"
-              >
-                <FaDownload /> Télécharger avec filigrane
-              </button>
-            ) : (
-              <button 
-                onClick={handleMove}
-                className="btn btn-secondary bulk-action-btn"
-                title="Déplacer"
-              >
-                <FiMove /> Déplacer
-              </button>
-            )}
+            <button 
+              onClick={handleMove}
+              className="btn btn-secondary bulk-action-btn"
+              title="Déplacer"
+            >
+              <FiMove /> Déplacer
+            </button>
             
             <button 
               onClick={handleCopy}

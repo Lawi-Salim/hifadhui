@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaPlus, FaFolderOpen, FaUpload, FaCalendar, FaDatabase } from 'react-icons/fa';
+import { FaPlus, FaFolderOpen, FaUpload, FaCalendar, FaDatabase, FaDownload } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';
 import api from '../../services/api';
 import ItemList from '../Common/ItemList';
@@ -250,7 +250,6 @@ const ImageList = () => {
       onItemsUpdated={refresh}
       onSelectAll={handleSelectAll}
       totalItems={images.length}
-      onBulkDownloadWithWatermark={handleBatchDownloadWithWatermark}
     >
       <div className="container">
         <div className="flex justify-between items-center mb-6">
@@ -267,7 +266,7 @@ const ImageList = () => {
             </button>
             <div className="title-content">
               <h1 className="text-2xl font-bold">Mes images</h1>
-              <p className="text-secondary">Vous avez {totalCount || 0} image(s) au total.</p>
+              <p className="text-secondary">Vous avez {images.length || 0}/{totalCount || 0} image(s) chargées.</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -328,10 +327,24 @@ const ImageList = () => {
             <h2 className="text-lg font-semibold">Images sécurisées</h2>
           </div>
           <div className="header-right">
-            <div className="text-sm text-secondary text-page">
-              {images.length} / {totalCount} images chargées
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleBatchDownloadWithWatermark}
+                disabled={!isSelectionMode || selectedImages.length === 0}
+                className={`btn btn-secondary inline-flex items-center gap-2 ${(!isSelectionMode || selectedImages.length === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={
+                  !isSelectionMode
+                    ? 'Activer la sélection pour télécharger avec filigrane'
+                    : selectedImages.length === 0
+                      ? 'Sélectionnez au moins une image pour télécharger avec filigrane'
+                      : 'Télécharger les images sélectionnées avec filigrane'
+                }
+              >
+                <FaDownload /> Avec filigrane
+              </button>
             </div>
-            
+
             <ContentToolbar
               viewMode={viewMode}
               setViewMode={setViewMode}
