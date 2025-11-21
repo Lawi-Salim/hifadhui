@@ -88,9 +88,91 @@ const FileUpload = () => {
     try {
       // Choisir la route selon le type de fichier
       const isZip = file.type === 'application/zip' || file.type === 'application/x-zip-compressed';
+      const ZIP_DIRECT_THRESHOLD = 4 * 1024 * 1024; // ~4MB: au-delà, utiliser le flux zip-cloudinary
       
       if (isZip) {
-        // Première étape : obtenir la liste des fichiers du ZIP
+        // Gros ZIP : upload direct vers Cloudinary puis traitement côté backend
+        if (file.size > ZIP_DIRECT_THRESHOLD) {
+          try {
+            globalProgressBar.updateCurrentItem('Upload du ZIP vers Cloudinary...');
+
+            // Étape 1 : préparation des paramètres d'upload Cloudinary
+            const prepareZipResponse = await api.post('/files/zip-cloudinary', {
+              step: 'prepare',
+              filename: file.name,
+              mimetype: file.type,
+              size: file.size
+            });
+
+            const {
+              cloudName,
+              apiKey,
+              timestamp,
+              signature,
+              folder,
+              public_id,
+              resource_type
+            } = prepareZipResponse.data || {};
+
+            if (!cloudName || !apiKey || !timestamp || !signature || !folder || !public_id || !resource_type) {
+              throw new Error('Paramètres Cloudinary incomplets pour l\'upload direct du ZIP');
+            }
+
+            const cloudFormData = new FormData();
+            cloudFormData.append('file', file);
+            cloudFormData.append('api_key', apiKey);
+            cloudFormData.append('timestamp', timestamp);
+            cloudFormData.append('signature', signature);
+            cloudFormData.append('folder', folder);
+            cloudFormData.append('public_id', public_id);
+
+            const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resource_type}/upload`;
+
+            const cloudinaryResponse = await axios.post(cloudinaryUrl, cloudFormData, {
+              timeout: 120000
+            });
+
+            const { secure_url, bytes, original_filename } = cloudinaryResponse.data || {};
+
+            if (!secure_url || bytes === undefined) {
+              throw new Error('Réponse Cloudinary incomplète après upload direct du ZIP');
+            }
+
+            globalProgressBar.updateCurrentItem('Traitement du ZIP en cours...');
+
+            const response = await api.post('/files/zip-cloudinary', {
+              step: 'process',
+              secure_url,
+              bytes,
+              originalname: original_filename || file.name
+            });
+
+            globalProgressBar.completeProgress();
+
+            console.log('Response status:', response.status);
+            console.log('Response data:', response.data);
+            
+            if (response.status < 200 || response.status >= 300) {
+              console.warn('Statut de réponse inattendu:', response.status);
+              setMessage({
+                type: 'warning',
+                text: `Upload terminé avec le statut ${response.status}`
+              });
+            }
+
+            return;
+          } catch (zipCloudinaryError) {
+            console.error('Erreur upload ZIP direct Cloudinary:', zipCloudinaryError);
+            setMessage({
+              type: 'error',
+              text: 'Erreur lors de l\'upload du fichier ZIP (flux direct Cloudinary)'
+            });
+            globalProgressBar.resetProgress();
+            return;
+          }
+        }
+
+        // ZIP petit : utiliser le flux existant (preview + upload-zip)
         try {
           const previewFormData = new FormData();
           previewFormData.append('document', file);

@@ -15,6 +15,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import AdmZip from 'adm-zip';
 import fs from 'fs';
 import path from 'path';
+import axios from 'axios';
 
 const router = express.Router();
 
@@ -117,6 +118,293 @@ router.get('/by-empreinte/:hash', async (req, res) => {
       success: false,
       message: 'Erreur lors de la récupération du fichier',
       error: error.message
+    });
+  }
+});
+
+// Route hybride pour upload ZIP direct Cloudinary puis traitement côté serveur
+router.post('/zip-cloudinary', authenticateToken, checkUploadQuota, behaviorMonitor, async (req, res) => {
+  try {
+    const { step } = req.body || {};
+
+    // Étape 1 : préparation des paramètres d'upload Cloudinary pour le ZIP
+    if (!step || step === 'prepare') {
+      const { filename, mimetype, size } = req.body || {};
+
+      if (!filename || size === undefined) {
+        return res.status(400).json({
+          error: 'Paramètres manquants pour la préparation de l\'upload ZIP',
+          code: 'MISSING_ZIP_UPLOAD_PARAMS'
+        });
+      }
+
+      const numericSize = Number(size);
+      if (Number.isNaN(numericSize)) {
+        return res.status(400).json({
+          error: 'Taille de fichier invalide pour le ZIP',
+          code: 'INVALID_ZIP_FILE_SIZE'
+        });
+      }
+
+      const HARD_LIMIT = 10 * 1024 * 1024; // 10MB
+      if (numericSize > HARD_LIMIT) {
+        return res.status(413).json({
+          error: 'Fichier ZIP trop volumineux. Taille maximale autorisée: 10MB',
+          code: 'ZIP_FILE_TOO_LARGE'
+        });
+      }
+
+      const zipMimeTypes = [
+        'application/zip',
+        'application/x-zip-compressed'
+      ];
+
+      if (mimetype && !zipMimeTypes.includes(mimetype)) {
+        return res.status(415).json({
+          error: 'Type de fichier non autorisé pour le ZIP',
+          message: 'Seuls les fichiers ZIP sont acceptés',
+          code: 'INVALID_ZIP_FILE_TYPE'
+        });
+      }
+
+      const timestamp = Math.round(Date.now() / 1000);
+      const folder = `Hifadhui/upload/${req.user.username || req.user.id}/zips`;
+      const publicId = generateUniqueFileName(filename);
+
+      const paramsToSign = {
+        timestamp,
+        folder,
+        public_id: publicId
+      };
+
+      const apiSecret = process.env.CLOUDINARY_API_SECRET;
+      const apiKey = process.env.CLOUDINARY_API_KEY;
+      const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+
+      if (!apiSecret || !apiKey || !cloudName) {
+        console.error('Configuration Cloudinary manquante pour zip-cloudinary');
+        return res.status(500).json({
+          error: 'Configuration Cloudinary manquante',
+          code: 'CLOUDINARY_CONFIG_MISSING'
+        });
+      }
+
+      const signature = cloudinary.utils.api_sign_request(paramsToSign, apiSecret);
+
+      return res.json({
+        step: 'prepare',
+        cloudName,
+        apiKey,
+        timestamp,
+        signature,
+        folder,
+        public_id: publicId,
+        resource_type: 'raw',
+        maxFileSize: HARD_LIMIT
+      });
+    }
+
+    // Étape 2 : téléchargement du ZIP depuis Cloudinary et traitement
+    if (step === 'process') {
+      const {
+        secure_url,
+        bytes,
+        originalname
+      } = req.body || {};
+
+      if (!secure_url || bytes === undefined || !originalname) {
+        return res.status(400).json({
+          error: 'Paramètres manquants pour le traitement du ZIP',
+          code: 'MISSING_ZIP_PROCESS_PARAMS'
+        });
+      }
+
+      const numericBytes = Number(bytes);
+      if (Number.isNaN(numericBytes)) {
+        return res.status(400).json({
+          error: 'Taille de fichier invalide pour le ZIP',
+          code: 'INVALID_ZIP_FILE_SIZE'
+        });
+      }
+
+      const HARD_LIMIT = 10 * 1024 * 1024; // 10MB
+      if (numericBytes > HARD_LIMIT) {
+        return res.status(413).json({
+          error: 'Fichier ZIP trop volumineux. Taille maximale autorisée: 10MB',
+          code: 'ZIP_FILE_TOO_LARGE'
+        });
+      }
+
+      console.log(`🔍 [ZIP-CLOUDINARY] Téléchargement du ZIP depuis Cloudinary: ${secure_url}`);
+
+      const zipResponse = await axios.get(secure_url, {
+        responseType: 'arraybuffer',
+        timeout: 120000
+      });
+
+      const zipBuffer = Buffer.from(zipResponse.data);
+      const zip = new AdmZip(zipBuffer);
+      const zipEntries = zip.getEntries();
+
+      // Compter les fichiers valides (images et PDFs)
+      let validFileCount = 0;
+      for (const zipEntry of zipEntries) {
+        if (zipEntry.isDirectory) continue;
+        const extension = path.extname(zipEntry.entryName).toLowerCase();
+        if (['.pdf', '.jpg', '.jpeg', '.png'].includes(extension)) {
+          validFileCount++;
+        }
+      }
+
+      if (validFileCount === 0) {
+        return res.status(400).json({
+          error: 'Aucun fichier supporté trouvé dans l\'archive ZIP',
+          code: 'NO_SUPPORTED_FILES_IN_ZIP'
+        });
+      }
+
+      console.log(`🔍 [ZIP-CLOUDINARY] ${validFileCount} fichier(s) valide(s) détecté(s) dans le ZIP`);
+
+      // Vérifier qu'il y a assez d'empreintes disponibles
+      const empreintesDisponibles = await Empreinte.getAvailableEmpreintes(req.user.id, validFileCount);
+
+      if (empreintesDisponibles.length < validFileCount) {
+        console.log(`⚠️ [ZIP-CLOUDINARY] Empreintes insuffisantes: ${empreintesDisponibles.length}/${validFileCount}`);
+        return res.status(400).json({
+          error: 'Empreintes insuffisantes',
+          message: `Le ZIP contient ${validFileCount} fichier(s) mais vous n\'avez que ${empreintesDisponibles.length} empreinte(s) disponible(s)` ,
+          required: validFileCount,
+          available: empreintesDisponibles.length,
+          code: 'INSUFFICIENT_EMPREINTES'
+        });
+      }
+
+      console.log(`✅ [ZIP-CLOUDINARY] ${empreintesDisponibles.length} empreinte(s) disponible(s) - Traitement autorisé`);
+
+      // Créer un dossier basé sur le nom du ZIP dans le dossier système
+      const systemRoot = await Dossier.getSystemRoot();
+      const originalDossierName = path.basename(originalname, path.extname(originalname));
+      const dossierName = createSlug(originalDossierName);
+      const [newDossier, created] = await Dossier.findOrCreate({
+        where: { name: dossierName, owner_id: req.user.id, parent_id: systemRoot.id },
+        defaults: { name: dossierName, name_original: fixEncoding(originalDossierName), owner_id: req.user.id, parent_id: systemRoot.id },
+      });
+
+      const processedFiles = [];
+      let extractedImageCount = 0;
+      let extractedPdfCount = 0;
+      let empreinteIndex = 0;
+
+      for (const zipEntry of zipEntries) {
+        if (zipEntry.isDirectory) continue;
+
+        const entryName = zipEntry.entryName;
+        const fileData = zipEntry.getData();
+
+        const extension = path.extname(entryName).toLowerCase();
+        let fileMimeType;
+
+        switch (extension) {
+          case '.pdf':
+            fileMimeType = 'application/pdf';
+            extractedPdfCount++;
+            break;
+          case '.jpg':
+          case '.jpeg':
+            fileMimeType = 'image/jpeg';
+            extractedImageCount++;
+            break;
+          case '.png':
+            fileMimeType = 'image/png';
+            extractedImageCount++;
+            break;
+          default:
+            console.log(`Type non supporté ignoré (ZIP-CLOUDINARY) : ${entryName}`);
+            continue; // On ignore les autres types de fichiers
+        }
+
+        // Au lieu d'écrire localement, uploader directement sur Cloudinary
+        const { getFileType, generateCloudinaryPath, getUserFileFolder } = await import('../utils/cloudinaryStructure.js');
+
+        const fileType = getFileType(fileMimeType);
+        const cloudinaryPath = generateCloudinaryPath(entryName, req.user.username, fileType);
+        const folderPath = getUserFileFolder(req.user, fileType);
+
+        // Créer un stream à partir du buffer
+        const { Readable } = await import('stream');
+        const stream = Readable.from(fileData);
+
+        // Upload via stream avec timeout plus long
+        const cloudinaryResult = await new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream({
+            folder: folderPath,
+            public_id: cloudinaryPath,
+            resource_type: fileType === 'images' ? 'image' : 'raw',
+            timeout: 120000 // 2 minutes timeout
+          }, (error, result) => {
+            if (error) {
+              console.error('Erreur upload Cloudinary (ZIP-CLOUDINARY):', error);
+              reject(error);
+            } else {
+              resolve(result);
+            }
+          });
+
+          stream.pipe(uploadStream);
+        });
+
+        const fileDataObject = {
+          originalname: path.basename(entryName),
+          path: cloudinaryResult.secure_url,
+          size: fileData.length,
+          mimetype: fileMimeType
+        };
+
+        // Utiliser l'empreinte correspondante
+        const currentEmpreinte = empreintesDisponibles[empreinteIndex];
+        empreinteIndex++;
+
+        console.log(`🔖 [ZIP-CLOUDINARY] Fichier ${empreinteIndex}/${validFileCount} - Empreinte: ${currentEmpreinte.product_id}`);
+
+        // Traiter le fichier avec l'empreinte
+        const processedFile = await processSingleFile(fileDataObject, req.user, req, newDossier.id, {
+          logActivity: false,
+          empreinte: currentEmpreinte
+        });
+        processedFiles.push(processedFile);
+      }
+
+      // Enregistrer une seule activité pour l'ensemble du ZIP
+      await ActivityLog.create({
+        userId: req.user.id,
+        actionType: 'ZIP_UPLOAD',
+        details: {
+          fileName: originalname,
+          dossierId: newDossier.id,
+          dossierName: newDossier.name,
+          extractedFileCount: processedFiles.length,
+          extractedImageCount,
+          extractedPdfCount
+        }
+      });
+
+      return res.status(201).json({
+        step: 'process',
+        message: `Dossier '${dossierName}' ${created ? 'créé' : 'mis à jour'} et ${processedFiles.length} fichiers uploadés avec succès.`,
+        dossier: newDossier,
+        files: processedFiles
+      });
+    }
+
+    return res.status(400).json({
+      error: 'Étape invalide pour zip-cloudinary',
+      code: 'INVALID_ZIP_STEP'
+    });
+  } catch (error) {
+    console.error('Erreur zip-cloudinary:', error);
+    res.status(500).json({
+      error: "Erreur lors du traitement de l'upload ZIP Cloudinary",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
