@@ -101,6 +101,23 @@ router.post('/sendgrid/inbound', upload.any(), async (req, res) => {
     const senderName = senderMatch[1] ? senderMatch[1].trim() : '';
     const senderEmail = senderMatch[2] ? senderMatch[2].trim() : emailData.from;
 
+    // Détecter les emails de notification de contact envoyés par le système
+    const smtpUser = (process.env.SMTP_FROM || process.env.SMTP_USER || '').toLowerCase();
+    const isContactNotification =
+      emailData.subject &&
+      emailData.subject.startsWith('[Contact Hifadhui]') &&
+      smtpUser &&
+      senderEmail && senderEmail.toLowerCase() === smtpUser;
+
+    if (isContactNotification) {
+      console.log('ℹ️ [WEBHOOK] Email de notification de contact détecté, non enregistré en base.');
+      return res.status(200).json({
+        success: true,
+        skipped: true,
+        reason: 'contact_notification'
+      });
+    }
+
     // Créer le message en base de données
     const message = await Message.create({
       type: 'email_received',

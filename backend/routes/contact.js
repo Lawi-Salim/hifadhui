@@ -51,21 +51,31 @@ router.post('/', contactLimiter, contactValidation, async (req, res) => {
 
     const { name, email, subject, message } = req.body;
 
+    const finalSubject = subject || 'Nouveau message de contact';
+
     // Envoyer l'email de contact
     await emailService.sendContactMessage({
       name,
       email,
-      subject: subject || 'Nouveau message de contact',
+      subject: finalSubject,
       message
     });
+
+    // Générer également le HTML complet pour l'enregistrement admin
+    const htmlContent = emailService.getContactTemplate(
+      name,
+      email,
+      finalSubject,
+      message
+    );
 
     // Enregistrer le message de contact dans la base de données
     try {
       await Message.create({
         type: 'contact_received',
-        subject: subject || 'Nouveau message de contact',
+        subject: finalSubject,
         content: message,
-        htmlContent: null,
+        htmlContent,
         senderEmail: email,
         senderName: name,
         recipientEmail: process.env.CONTACT_EMAIL || process.env.SMTP_FROM || process.env.SMTP_USER,

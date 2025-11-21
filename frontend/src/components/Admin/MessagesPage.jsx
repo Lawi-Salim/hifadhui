@@ -894,9 +894,9 @@ const MessagesPage = ({ predefinedType = null, pageTitle = 'Messages', pageIcon:
                                 </div>
                                 <div className="gmail-tooltip-row">
                                   <strong>à:</strong> 
-                                  {(messageDetail.type === 'contact_received' || messageDetail.type === 'email_received') && ' mavuna@hifadhui.site'}
+                                  {(messageDetail.type === 'contact_received' || messageDetail.type === 'email_received') && ` ${messageDetail.recipientEmail || 'mavuna@hifadhui.site'}`}
                                   {messageDetail.type === 'email_sent' && ` ${messageDetail.recipientEmail}`}
-                                  {(messageDetail.type === 'notification' || messageDetail.type === 'alert') && ' mavuna@hifadhui.site'}
+                                  {(messageDetail.type === 'notification' || messageDetail.type === 'alert') && ` ${messageDetail.recipientEmail || 'mavuna@hifadhui.site'}`}
                                 </div>
                                 <div className="gmail-tooltip-row">
                                   <strong>Date:</strong> {new Date(messageDetail.createdAt).toLocaleString('fr-FR')}
