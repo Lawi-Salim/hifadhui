@@ -33,6 +33,7 @@ import ReportsPage from './components/Admin/ReportsPage.jsx';
 import RiskDashboard from './components/Admin/RiskDashboard.jsx';
 import TechnicalPage from './components/Admin/TechnicalPage.jsx';
 import MessagesPage from './components/Admin/MessagesPage.jsx';
+import ContactMessagesPage from './components/Admin/ContactMessagesPage.jsx';
 import NotificationsPage from './components/Admin/NotificationsPage.jsx';
 import EmpreintesPage from './components/Admin/EmpreintesPage.jsx';
 import UserImages from './components/Admin/UserImages.jsx';
@@ -191,6 +192,7 @@ function AppContent() {
           <Route element={<AdminRoute />}>
             <Route path="/admin/users" element={<ListeUtilisateurs />} />
             <Route path="/admin/messages" element={<MessagesPage />} />
+            <Route path="/admin/contact" element={<ContactMessagesPage />} />
             <Route path="/admin/notifications" element={<NotificationsPage />} />
             <Route path="/admin/images" element={<UserImages />} />
             <Route path="/admin/files" element={<UserFiles />} />

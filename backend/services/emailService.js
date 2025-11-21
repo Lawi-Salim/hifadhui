@@ -101,9 +101,14 @@ class EmailService {
    * Envoyer un message de contact
    */
   async sendContactMessage({ name, email, subject, message }) {
+    const toAddress = process.env.CONTACT_EMAIL || process.env.SMTP_FROM || process.env.SMTP_USER;
+
     const mailOptions = {
-      from: `"Hifadhui" <${process.env.SMTP_FROM}>`,
-      to: process.env.SMTP_FROM, // Envoyer à nous-mêmes
+      from: {
+        name: 'Hifadhui',
+        address: process.env.SMTP_FROM || process.env.SMTP_USER
+      },
+      to: toAddress, // Adresse de réception des messages de contact
       replyTo: email, // Permettre de répondre directement au client
       subject: `[Contact Hifadhui] ${subject}`,
       html: this.getContactTemplate(name, email, subject, message),

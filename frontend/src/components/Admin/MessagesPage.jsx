@@ -31,7 +31,7 @@ import messagesService from '../../services/messagesService';
 import EmailComposer from './EmailComposer';
 import './AdminDashboard.css';
 
-const MessagesPage = () => {
+const MessagesPage = ({ predefinedType = null, pageTitle = 'Messages', pageIcon: PageIcon = FiMail }) => {
   const [activeTab, setActiveTabState] = useState('unread');
   
   // Wrapper pour setActiveTab
@@ -133,6 +133,11 @@ const MessagesPage = () => {
         limit: pagination.itemsPerPage || 20,
         search: searchTerm || ''
       };
+
+      // Filtrer par type prédéfini (ex: messages de contact uniquement)
+      if (predefinedType) {
+        params.type = predefinedType;
+      }
       
       const data = await messagesService.getMessages(params);
       setMessages(data.messages);
@@ -446,8 +451,8 @@ const MessagesPage = () => {
           </button>
           <div className="title-content">
             <h1>
-              <FiMail className="page-icon" />
-              Messages
+              <PageIcon className="page-icon" />
+              {pageTitle}
             </h1>
           </div>
         </div>
@@ -550,12 +555,14 @@ const MessagesPage = () => {
           <FiInbox /> Reçus ({stats.received || 0})
           {stats.unread > 0 && <span className="tab-notification-badge">{stats.unread}</span>}
         </button>
-        <button 
-          className={`tab-btn ${activeTab === 'sent' ? 'active' : ''}`}
-          onClick={() => setActiveTab('sent')}
-        >
-          <FiSend /> Envoyés ({stats.sent})
-        </button>
+        {!predefinedType && (
+          <button 
+            className={`tab-btn ${activeTab === 'sent' ? 'active' : ''}`}
+            onClick={() => setActiveTab('sent')}
+          >
+            <FiSend /> Envoyés ({stats.sent})
+          </button>
+        )}
       </div>
 
       {/* Search and Filters */}

@@ -24,7 +24,8 @@ import {
   FiMenu,
   FiX,
   FiMail,
-  FiBell
+  FiBell,
+  FiMessageSquare
 } from 'react-icons/fi';
 import { FaFingerprint } from 'react-icons/fa';
 import UserMenu from './UserMenu';
@@ -116,6 +117,7 @@ const Sidebar = () => {
       { path: '/admin/dashboard', label: 'Dashboard Admin', icon: FiBarChart2 },
       { path: '/admin/users', label: 'Utilisateurs', icon: FiUser },
       { path: '/admin/messages', label: 'Messages', icon: FiMail },
+      { path: '/admin/contact', label: 'Contacts', icon: FiMessageSquare },
       { path: '/admin/notifications', label: 'Notifications', icon: FiBell },
       { path: '/admin/files', label: 'Tous les PDFs', icon: FiFileText },
       { path: '/admin/images', label: 'Toutes les Images', icon: FiImage },

@@ -1,6 +1,7 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import emailService from '../services/emailService.js';
+import Message from '../models/Message.js';
 import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
@@ -57,6 +58,29 @@ router.post('/', contactLimiter, contactValidation, async (req, res) => {
       subject: subject || 'Nouveau message de contact',
       message
     });
+
+    // Enregistrer le message de contact dans la base de données
+    try {
+      await Message.create({
+        type: 'contact_received',
+        subject: subject || 'Nouveau message de contact',
+        content: message,
+        htmlContent: null,
+        senderEmail: email,
+        senderName: name,
+        recipientEmail: process.env.CONTACT_EMAIL || process.env.SMTP_FROM || process.env.SMTP_USER,
+        status: 'unread',
+        priority: 'normal',
+        metadata: {
+          source: 'contact_form',
+          ip: req.ip,
+          userAgent: req.headers['user-agent'] || null
+        }
+      });
+    } catch (dbError) {
+      console.error('Erreur lors de l\'enregistrement du message de contact:', dbError);
+      // On ne bloque pas la réponse utilisateur si l\'enregistrement échoue
+    }
 
     res.status(200).json({
       success: true,
