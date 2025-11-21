@@ -165,8 +165,8 @@
   height: 150px;
   cursor: pointer;
   overflow: hidden;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
+  border-top-left-radius: var(--border-radius);
+  border-top-right-radius: var(--border-radius);
   background-color: var(--bg-tertiary);
 }
 
@@ -192,8 +192,8 @@
   width: 100% !important;
   height: 100% !important;
   object-fit: cover;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
+  border-top-left-radius: var(--border-radius);
+  border-top-right-radius: var(--border-radius);
 }
 
 .image-info {
@@ -201,9 +201,10 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1rem;
-  background: var(--bg-secondary);
+  /* background: var(--bg-secondary); */
   border-bottom-left-radius: 16px;
   border-bottom-right-radius: 16px;
+  position: relative; /* Pour positionner le menu d'actions par rapport à la barre info */
 }
 
 .image-details {

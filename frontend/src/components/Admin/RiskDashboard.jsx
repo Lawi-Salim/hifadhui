@@ -79,7 +79,13 @@ const RiskDashboard = () => {
   // Récupérer les données de risque
   const fetchRiskData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+      if (!token) {
+        console.warn('RiskDashboard: aucun token trouvé, appels API admin ignorés (dashboard)');
+        return;
+      }
+
       const response = await fetch('/api/v1/admin/risk/dashboard', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -96,7 +102,13 @@ const RiskDashboard = () => {
   // Récupérer les statistiques temps réel
   const fetchRealtimeStats = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+      if (!token) {
+        console.warn('RiskDashboard: aucun token trouvé, appels API admin ignorés (realtime)');
+        return;
+      }
+
       const response = await fetch('/api/v1/admin/risk/realtime', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -114,7 +126,13 @@ const RiskDashboard = () => {
   const fetchTrends = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+      if (!token) {
+        console.warn('RiskDashboard: aucun token trouvé, appels API admin ignorés (trends)');
+        return;
+      }
+
       const response = await fetch('/api/v1/admin/risk/trends', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -133,7 +151,13 @@ const RiskDashboard = () => {
   // Récupérer les métriques système
   const fetchSystemMetrics = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+      if (!token) {
+        console.warn('RiskDashboard: aucun token trouvé, appels API admin ignorés (system metrics)');
+        return;
+      }
+
       const response = await fetch('/api/v1/admin/system/metrics', {
         headers: { 'Authorization': `Bearer ${token}` }
       });

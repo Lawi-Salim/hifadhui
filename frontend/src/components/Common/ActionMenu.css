@@ -6,7 +6,7 @@
   border-radius: var(--border-radius);
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   z-index: 9999;
-  width: 180px;
+  width: 200px;
   display: flex;
   flex-direction: column;
 }
@@ -16,7 +16,8 @@
 }
 
 .actions-menu.position-top {
-  bottom: 100%;
+  top: 0;
+  transform: translateY(-100%);
 }
 
 .actions-menu .menu-item {

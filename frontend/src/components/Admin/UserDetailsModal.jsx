@@ -13,7 +13,7 @@ const UserDetailsModal = ({ user, isOpen, onClose, onActionComplete }) => {
   const [userStats, setUserStats] = useState({
     imagesCount: 0,
     pdfsCount: 0,
-    storageUsed: '0 MB',
+    storageUsed: '0 B',
     lastActivity: null,
     sessionStatus: 'unknown',
     reportsCount: 0,
@@ -28,7 +28,7 @@ const UserDetailsModal = ({ user, isOpen, onClose, onActionComplete }) => {
       setUserStats({
         imagesCount: 0,
         pdfsCount: 0,
-        storageUsed: '0 MB',
+        storageUsed: '0 B',
         lastActivity: null,
         sessionStatus: 'unknown',
         reportsCount: 0,
@@ -107,7 +107,7 @@ const UserDetailsModal = ({ user, isOpen, onClose, onActionComplete }) => {
           const newStats = {
             imagesCount: filesCount.images || 0,
             pdfsCount: filesCount.pdfs || 0,
-            storageUsed: stats.storageUsed || '0 MB',
+            storageUsed: stats.storageUsed || '0 B',
             lastActivity: lastActivity || stats.lastActivity,
             sessionStatus: sessionStatus,
             reportsCount: stats.reportsReceived || 0,
@@ -125,7 +125,7 @@ const UserDetailsModal = ({ user, isOpen, onClose, onActionComplete }) => {
       setUserStats({
         imagesCount: 0,
         pdfsCount: 0,
-        storageUsed: '0 MB',
+        storageUsed: '0 B',
         lastActivity: null,
         sessionStatus: 'unknown',
         reportsCount: 0,

@@ -7,6 +7,7 @@ import ActionMenu from './ActionMenu';
 import PdfPreview from './PdfPreview';
 import { buildCloudinaryUrl } from '../../config/cloudinary';
 import { createSlug, fixEncoding } from '../../utils/textUtils';
+import { formatFileSize } from '../../utils/fileSize';
 import '../Admin/AdminStyles.css'; // Import des styles admin pour la vue liste
 
 const ItemList = ({ 
@@ -259,7 +260,7 @@ const ItemList = ({
                   maxLength={15}
                   hideExtension={true}
                 />
-                <p className="image-date">{formatDate(item.date_upload)}</p>
+                {/* <p className="image-date">{formatDate(item.date_upload)}</p> */}
               </div>
               {!isSelectionMode && (
                 <div className="image-actions-menu">
@@ -270,20 +271,21 @@ const ItemList = ({
                   >
                     <FaEllipsisV />
                   </button>
+
+                  {activeMenu?.id === item.id && customActionsMenu && customActionsMenu(item)}
+                  {activeMenu?.id === item.id && !customActionsMenu && (
+                    <ActionMenu
+                      isOpen={true}
+                      position={activeMenu?.position || 'bottom'}
+                      onDownload={handleOpenFile ? () => { handleOpenFile(item); toggleMenu(null); } : null}
+                      onShare={handleShare ? () => { handleShare(item); toggleMenu(null); } : null}
+                      onCertificate={handleCertificate ? () => { handleCertificate(item); toggleMenu(null); } : null}
+                      onRename={handleOpenFileRenameModal ? () => { handleOpenFileRenameModal(item); toggleMenu(null); } : null}
+                      onDelete={handleOpenFileDeleteModal ? () => { handleOpenFileDeleteModal(item); toggleMenu(null); } : null}
+                      onClose={() => toggleMenu(null)}
+                    />
+                  )}
                 </div>
-              )}
-              {!isSelectionMode && activeMenu?.id === item.id && customActionsMenu && customActionsMenu(item)}
-              {!isSelectionMode && activeMenu?.id === item.id && !customActionsMenu && (
-                <ActionMenu
-                  isOpen={true}
-                  position={activeMenu?.position || 'bottom'}
-                  onDownload={handleOpenFile ? () => { handleOpenFile(item); toggleMenu(null); } : null}
-                  onShare={handleShare ? () => { handleShare(item); toggleMenu(null); } : null}
-                  onCertificate={handleCertificate ? () => { handleCertificate(item); toggleMenu(null); } : null}
-                  onRename={handleOpenFileRenameModal ? () => { handleOpenFileRenameModal(item); toggleMenu(null); } : null}
-                  onDelete={handleOpenFileDeleteModal ? () => { handleOpenFileDeleteModal(item); toggleMenu(null); } : null}
-                  onClose={() => toggleMenu(null)}
-                />
               )}
             </div>
           </div>
@@ -369,7 +371,7 @@ const ItemList = ({
                 />
               </h4>
               <div className="list-meta-info">
-                <span className="list-file-size">{item.size ? `${(item.size / 1024).toFixed(2)} KB` : 'N/A'}</span>
+                <span className="list-file-size">{item.size ? formatFileSize(item.size) : 'N/A'}</span>
                 <span className="list-file-date">{formatDate(item.date_upload)}</span>
               </div>
             </div>

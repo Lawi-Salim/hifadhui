@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import certificateService from '../services/certificateService';
 import './VerifyPage.css';
+import { formatFileSize } from '../utils/fileSize';
 
 /**
  * Page publique de vérification d'authenticité des fichiers
@@ -112,14 +113,6 @@ const VerifyPage = () => {
 
   const handleVerifyProductId = () => {
     verifyProductId(productIdInput);
-  };
-
-  const formatFileSize = (bytes) => {
-    if (!bytes) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    const k = 1024;
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${(bytes / Math.pow(k, i)).toFixed(2)} ${units[i]}`;
   };
 
   const formatDate = (date) => {

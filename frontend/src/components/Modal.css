@@ -384,8 +384,115 @@
   /* Styles pour les modales de déplacement/copie */
   .modal-overlay.move-modal .modal-content,
   .modal-overlay.copy-modal .modal-content {
-    max-width: 600px;
-    padding: 1.5rem;
+    max-width: 720px;
+    padding: 1.75rem 2rem;
+  }
+
+  /* Nouvelle génération de modales Move/Copy (ModalMove / ModalCopy) */
+  .modal-overlay.modal-move-new .modal-content,
+  .modal-overlay.modal-copy-new .modal-content {
+    max-width: 760px;
+    padding: 1.75rem 2rem;
+  }
+
+  .folder-details-modal-content {
+    max-width: 720px;
+    min-height: 35rem;
+    padding: 1.75rem 2rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .folder-details-title {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .folder-details-title-name {
+    color: var(--primary-color);
+    background-color: none;
+  }
+
+  .folder-details-layout {
+    display: flex;
+    margin-top: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .folder-details-sidebar {
+    width: 220px;
+    border-right: 1px solid var(--border-color);
+    padding: 0.75rem 0.75rem 0.75rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: var(--bg-secondary);
+  }
+
+  .folder-details-tab {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .folder-details-tab.active {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .folder-details-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--bg-secondary);
+  }
+
+  .folder-details-section {
+    padding: 0.25rem 0;
+  }
+
+  .folder-details-list {
+    margin: 0;
+    padding: 0;
+  }
+
+  .folder-details-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .folder-details-row dt {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .folder-details-row dd {
+    margin: 0;
+    color: var(--text-primary);
+    word-break: break-word;
+  }
+
+  .folder-details-placeholder {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
   }
 
   .modal-header {
@@ -399,10 +506,6 @@
     font-weight: 600;
     color: var(--text-primary);
   }
-/* 
-  .modal-body {
-    margin-bottom: 1.5rem;
-  } */
 
   .modal-description {
     color: var(--text-secondary);
@@ -410,17 +513,38 @@
     line-height: 1.5;
   }
 
+  /* Ancienne zone de sélection de dossiers */
   .folder-selector {
     border: 1px solid var(--border-color);
     border-radius: 4px;
     max-height: 300px;
-    overflow-y: auto;
+    overflow: hidden;
     background: var(--bg-primary);
   }
 
+  /* Liste de dossiers pour les anciennes modales */
+  .folder-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .folder-list-header {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .folder-list-header-name {
+    padding-left: 28px; /* espace pour chevron + icône dossier */
+  }
+
   .folder-tree {
-    padding: 0.5rem 0;
-    max-height: 220px;
+    padding: 0;
+    max-height: 240px;
     overflow-y: auto;
   }
 
@@ -444,6 +568,15 @@
 
   .folder-tree-item {
     margin: 0;
+  }
+
+  /* Spécifique aux modales de déplacement/copie : arborescence en colonne */
+  .folder-selector .folder-tree-item {
+    display: block;
+  }
+
+  .folder-selector .folder-children {
+    margin-left: 1.25rem;
   }
 
   .folder-toggle {
@@ -487,11 +620,13 @@
   .folder-item {
     display: flex;
     align-items: center;
-    padding: 0.75rem 1rem;
+    padding: 6px 10px;
     cursor: pointer;
     transition: background-color 0.2s ease;
     border-radius: 4px;
-    margin: 0 0.5rem;
+    margin: 0;
+    min-height: 32px;
+    border-bottom: 1px solid var(--border-color);
   }
 
   .folder-item:hover {
@@ -501,20 +636,6 @@
   .folder-item.selected {
     background-color: var(--primary-color);
     color: white;
-  }
-
-  .folder-toggle {
-    background: none;
-    border: none;
-    padding: 0;
-    margin-right: 0.5rem;
-    color: var(--text-secondary);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
   }
 
   .folder-icon {
@@ -615,4 +736,148 @@
     font-size: 0.85rem;
     color: var(--text-secondary);
   }
-  
+
+  /* Overrides dédiés aux nouvelles modales ModalMove / ModalCopy */
+  .folder-selector-new {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    height: 300px;
+    overflow: hidden;
+  }
+
+  .folder-selector-new .folder-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .folder-selector-new .folder-list-header {
+    display: flex;
+    align-items: center;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .folder-selector-new .folder-list-header-name {
+    padding-left: 28px; /* espace pour chevron + icône dossier */
+  }
+
+  .folder-selector-new .folder-list-body {
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  /* Scrollbar pour les nouvelles listes de dossiers (même style que .folder-tree) */
+  .folder-selector-new .folder-list-body::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .folder-selector-new .folder-list-body::-webkit-scrollbar-track {
+    background: transparent; /* Fond de la piste transparent */
+  }
+
+  .folder-selector-new .folder-list-body::-webkit-scrollbar-thumb {
+    background-color: #566573; /* Couleur du curseur */
+    border-radius: 4px;
+  }
+
+  .folder-selector-new .folder-list-body::-webkit-scrollbar-thumb:hover {
+    background-color: #808b96; /* Couleur du curseur au survol */
+  }
+
+  /* Lignes de dossiers pour les nouvelles modales */
+  .folder-row {
+    width: 100%;
+  }
+
+  .folder-row-inner {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: inherit;
+    padding: 6px 10px;
+    cursor: pointer;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    min-height: 32px;
+  }
+
+  .folder-row-inner:hover {
+    background: var(--bg-tertiary);
+  }
+
+  .folder-row-inner.selected {
+    background: var(--primary-color);
+    color: #fff;
+  }
+
+  .folder-row-chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    margin-right: 6px;
+  }
+
+  .folder-row-chevron-btn {
+    background: transparent;
+    border: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .folder-row-chevron-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .folder-row-chevron-placeholder {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+  }
+
+  .folder-row-icon {
+    margin-right: 0.75rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+
+  .folder-row-inner.selected .folder-row-icon {
+    color: #fff;
+  }
+
+  .folder-row-name {
+    flex: 1;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .destination-summary {
+    margin-top: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    font-size: 0.9rem;
+  }
+
+  .destination-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .destination-value {
+    color: var(--text-primary);
+  }

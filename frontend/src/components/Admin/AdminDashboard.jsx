@@ -16,6 +16,7 @@ import {
 } from 'react-icons/fi';
 import './AdminDashboard.css';
 import LoadingSpinner from '../Common/LoadingSpinner';
+import { formatFileSize } from '../../utils/fileSize';
 
 // Import conditionnel de Recharts avec fallback
 let LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell;
@@ -83,26 +84,32 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+      // Si aucun token, ne pas appeler les endpoints admin (cela éviter les 401/403 inutiles)
+      if (!token) {
+        console.warn('AdminDashboard: aucun token trouvé, appels API admin ignorés');
+        setLoading(false);
+        return;
+      }
+
+      const authHeaders = {
+        'Authorization': `Bearer ${token}`
+      };
       
       // Récupérer les métriques globales
       const metricsResponse = await fetch('/api/v1/admin/dashboard/metrics', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        headers: authHeaders
       });
       
       // Récupérer les données de graphiques
       const chartsResponse = await fetch(`/api/v1/admin/dashboard/charts?range=${timeRange}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        headers: authHeaders
       });
       
       // Récupérer les alertes
       const alertsResponse = await fetch('/api/v1/admin/dashboard/alerts', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        headers: authHeaders
       });
 
       if (metricsResponse.ok && chartsResponse.ok && alertsResponse.ok) {
@@ -127,14 +134,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
   const formatNumber = (num) => {
     if (num >= 1000000) {
       return (num / 1000000).toFixed(1) + 'M';
@@ -144,13 +143,7 @@ const AdminDashboard = () => {
     return num.toString();
   };
 
-  const formatBytes = (bytes) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+  const formatBytes = (bytes) => formatFileSize(bytes);
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 

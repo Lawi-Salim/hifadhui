@@ -28,6 +28,10 @@ const deleteFile = (id) => {
   return api.delete(`/files/${id}`);
 };
 
+const getFileById = (id) => {
+  return api.get(`/files/${id}`);
+};
+
 // Service pour la suppression de compte
 const deleteAccount = (password = null) => {
   const data = password ? { password } : {};
@@ -38,6 +42,7 @@ const fileService = {
   getFiles,
   renameFile,
   deleteFile,
+  getFileById,
   deleteAccount,
 };
 

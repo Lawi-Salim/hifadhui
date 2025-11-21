@@ -9,7 +9,7 @@ class MessagesService {
    * Récupère le token d'authentification
    */
   getAuthToken() {
-    return localStorage.getItem('token');
+    return localStorage.getItem('token') || sessionStorage.getItem('token');
   }
 
   /**

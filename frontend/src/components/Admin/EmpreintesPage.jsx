@@ -21,6 +21,7 @@ import LoadingSpinner from '../Common/LoadingSpinner';
 import empreinteAdminService from '../../services/empreinteAdminService';
 import './AdminDashboard.css';
 import '../../pages/GenerateEmpreintes.css';
+import { formatFileSize } from '../../utils/fileSize';
 
 const EmpreintesPage = () => {
   // États pour les onglets
@@ -606,85 +607,77 @@ const EmpreintesPage = () => {
 
       {/* Modal de détails */}
       {detailsModal && selectedEmpreinte && (
-        <div className="modal-overlay" onClick={() => setDetailsModal(false)}>
+        <div className="modal-overlay modal-detail-empreinte" onClick={() => setDetailsModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2><FaFingerprint /> Détails de l'Empreinte</h2>
+              <h2>Détails de l'empreinte</h2>
               <button className="modal-close" onClick={() => setDetailsModal(false)}>×</button>
             </div>
             <div className="modal-body">
-              <div className="details-grid">
-                <div className="detail-item">
-                  <label>Product ID</label>
-                  <code>{selectedEmpreinte.product_id}</code>
+              <div className="detail-row">
+                <strong>Product ID:</strong>
+                <code>{selectedEmpreinte.product_id}</code>
+              </div>
+              <div className="detail-row">
+                <strong>Statut:</strong>
+                {getStatusBadge(selectedEmpreinte.status)}
+              </div>
+              <div className="detail-row">
+                <strong>Propriétaire:</strong>
+                <div>
+                  <div><strong>{selectedEmpreinte.owner?.username}</strong></div>
+                  <div><small>{selectedEmpreinte.owner?.email}</small></div>
                 </div>
-                <div className="detail-item">
-                  <label>Statut</label>
-                  {getStatusBadge(selectedEmpreinte.status)}
-                </div>
-                <div className="detail-item">
-                  <label>Propriétaire</label>
-                  <div>
-                    <strong>{selectedEmpreinte.owner?.username}</strong>
-                    <br />
-                    <small>{selectedEmpreinte.owner?.email}</small>
-                  </div>
-                </div>
-                <div className="detail-item">
-                  <label>Hash Pré-généré</label>
-                  <code className="hash-code">{selectedEmpreinte.hash_pregenere}</code>
-                </div>
-                <div className="detail-item">
-                  <label>Signature Pré-générée</label>
-                  <code className="hash-code">{selectedEmpreinte.signature_pregeneree}</code>
-                </div>
-                <div className="detail-item">
-                  <label>Généré le</label>
-                  <span>{formatDate(selectedEmpreinte.generated_at)}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Utilisé le</label>
-                  <span>
-                    {selectedEmpreinte.used_at 
-                      ? formatDate(selectedEmpreinte.used_at) 
-                      : <span className="text-muted">Empreinte non utilisée</span>
-                    }
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <label>Expire le</label>
-                  <span>{formatDate(selectedEmpreinte.expires_at)}</span>
-                </div>
+              </div>
+              <div className="detail-row">
+                <strong>Hash Pré-généré:</strong>
+                <code className="hash-full">{selectedEmpreinte.hash_pregenere}</code>
+              </div>
+              <div className="detail-row">
+                <strong>Signature Pré-générée:</strong>
+                <code className="hash-full">{selectedEmpreinte.signature_pregeneree}</code>
+              </div>
+              <div className="detail-row">
+                <strong>Généré le:</strong>
+                <span>{formatDate(selectedEmpreinte.generated_at)}</span>
+              </div>
+              <div className="detail-row">
+                <strong>Utilisé le:</strong>
+                <span>
+                  {selectedEmpreinte.used_at 
+                    ? formatDate(selectedEmpreinte.used_at) 
+                    : <span className="text-muted">Empreinte non utilisée</span>
+                  }
+                </span>
+              </div>
+              <div className="detail-row">
+                <strong>Expire le:</strong>
+                <span>{formatDate(selectedEmpreinte.expires_at)}</span>
+              </div>
+              <div className="detail-row">
+                <strong>Fichier associé:</strong>
                 {selectedEmpreinte.file ? (
-                  <>
-                    <div className="detail-item full-width">
-                      <label>Fichier Associé</label>
-                      <div className="file-info">
-                        <FiFile />
-                        <div>
-                          <a 
-                            href={`/share/${selectedEmpreinte.hash_pregenere}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            style={{ color: 'var(--primary-color)', textDecoration: 'none' }}
-                          >
-                            <strong>{selectedEmpreinte.file.filename}</strong>
-                          </a>
-                          <br />
-                          <small>
-                            {selectedEmpreinte.file.mimetype} • 
-                            {(selectedEmpreinte.file.size / 1024).toFixed(2)} KB • 
-                            Uploadé le {formatDate(selectedEmpreinte.file.date_upload)}
-                          </small>
-                        </div>
-                      </div>
+                  <div className="file-info">
+                    <FiFile />
+                    <div>
+                      <a 
+                        href={`/share/${selectedEmpreinte.hash_pregenere}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ color: 'var(--primary-color)', textDecoration: 'none' }}
+                      >
+                        <strong>{selectedEmpreinte.file.filename}</strong>
+                      </a>
+                      <br />
+                      <small>
+                        {selectedEmpreinte.file.mimetype} • 
+                        {formatFileSize(selectedEmpreinte.file.size)} • 
+                        Uploadé le {formatDate(selectedEmpreinte.file.date_upload)}
+                      </small>
                     </div>
-                  </>
-                ) : (
-                  <div className="detail-item full-width">
-                    <label>Fichier Associé</label>
-                    <span className="text-muted">Aucun fichier lié à cette empreinte</span>
                   </div>
+                ) : (
+                  <span className="text-muted">Aucun fichier lié à cette empreinte</span>
                 )}
               </div>
             </div>

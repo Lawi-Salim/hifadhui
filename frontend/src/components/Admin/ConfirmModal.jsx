@@ -79,7 +79,7 @@ const ConfirmModal = ({
               </div>
               <div className="info-row">
                 <span className="label">Stockage:</span>
-                <span className="value">{user.storageUsed || '0 MB'}</span>
+                <span className="value">{user.storageUsed || '0 B'}</span>
               </div>
             </div>
           )}

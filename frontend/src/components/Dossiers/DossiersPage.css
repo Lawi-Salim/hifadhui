@@ -5,12 +5,19 @@
 }
 
 .btn-menu {
+  display: flex;
+  align-items: center;
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
-  padding: 0.5rem;
+  padding: 0.3rem;
+}
+
+.btn-menu:hover {
+  background: var(--bg-primary);
+  border-radius: 50%;
 }
 
 /* Styles déplacés depuis FileList.css */
@@ -175,25 +182,26 @@
 
 .dossiers-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 1rem;
-  padding: 1rem 0;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.5rem;
+  padding: 0.5rem 0;
 }
 
 .dossier-card {
   background-color: var(--surface-color);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
-  padding: 1rem;
+  padding: 0.5rem 0.5rem 0.35rem;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.15s, box-shadow 0.15s;
   display: flex;
   flex-direction: column;
   text-decoration: none;
   color: inherit;
   position: relative;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  min-height: 110px;
 }
 
 .dossier-card:hover {
@@ -202,17 +210,17 @@
 }
 
 .dossier-icon {
-  font-size: 3rem;
+  font-size: 2.1rem;
   color: var(--secondary-color);
-  margin-bottom: 1rem;
+  margin-bottom: 0.2rem;
   align-self: center;
-  margin-top: 0;
+  margin-top: 0.25rem;
 }
 
 .dossier-info {
   text-align: center;
-  flex-grow: 1;
-  padding: 0.5rem;
+  flex-grow: 0;
+  padding: 0.25rem 0.25rem 0.3rem;
 }
 
 .dossier-link {
@@ -262,14 +270,17 @@
 }
 
 .dossier-name {
-  font-weight: bold;
-  margin-bottom: 0.25rem;
+  font-weight: 500;
+  margin-bottom: 0.15rem;
+  font-size: 0.8rem;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dossier-file-count {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin-bottom: 1rem;
+  display: none;
 }
 
 /* Styles pour les modaux de dossier - supprimés car gérés dans Modal.css */

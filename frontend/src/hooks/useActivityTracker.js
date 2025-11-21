@@ -157,6 +157,16 @@ export const useActivityTracker = () => {
   }, [sendSessionEnd, SERVER_TIMEOUT]);
 
   useEffect(() => {
+    // Ne rien démarrer tant qu'il n'y a pas de token
+    const token = localStorage.getItem('token');
+    if (!token) {
+      // En dev uniquement, log discret pour debug éventuel
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[ACTIVITY] Tracker inactif (pas de token)');
+      }
+      return;
+    }
+
     // Événements d'activité utilisateur
     const activityEvents = [
       'mousedown', 'mousemove', 'keypress', 'scroll', 

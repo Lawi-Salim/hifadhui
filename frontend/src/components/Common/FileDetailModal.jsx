@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaTimes, FaDownload, FaEye, FaCalendar, FaFileAlt, FaImage, FaFilePdf } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import PdfPreview from './PdfPreview';
@@ -6,16 +6,56 @@ import ImageWithWatermark from './ImageWithWatermark';
 import { buildCloudinaryUrl } from '../../config/cloudinary';
 // import './FileDetailModal.css'; // Fichier CSS manquant
 import '../Images/Images.css';
+import fileService from '../../services/fileService';
+import { formatFileSize } from '../../utils/fileSize';
 
 const FileDetailModal = ({ file, onClose, type = 'file', isOpen }) => {
   const { user } = useAuth();
-  
+  const [displayData, setDisplayData] = useState(file || null);
+
+  useEffect(() => {
+    setDisplayData(file || null);
+  }, [file]);
+
+  useEffect(() => {
+    const shouldFetchFullDetails = () => {
+      if (!isOpen || !file || !file.id) return false;
+      const hasProductId = !!(file.empreinte && file.empreinte.product_id);
+      const hasSize = !!file.size;
+      const hasHash = !!file.hash;
+      const hasSignature = !!file.signature;
+      return !(hasProductId && hasSize && hasHash && hasSignature);
+    };
+
+    if (!shouldFetchFullDetails()) return;
+
+    let cancelled = false;
+
+    const fetchDetails = async () => {
+      try {
+        const response = await fileService.getFileById(file.id);
+        const full = response?.data?.file || response?.data || null;
+        if (!cancelled && full) {
+          setDisplayData(full);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des détails du fichier :', error);
+      }
+    };
+
+    fetchDetails();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [file, isOpen]);
+
   if (!isOpen) return null;
 
-  if (!file) return null;
+  if (!displayData) return null;
 
-  const isImage = file.mimetype && file.mimetype.startsWith('image/');
-  const isPdf = file.mimetype === 'application/pdf';
+  const isImage = displayData.mimetype && displayData.mimetype.startsWith('image/');
+  const isPdf = displayData.mimetype === 'application/pdf';
 
   // Fonction pour construire l'URL complète des images
   const getImageUrl = (fileUrl) => {
@@ -38,13 +78,6 @@ const FileDetailModal = ({ file, onClose, type = 'file', isOpen }) => {
     if (filename.length <= maxLength) return filename;
     return filename.substring(0, maxLength) + '...';
   };
-
-  // Déterminer les données à afficher selon le type
-  const getDisplayData = () => {
-    return file;
-  };
-
-  const displayData = getDisplayData();
 
   const title = isImage ? 'Détails de l\'image' : 'Détails du fichier';
 
@@ -79,11 +112,11 @@ const FileDetailModal = ({ file, onClose, type = 'file', isOpen }) => {
             <div className="detail-section">
               <h4>{title}</h4>
               <dl className="details-list">
-                <dt>Nom:</dt><dd title={displayData.filename}>{truncateFilename(displayData.filename)}</dd>
+                <dt>Nom:</dt><dd title={displayData.filename}>{displayData.filename}</dd>
                 <dt>Type:</dt><dd>{displayData.mimetype}</dd>
                 <dt>Product ID:</dt><dd>{displayData.empreinte?.product_id}</dd>
                 <dt>Date d'upload:</dt><dd>{formatDate(displayData.date_upload)}</dd>
-                <dt>Taille:</dt><dd>{displayData.size ? `${(displayData.size / 1024).toFixed(2)} KB` : 'Non disponible'}</dd>
+                <dt>Taille:</dt><dd>{displayData.size ? formatFileSize(displayData.size) : 'Non disponible'}</dd>
                 <dt>Emplacement:</dt><dd>{displayData.dossier?.fullPath || displayData.dossier?.name_original || displayData.dossier?.name || 'Racine'}</dd>
               </dl>
             </div>

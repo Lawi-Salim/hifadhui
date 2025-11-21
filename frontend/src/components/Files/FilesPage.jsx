@@ -353,9 +353,9 @@ const FilesPage = () => {
                 }}
               >
                 <option value="">Toutes les tailles</option>
-                <option value="small">Petit (&lt; 1 MB)</option>
-                <option value="medium">Moyen (1-10 MB)</option>
-                <option value="large">Grand (&gt; 10 MB)</option>
+                <option value="small">Petit (&lt; 1 Mo)</option>
+                <option value="medium">Moyen (1-10 Mo)</option>
+                <option value="large">Grand (&gt; 10 Mo)</option>
               </select>
             </div>
           </div>

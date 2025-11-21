@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { FiUpload, FiClock, FiLock, FiEdit3, FiFileText, FiMenu } from 'react-icons/fi';
@@ -56,6 +57,7 @@ const FileUpload = () => {
       'application/zip',
       'application/x-zip-compressed'
     ];
+    const SMALL_LIMIT = 4 * 1024 * 1024; // ~4MB: au-delà, utiliser l'upload direct Cloudinary pour les fichiers non ZIP
 
     if (file.size > maxSize) {
       setMessage({
@@ -124,24 +126,106 @@ const FileUpload = () => {
             fileIndex++;
           }
         }, 500);
+
+        const response = await api.post('/files/upload-zip', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          },
+          timeout: 90000,
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.loaded === progressEvent.total) {
+              globalProgressBar.updateCurrentItem('Traitement et extraction en cours...');
+            }
+          }
+        });
+
+        if (extractionInterval) {
+          clearInterval(extractionInterval);
+        }
+        globalProgressBar.completeProgress();
+
+        console.log('Response status:', response.status);
+        console.log('Response data:', response.data);
+        
+        if (response.status < 200 || response.status >= 300) {
+          console.warn('Statut de réponse inattendu:', response.status);
+          setMessage({
+            type: 'warning',
+            text: `Upload terminé avec le statut ${response.status}`
+          });
+        }
+
+        return;
       }
 
-      // La progression est déjà gérée par useProgressBar
-      const uploadRoute = isZip ? '/files/upload-zip' : '/files/upload';
-      
-      const response = await api.post(uploadRoute, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        },
-        timeout: 90000, // 1.5 minutes pour les uploads de fichiers (5MB max + traitement)
-        onUploadProgress: (progressEvent) => {
-          // Progression gérée par le hook useProgressBar
-          // Quand l'upload atteint 100%, indiquer le traitement
-          if (progressEvent.loaded === progressEvent.total) {
-            globalProgressBar.updateCurrentItem(isZip ? 'Traitement et extraction en cours...' : 'Finalisation...');
+      let response;
+
+      const isSmallFile = file.size <= SMALL_LIMIT;
+
+      if (isSmallFile) {
+        response = await api.post('/files/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          },
+          timeout: 90000,
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.loaded === progressEvent.total) {
+              globalProgressBar.updateCurrentItem('Finalisation...');
+            }
           }
+        });
+      } else {
+        const prepareResponse = await api.post('/files/upload-cloudinary', {
+          step: 'prepare',
+          filename: file.name,
+          mimetype: file.type,
+          size: file.size,
+          dossier_id: null
+        });
+
+        const {
+          cloudName,
+          apiKey,
+          timestamp,
+          signature,
+          folder,
+          public_id,
+          resource_type
+        } = prepareResponse.data || {};
+
+        if (!cloudName || !apiKey || !timestamp || !signature || !folder || !public_id || !resource_type) {
+          throw new Error('Paramètres Cloudinary incomplets pour l\'upload direct');
         }
-      });
+
+        const cloudFormData = new FormData();
+        cloudFormData.append('file', file);
+        cloudFormData.append('api_key', apiKey);
+        cloudFormData.append('timestamp', timestamp);
+        cloudFormData.append('signature', signature);
+        cloudFormData.append('folder', folder);
+        cloudFormData.append('public_id', public_id);
+
+        const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resource_type}/upload`;
+
+        const cloudinaryResponse = await axios.post(cloudinaryUrl, cloudFormData, {
+          timeout: 120000
+        });
+
+        const { secure_url, bytes, original_filename } = cloudinaryResponse.data || {};
+
+        if (!secure_url || bytes === undefined) {
+          throw new Error('Réponse Cloudinary incomplète après upload direct');
+        }
+
+        response = await api.post('/files/upload-cloudinary', {
+          step: 'register',
+          secure_url,
+          bytes,
+          mimetype: file.type,
+          dossier_id: null,
+          originalname: original_filename || file.name
+        });
+      }
 
       // Compléter la progression
       if (extractionInterval) {

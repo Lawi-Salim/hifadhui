@@ -1,9 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { FiMove, FiCopy, FiX } from 'react-icons/fi';
+import { FiMove, FiX } from 'react-icons/fi';
 import { FaCheck, FaDownload } from 'react-icons/fa';
-import MoveModal from './MoveModal';
-import CopyModal from './CopyModal';
+import MoveModal from './ModalMove';
 import './BulkActionsManager.css';
+import { useToast } from '../../hooks/useToast';
+import ToastContainer from './ToastContainer';
 
 const BulkActionsManager = ({
   isSelectionMode,
@@ -16,18 +17,12 @@ const BulkActionsManager = ({
   children
 }) => {
   const [showMoveModal, setShowMoveModal] = useState(false);
-  const [showCopyModal, setShowCopyModal] = useState(false);
+  const { toasts, showSuccess, showError, removeToast } = useToast();
 
   const handleMove = useCallback(() => {
     if (selectedItems.length === 0) return;
     console.log('🔄 [BULK-MANAGER] Ouverture modale déplacement:', { selectedItems, itemType });
     setShowMoveModal(true);
-  }, [selectedItems, itemType]);
-
-  const handleCopy = useCallback(() => {
-    if (selectedItems.length === 0) return;
-    console.log('📋 [BULK-MANAGER] Ouverture modale copie:', { selectedItems, itemType });
-    setShowCopyModal(true);
   }, [selectedItems, itemType]);
 
 
@@ -46,6 +41,19 @@ const BulkActionsManager = ({
     onSelectionModeChange(false);
     onItemsUpdated();
   }, [onSelectionModeChange, onItemsUpdated]);
+
+  const handleMoveSuccess = useCallback(() => {
+    onActionComplete();
+    showSuccess('Déplacement effectué avec succès');
+  }, [onActionComplete, showSuccess]);
+
+  const handleActionError = useCallback((message) => {
+    if (!message) {
+      showError('Erreur lors de l\'opération');
+    } else {
+      showError(message);
+    }
+  }, [showError]);
 
   const getItemTypeLabel = () => {
     switch (itemType) {
@@ -75,14 +83,6 @@ const BulkActionsManager = ({
             >
               <FiMove /> Déplacer
             </button>
-            
-            <button 
-              onClick={handleCopy}
-              className="btn btn-secondary bulk-action-btn"
-              title="Copier"
-            >
-              <FiCopy /> Copier
-            </button>
 
             <button
               onClick={handleSelectAll}
@@ -108,16 +108,11 @@ const BulkActionsManager = ({
         onClose={() => setShowMoveModal(false)}
         selectedItems={selectedItems}
         itemType={itemType}
-        onSuccess={onActionComplete}
+        onSuccess={handleMoveSuccess}
+        onError={handleActionError}
       />
 
-      <CopyModal
-        isOpen={showCopyModal}
-        onClose={() => setShowCopyModal(false)}
-        selectedItems={selectedItems}
-        itemType={itemType}
-        onSuccess={onActionComplete}
-      />
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
 
     </>
   );

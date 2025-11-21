@@ -23,6 +23,14 @@ router.post('/', authenticateToken, async (req, res) => {
     if (!actualParentId) {
       const systemRoot = await Dossier.getSystemRoot();
       actualParentId = systemRoot.id;
+    } else {
+      // Si un parent est fourni, vérifier qu'il existe encore pour éviter une erreur 23503
+      const parentDossier = await Dossier.findByPk(actualParentId);
+      if (!parentDossier) {
+        return res.status(400).json({
+          error: "Le dossier parent spécifié n'existe plus. Veuillez recharger la page et réessayer.",
+        });
+      }
     }
 
     // Transformer le nom en slug pour éviter les problèmes d'encodage

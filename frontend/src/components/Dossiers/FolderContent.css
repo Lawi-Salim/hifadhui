@@ -1,0 +1,237 @@
+.folder-content-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 260px);
+  min-height: 480px;
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.folder-content-header {
+  padding: 0.35rem 0.9rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 50px;
+}
+
+.folder-content-header-right {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+}
+
+.folder-content-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.folder-content-tree {
+  width: 220px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.folder-content-tree-header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.folder-content-tree-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+/* Scrollbar personnalisée pour l'arbre des dossiers (même style que .folder-tree dans Modal.css) */
+.folder-content-tree-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.folder-content-tree-list::-webkit-scrollbar-track {
+  background: transparent; /* Fond de la piste transparent */
+}
+
+.folder-content-tree-list::-webkit-scrollbar-thumb {
+  background-color: #566573; /* Couleur du curseur */
+  border-radius: 4px;
+}
+
+.folder-content-tree-list::-webkit-scrollbar-thumb:hover {
+  background-color: #808b96; /* Couleur du curseur au survol */
+}
+
+.folder-tree-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 6px 10px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  min-height: 32px;
+  position: relative;
+}
+
+.folder-tree-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.folder-tree-item.active {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.folder-tree-item.soft-selected {
+  background: var(--bg-tertiary);
+}
+
+.folder-tree-item .tree-icon {
+  font-size: 1.1rem;
+}
+
+.folder-tree-item .tree-label {
+  font-size: 0.9rem;
+}
+
+.folder-tree-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.folder-tree-menu-btn {
+  padding: 0.25rem;
+}
+
+.folder-tree-item.active .folder-tree-menu-btn {
+  color: #fff;
+}
+
+.folder-tree-item .tree-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  margin-right: 4px;
+}
+
+.folder-tree-item .tree-chevron-icon {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.folder-tree-item.active .tree-chevron-icon {
+  color: #fff;
+}
+
+.folder-tree-item .tree-chevron-placeholder {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+}
+
+.folder-tree-sub-item {
+  padding-left: 2rem;
+  font-size: 0.9rem;
+}
+
+.folder-tree-sub-item.depth-2 {
+  padding-left: 3rem;
+}
+
+.folder-tree-sub-item.depth-3 {
+  padding-left: 4rem;
+}
+
+.folder-tree-divider {
+  width: 1px;
+  background: var(--border-color);
+}
+
+.folder-content-view-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.folder-content-view-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.folder-content-view-body {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cartes de fichiers plus compactes dans la vue Dossiers */
+.folder-content-view-body .image-card-modern {
+  border-radius: 10px;
+}
+
+.folder-content-view-body .image-card-modern .image-preview-modern {
+  height: 110px;
+}
+
+.folder-content-view-body .image-info {
+  padding: 0.5rem 0.6rem;
+  position: relative; /* Permet au menu d'être positionné par rapport à la barre info */
+}
+
+.folder-content-view-body .image-actions-menu {
+  position: static; /* Laisser .image-info devenir le conteneur positionné */
+}
+
+.folder-content-view-body .image-details .image-name {
+  font-size: 0.8rem;
+  max-width: 120px;
+}
+
+.folder-content-view-body .image-details .image-date {
+  display: none;
+}
+
+/* Centrage de l'état vide dans la vue Dossiers */
+.folder-content-view-body .empty-folder {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.folder-empty-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .folder-content-main {
+    flex-direction: column;
+  }
+
+  .folder-content-tree {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .folder-content-view-body {
+    padding: 0.75rem;
+  }
+}

@@ -9,7 +9,7 @@ import uploadLocal from '../middleware/upload-local.js';
 import { behaviorMonitor } from '../middleware/behaviorMonitor.js';
 import { checkUploadQuota, getQuotaInfo } from '../middleware/uploadQuota.js';
 import crypto from 'crypto';
-import { deleteCloudinaryFile } from '../utils/cloudinaryStructure.js';
+import { deleteCloudinaryFile, getFileType, getUserFileFolder, generateUniqueFileName } from '../utils/cloudinaryStructure.js';
 import { body, validationResult } from 'express-validator';
 import { v2 as cloudinary } from 'cloudinary';
 import AdmZip from 'adm-zip';
@@ -362,10 +362,194 @@ router.post('/upload', authenticateToken, checkUploadQuota, behaviorMonitor, upl
   }
 });
 
+// Route hybride pour préparer un upload direct Cloudinary puis enregistrer le fichier
+router.post('/upload-cloudinary', authenticateToken, checkUploadQuota, behaviorMonitor, async (req, res) => {
+  try {
+    const { step } = req.body || {};
+    
+    // Étape 1 : préparation des paramètres d'upload Cloudinary
+    if (!step || step === 'prepare') {
+      const { filename, mimetype, size, dossier_id } = req.body || {};
+      
+      if (!filename || !mimetype || size === undefined) {
+        return res.status(400).json({
+          error: 'Paramètres manquants pour la préparation de l\'upload',
+          code: 'MISSING_UPLOAD_PARAMS'
+        });
+      }
+
+      const numericSize = Number(size);
+      if (Number.isNaN(numericSize)) {
+        return res.status(400).json({
+          error: 'Taille de fichier invalide',
+          code: 'INVALID_FILE_SIZE'
+        });
+      }
+
+      const HARD_LIMIT = 10 * 1024 * 1024; // 10MB
+      if (numericSize > HARD_LIMIT) {
+        return res.status(413).json({
+          error: 'Fichier trop volumineux. Taille maximale autorisée: 10MB',
+          code: 'FILE_TOO_LARGE'
+        });
+      }
+
+      const allowedTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/svg+xml',
+        'application/pdf'
+      ];
+
+      if (!allowedTypes.includes(mimetype)) {
+        return res.status(415).json({
+          error: 'Type de fichier non autorisé',
+          message: 'Formats acceptés : JPG, JPEG, PNG, SVG, PDF',
+          code: 'INVALID_FILE_TYPE'
+        });
+      }
+
+      const fileType = getFileType(mimetype, filename);
+      if (fileType === 'autres') {
+        return res.status(415).json({
+          error: 'Type de fichier non supporté',
+          code: 'UNSUPPORTED_FILE_TYPE'
+        });
+      }
+
+      const folder = getUserFileFolder(req.user, fileType);
+      const publicId = generateUniqueFileName(filename);
+      const timestamp = Math.round(Date.now() / 1000);
+
+      const paramsToSign = {
+        timestamp,
+        folder,
+        public_id: publicId
+      };
+
+      const apiSecret = process.env.CLOUDINARY_API_SECRET;
+      const apiKey = process.env.CLOUDINARY_API_KEY;
+      const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+
+      if (!apiSecret || !apiKey || !cloudName) {
+        console.error('Configuration Cloudinary manquante pour upload-cloudinary');
+        return res.status(500).json({
+          error: 'Configuration Cloudinary manquante',
+          code: 'CLOUDINARY_CONFIG_MISSING'
+        });
+      }
+
+      const signature = cloudinary.utils.api_sign_request(paramsToSign, apiSecret);
+
+      const resourceType = fileType === 'pdfs' ? 'raw' : 'image';
+
+      return res.json({
+        step: 'prepare',
+        cloudName,
+        apiKey,
+        timestamp,
+        signature,
+        folder,
+        public_id: publicId,
+        resource_type: resourceType,
+        maxFileSize: HARD_LIMIT,
+        dossier_id: dossier_id || null
+      });
+    }
+
+    // Étape 2 : enregistrement du fichier après upload direct sur Cloudinary
+    if (step === 'register') {
+      const {
+        secure_url,
+        bytes,
+        mimetype,
+        dossier_id,
+        originalname
+      } = req.body || {};
+
+      if (!secure_url || !mimetype || bytes === undefined || !originalname) {
+        return res.status(400).json({
+          error: 'Paramètres manquants pour l\'enregistrement du fichier',
+          code: 'MISSING_REGISTER_PARAMS'
+        });
+      }
+
+      const numericBytes = Number(bytes);
+      if (Number.isNaN(numericBytes)) {
+        return res.status(400).json({
+          error: 'Taille de fichier invalide',
+          code: 'INVALID_FILE_SIZE'
+        });
+      }
+
+      const HARD_LIMIT = 10 * 1024 * 1024; // 10MB
+      if (numericBytes > HARD_LIMIT) {
+        return res.status(413).json({
+          error: 'Fichier trop volumineux. Taille maximale autorisée: 10MB',
+          code: 'FILE_TOO_LARGE'
+        });
+      }
+
+      // Vérifier les empreintes disponibles
+      console.log(`🔍 [UPLOAD-CLOUDINARY] Vérification empreintes disponibles pour user ${req.user.id}`);
+      const empreintesDisponibles = await Empreinte.getAvailableEmpreintes(req.user.id, 1);
+      
+      if (empreintesDisponibles.length === 0) {
+        console.log('⚠️ [UPLOAD-CLOUDINARY] Aucune empreinte disponible - Enregistrement refusé');
+        return res.status(400).json({
+          error: 'Aucune empreinte disponible',
+          message: 'Vous devez générer des empreintes avant d\'uploader des fichiers',
+          code: 'NO_EMPREINTE_AVAILABLE'
+        });
+      }
+
+      const empreinte = empreintesDisponibles[0];
+      console.log(`✅ [UPLOAD-CLOUDINARY] Empreinte disponible trouvée: ${empreinte.product_id}`);
+
+      const fileData = {
+        originalname,
+        path: secure_url,
+        size: numericBytes,
+        mimetype
+      };
+
+      const file = await processSingleFile(fileData, req.user, req, dossier_id, {
+        logActivity: true,
+        empreinte
+      });
+
+      return res.status(201).json({
+        step: 'register',
+        message: 'Fichier uploadé et enregistré avec succès',
+        file: {
+          id: file.id,
+          filename: file.filename,
+          hash: file.hash,
+          signature: file.signature,
+          product_id: empreinte.product_id,
+          empreinte_id: file.empreinte_id,
+          date_upload: file.date_upload
+        }
+      });
+    }
+
+    return res.status(400).json({
+      error: 'Étape invalide pour upload-cloudinary',
+      code: 'INVALID_STEP'
+    });
+  } catch (error) {
+    console.error('Erreur upload-cloudinary:', error);
+    res.status(500).json({
+      error: "Erreur lors du traitement de l'upload Cloudinary",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
 
 // Route pour obtenir la liste des fichiers dans un ZIP
 router.post('/zip-preview', authenticateToken, uploadLocal.upload.single('document'), async (req, res) => {
   try {
+    // ... rest of the code remains the same ...
     if (!req.file) {
       return res.status(400).json({ error: 'Aucun fichier fourni' });
     }
@@ -711,11 +895,20 @@ router.get('/:id', authenticateToken, async (req, res) => {
         id: req.params.id,
         owner_id: req.user.id
       },
-      include: [{
-        model: Dossier,
-        as: 'fileDossier',
-        attributes: ['id', 'name', 'name_original']
-      }]
+      include: [
+        {
+          model: Dossier,
+          as: 'fileDossier',
+          // Pas de restriction d'attributs ici pour permettre à getFullPath()
+          // d'accéder à parent_id et construire tout le chemin hiérarchique.
+        },
+        {
+          model: Empreinte,
+          as: 'empreinte',
+          attributes: ['product_id', 'status', 'hash_pregenere', 'expires_at'],
+          required: false
+        }
+      ]
     });
 
     if (!file) {

@@ -199,13 +199,13 @@ function generateUniqueFileName(originalName, prefix = '') {
   
   const baseName = prefix ? `${prefix}_${nameWithoutExt}` : nameWithoutExt;
   
-  // Pour les PDFs, garder l'extension car Cloudinary raw en a besoin
+  // Pour les PDFs, ne pas inclure l'extension dans le public_id : Cloudinary ajoutera .pdf automatiquement
   if (extension === 'pdf') {
-    return `${baseName}_${timestamp}.${extension}`;
+    return `${baseName}_${timestamp}`;
   }
   
-  // Pour les images, ajouter l'extension
-  return `${baseName}_${timestamp}.${extension}`;
+  // Pour les images, idem : ne pas inclure l'extension pour éviter les doubles extensions (.png.png, .jpg.jpg, etc.)
+  return `${baseName}_${timestamp}`;
 }
 
 

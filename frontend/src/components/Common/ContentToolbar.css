@@ -141,7 +141,7 @@
   }
 } */
 
-.trash, .check, .menu, .download {
+.trash, .check, .menu, .download, .rename {
   color: var(--text-secondary);
   display: flex;
   align-items: center;
@@ -154,7 +154,7 @@
   transition: all 0.2s ease;
 }
 
-.trash:hover, .check:hover, .menu:hover, .download:hover {
+.trash:hover, .check:hover, .menu:hover, .download:hover, .rename:hover {
   background-color: var(--bg-primary);
   color: var(--primary-color);
 }

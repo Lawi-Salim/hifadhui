@@ -124,7 +124,13 @@ const TechnicalPage = () => {
   const fetchTechnicalData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+      if (!token) {
+        console.warn('TechnicalPage: aucun token trouvé, appels API admin ignorés');
+        setLoading(false);
+        return;
+      }
       
       const response = await fetch(`/api/v1/admin/technical?filter=${filter}&timeRange=${selectedTimeRange}&page=${currentPage}&limit=10`, {
         headers: {

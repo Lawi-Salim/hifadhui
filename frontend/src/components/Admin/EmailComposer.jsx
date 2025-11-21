@@ -18,6 +18,7 @@ import {
 } from 'react-icons/fi';
 import messagesService from '../../services/messagesService';
 import './EmailComposer.css';
+import { formatFileSize } from '../../utils/fileSize';
 
 const EmailComposer = ({ 
   isOpen, 
@@ -116,14 +117,6 @@ const EmailComposer = ({
 
   const removeAttachment = (id) => {
     setAttachments(prev => prev.filter(att => att.id !== id));
-  };
-
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const handleSend = async () => {

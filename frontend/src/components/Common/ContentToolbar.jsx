@@ -1,7 +1,7 @@
 import React from 'react';
 import { FiGrid, FiList } from 'react-icons/fi';
 import './ContentToolbar.css';
-import { FaTrash, FaCheck, FaDownload } from 'react-icons/fa';
+import { FaTrash, FaCheck, FaDownload, FaPencilAlt } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';
 import ViewModeSwitcher from './ViewModeSwitcher';
 
@@ -14,6 +14,8 @@ const ContentToolbar =({
   selectedCount = 0, 
   onBatchDelete,
   onBatchDownload,
+  showRenameIcon = false,
+  onBatchRename,
   pagination,
   onPageChange,
   currentPage = 1,
@@ -48,6 +50,15 @@ const ContentToolbar =({
               >
                 <FaCheck />
               </div>
+              {showRenameIcon && (
+                <div 
+                  className={`rename ${selectedCount === 1 ? 'enabled' : 'disabled'}`} 
+                  title={selectedCount === 1 ? 'Renommer l\'élément sélectionné' : 'Renommer (sélectionnez un seul élément)'}
+                  onClick={selectedCount === 1 && onBatchRename ? onBatchRename : undefined}
+                >
+                  <FaPencilAlt />
+                </div>
+              )}
               
               <div 
                 className={`trash ${selectedCount > 0 ? 'enabled' : 'disabled'}`} 

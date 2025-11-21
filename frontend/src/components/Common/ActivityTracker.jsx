@@ -7,7 +7,7 @@ const ActivityTracker = ({ children }) => {
 
   useEffect(() => {
     // Ne pas activer le tracker si l'utilisateur n'est pas connecté
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       console.log('ActivityTracker: Pas de token, tracker désactivé');
       return;

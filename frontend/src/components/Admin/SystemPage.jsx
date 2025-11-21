@@ -15,6 +15,7 @@ import {
 } from 'react-icons/fi';
 import './AdminDashboard.css';
 import LoadingSpinner from '../Common/LoadingSpinner';
+import { formatFileSize } from '../../utils/fileSize';
 
 const SystemPage = () => {
   const [systemData, setSystemData] = useState({
@@ -49,18 +50,29 @@ const SystemPage = () => {
   const fetchSystemData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+      // Si aucun token, ne pas appeler les endpoints admin
+      if (!token) {
+        console.warn('SystemPage: aucun token trouvé, appels API admin ignorés');
+        setLoading(false);
+        return;
+      }
+
+      const authHeaders = {
+        'Authorization': `Bearer ${token}`
+      };
       
       // Récupération des vraies données système
       const [performanceRes, resourcesRes, errorsRes] = await Promise.all([
         fetch('/api/v1/admin/system/performance', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: authHeaders
         }),
         fetch('/api/v1/admin/system/resources', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: authHeaders
         }),
         fetch('/api/v1/admin/system/errors', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: authHeaders
         })
       ]);
 
@@ -109,13 +121,7 @@ const SystemPage = () => {
     }
   };
 
-  const formatBytes = (bytes) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+  const formatBytes = (bytes) => formatFileSize(bytes);
 
   const formatTime = (timestamp) => {
     return new Date(timestamp).toLocaleString('fr-FR');

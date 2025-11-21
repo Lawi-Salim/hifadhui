@@ -144,7 +144,12 @@ const ReportsPage = () => {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+      if (!token) {
+        console.warn('ReportsPage: aucun token trouvé, appels API admin ignorés (reports)');
+        return;
+      }
       
       const response = await fetch(`/api/v1/admin/reports?status=${filter}&type=${typeFilter}&source=${sourceFilter}`, {
         headers: {
@@ -169,7 +174,12 @@ const ReportsPage = () => {
   const fetchWarnings = async () => {
     try {
       setWarningsLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+      if (!token) {
+        console.warn('ReportsPage: aucun token trouvé, appels API admin ignorés (warnings)');
+        return;
+      }
       
       const response = await fetch('/api/v1/admin/moderation/warnings', {
         headers: {
@@ -196,7 +206,12 @@ const ReportsPage = () => {
   const fetchSuspensions = async () => {
     try {
       setSuspensionsLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+      if (!token) {
+        console.warn('ReportsPage: aucun token trouvé, appels API admin ignorés (suspensions)');
+        return;
+      }
       
       const response = await fetch('/api/v1/admin/moderation/suspensions', {
         headers: {
@@ -223,7 +238,12 @@ const ReportsPage = () => {
   const fetchDeletions = async () => {
     try {
       setDeletionsLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+      if (!token) {
+        console.warn('ReportsPage: aucun token trouvé, appels API admin ignorés (deletions)');
+        return;
+      }
       
       const response = await fetch('/api/v1/admin/moderation/deletions', {
         headers: {
@@ -251,7 +271,12 @@ const ReportsPage = () => {
   const fetchRealtimeAlerts = async () => {
     try {
       setAlertsLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+      if (!token) {
+        console.warn('ReportsPage: aucun token trouvé, appels API admin ignorés (alerts)');
+        return;
+      }
       
       const response = await fetch('/api/v1/admin/alerts/realtime', {
         headers: {

@@ -4,7 +4,7 @@ import dossierService from '../../services/dossierService';
 import api from '../../services/api';
 import Breadcrumb from '../Common/Breadcrumb';
 import ItemList from '../Common/ItemList';
-import CreateDossierModal from './CreateDossierModal';
+import ModalFolder from '../Common/ModalFolder';
 import RenameDossierModal from './RenameDossierModal';
 import DeleteDossierModal from './DeleteDossierModal';
 import UploadZipModal from './UploadZipModal';
@@ -18,6 +18,8 @@ import { useViewMode } from '../../contexts/ViewModeContext';
 import { createSlug, fixEncoding } from '../../utils/textUtils';
 import { useDownloadZip, DownloadProgressIndicator } from '../Common/DownloadZip';
 import { FaUpload, FaPlus } from 'react-icons/fa';
+import { useToast } from '../../hooks/useToast';
+import ToastContainer from '../Common/ToastContainer';
 import './DossiersPage.css';
 import '../Files/FileList.css';
 
@@ -48,6 +50,8 @@ const DossierDetailsPage = () => {
     handleDownloadZip,
     clearError
   } = useDownloadZip();
+
+  const { toasts, showSuccess, showError, removeToast } = useToast();
 
   const fetchDossierDetails = useCallback(async () => {
     try {
@@ -107,6 +111,22 @@ const DossierDetailsPage = () => {
     }
   };
 
+  const handleToolbarRename = () => {
+    if (!selectedItems || selectedItems.length !== 1) return;
+
+    const item = selectedItems[0];
+
+    // Fichier: presence de filename + mimetype
+    if (item.filename) {
+      setSelectedFile(item);
+      setIsFileRenameModalOpen(true);
+      return;
+    }
+
+    // Dossier: pas de filename, on utilise RenameDossierModal existant
+    setDossierToRename(item);
+  };
+
   const handleOpenFile = async (file) => {
     try {
       const response = await api.get(`/files/${file.id}/download`, {
@@ -150,6 +170,8 @@ const DossierDetailsPage = () => {
 
   const handleFileDeleted = () => {
     fetchDossierDetails();
+    const nameLabel = selectedFile?.filename || 'Fichier';
+    showSuccess(`${nameLabel} supprimé avec succès`);
   };
 
   const handleOpenRenameModal = (e, dossier) => {
@@ -177,6 +199,8 @@ const DossierDetailsPage = () => {
 
   const handleDossierCreated = (newDossier) => {
     fetchDossierDetails();
+    const nameLabel = newDossier?.name_original || newDossier?.name || 'Dossier';
+    showSuccess(`${nameLabel} créé avec succès`);
   };
 
   const toggleSelectionMode = () => {
@@ -310,6 +334,8 @@ const DossierDetailsPage = () => {
             isSelectionMode={isSelectionMode}
             selectedCount={selectedItems.length}
             showSelectionTools={true}
+            showRenameIcon={true}
+            onBatchRename={handleToolbarRename}
           />
         </div>
       </div>
@@ -347,7 +373,11 @@ const DossierDetailsPage = () => {
           isOpen={!!dossierToDelete}
           onClose={() => setDossierToDelete(null)}
           dossier={dossierToDelete}
-          onDossierDeleted={handleDossierUpdated}
+          onDossierDeleted={() => {
+            const nameLabel = dossierToDelete?.name_original || dossierToDelete?.name || 'Dossier';
+            handleDossierUpdated();
+            showSuccess(`${nameLabel} supprimé avec succès`);
+          }}
         />
       )}
       {dossierToUpload && (
@@ -358,11 +388,12 @@ const DossierDetailsPage = () => {
           onUploadComplete={handleDossierUpdated}
         />
       )}
-      <CreateDossierModal 
+      <ModalFolder 
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onDossierCreated={handleDossierCreated}
-        parentId={dossier?.id}
+        initialParentId={dossier?.id}
+        onError={showError}
       />
       <RenameFileModal 
         isOpen={isFileRenameModalOpen}
@@ -409,6 +440,8 @@ const DossierDetailsPage = () => {
         progressBar={progressBar}
         onClose={clearError}
       />
+
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
 
     </div>
   );

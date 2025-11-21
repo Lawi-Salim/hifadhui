@@ -10,6 +10,7 @@ import UserDisplayName from '../Layout/UserDisplayName';
 import ProviderIcon from '../Layout/ProviderIcon';
 import { buildImageUrl } from '../../config/cloudinary';
 import LoadingSpinner from '../Common/LoadingSpinner';
+import { formatFileSize } from '../../utils/fileSize';
 import '../Images/Images.css';
 import './AdminStyles.css';
 
@@ -68,15 +69,6 @@ const UserImages = () => {
     setOpenMenuId(null);
   };
 
-
-  // Fonction pour formater la taille des fichiers
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
 
   // Fonction pour obtenir les utilisateurs uniques pour le filtre
   const getUniqueUsers = () => {
@@ -164,10 +156,10 @@ const UserImages = () => {
                 className="filter-select"
               >
                 <option value="">Toutes les tailles</option>
-                <option value="small">&lt; 1 MB</option>
-                <option value="medium">1-10 MB</option>
-                <option value="large">10-50 MB</option>
-                <option value="xlarge">&gt; 50 MB</option>
+                <option value="small">&lt; 1 Mo</option>
+                <option value="medium">1-10 Mo</option>
+                <option value="large">10-50 Mo</option>
+                <option value="xlarge">&gt; 50 Mo</option>
               </select>
             </div>
           </div>

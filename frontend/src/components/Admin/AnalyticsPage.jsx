@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fi';
 import './AdminDashboard.css';
 import LoadingSpinner from '../Common/LoadingSpinner';
+import { formatFileSize } from '../../utils/fileSize';
 
 const AnalyticsPage = () => {
   const [reportData, setReportData] = useState({
@@ -44,8 +45,15 @@ const AnalyticsPage = () => {
   const fetchReportData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+      // Si aucun token, ne pas appeler l'API admin
+      if (!token) {
+        console.warn('AnalyticsPage: aucun token trouvé, appels API admin ignorés');
+        setLoading(false);
+        return;
+      }
+
       // Appel API pour récupérer les vraies données
       const response = await fetch(`/api/v1/admin/reports/data?type=${selectedReport}&period=${selectedPeriod}&startDate=${dateRange.start}&endDate=${dateRange.end}`, {
         headers: {
@@ -79,15 +87,7 @@ const AnalyticsPage = () => {
       setLoading(false);
     }
   };
-
-
-  const formatBytes = (bytes) => {
-    if (bytes === undefined || bytes === null || isNaN(bytes) || bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+  const formatBytes = (bytes) => formatFileSize(bytes);
 
   const formatNumber = (num) => {
     if (num === undefined || num === null || isNaN(num)) {

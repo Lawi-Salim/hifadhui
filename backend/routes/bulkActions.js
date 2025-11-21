@@ -83,6 +83,23 @@ router.post('/move', authenticateToken, async (req, res) => {
               continue;
             }
 
+            // Empêcher les doublons de nom dans le même dossier parent
+            const existingSibling = await Dossier.findOne({
+              where: {
+                name: dossier.name,
+                owner_id: req.user.id,
+                parent_id: targetDossierId,
+                id: { [Op.ne]: dossier.id }
+              }
+            });
+
+            if (existingSibling) {
+              errors.push(
+                `Un dossier avec le nom "${dossier.name}" existe déjà dans le dossier de destination`
+              );
+              continue;
+            }
+
             await dossier.update({ parent_id: targetDossierId });
             movedCount++;
 
@@ -106,6 +123,15 @@ router.post('/move', authenticateToken, async (req, res) => {
       }
     }
 
+    // Si on déplace des dossiers et qu'aucun déplacement n'a réussi alors qu'il y a des erreurs,
+    // renvoyer une erreur HTTP (ex: doublon de nom dans le dossier de destination).
+    if (itemType === 'dossier' && movedCount === 0 && errors.length > 0) {
+      return res.status(409).json({
+        error: errors[0],
+        errors
+      });
+    }
+
     res.json({
       success: true,
       movedCount,
@@ -118,98 +144,6 @@ router.post('/move', authenticateToken, async (req, res) => {
   }
 });
 
-// POST /api/bulk-actions/copy - Copier des éléments en lot
-router.post('/copy', authenticateToken, async (req, res) => {
-  console.log('📋 [BULK-COPY] Requête reçue:', { itemIds: req.body.itemIds, targetDossierId: req.body.targetDossierId, itemType: req.body.itemType });
-  const { itemIds, targetDossierId, itemType = 'file' } = req.body;
-  
-  if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
-    return res.status(400).json({ error: 'Liste d\'éléments requise.' });
-  }
-
-  if (!targetDossierId) {
-    return res.status(400).json({ error: 'Dossier de destination requis.' });
-  }
-
-  try {
-    // Vérifier que le dossier de destination existe et appartient à l'utilisateur
-    const targetDossier = await Dossier.findOne({
-      where: { id: targetDossierId, owner_id: req.user.id }
-    });
-
-    if (!targetDossier) {
-      return res.status(404).json({ error: 'Dossier de destination non trouvé.' });
-    }
-
-    let copiedCount = 0;
-    const errors = [];
-
-    if (itemType === 'file' || itemType === 'image') {
-      // Copier des fichiers (incluant les images)
-      for (const fileId of itemIds) {
-        try {
-          console.log(` [BULK-COPY] Recherche fichier ID: ${fileId}`);
-          const originalFile = await File.findOne({
-            where: { id: fileId, owner_id: req.user.id }
-          });
-
-          if (originalFile) {
-            console.log(` [BULK-COPY] Fichier trouvé: ${originalFile.filename}, copie vers dossier ${targetDossierId}`);
-            // Créer une copie du fichier avec un hash unique (64 caractères max)
-            const copyTimestamp = Date.now();
-            const copyData = `${originalFile.filename}_${copyTimestamp}_${req.user.id}`;
-            const uniqueHash = crypto.createHash('sha256').update(copyData).digest('hex');
-            
-            // Générer une signature unique pour la copie
-            const signatureData = `${originalFile.signature}_copy_${copyTimestamp}`;
-            const uniqueSignature = crypto.createHash('sha256').update(signatureData).digest('hex');
-            
-            const copiedFile = await File.create({
-              filename: originalFile.filename,
-              mimetype: originalFile.mimetype,
-              file_url: originalFile.file_url,
-              hash: uniqueHash,
-              signature: uniqueSignature,
-              owner_id: req.user.id,
-              dossier_id: targetDossierId
-            });
-
-            copiedCount++;
-
-            // Log de l'activité
-            await ActivityLog.create({
-              userId: req.user.id,
-              actionType: 'FILE_COPY',
-              details: {
-                originalFileId: originalFile.id,
-                copiedFileId: copiedFile.id,
-                fileName: originalFile.filename,
-                targetDossierId: targetDossierId,
-                targetDossierName: targetDossier.name
-              }
-            });
-          } else {
-            console.log(`❌ [BULK-COPY] Fichier ${fileId} non trouvé`);
-            errors.push(`Fichier ${fileId} non trouvé`);
-          }
-        } catch (error) {
-          console.error(`❌ [BULK-COPY] Erreur fichier ${fileId}:`, error);
-          errors.push(`Erreur lors de la copie du fichier ${fileId}: ${error.message}`);
-        }
-      }
-    }
-
-    res.json({
-      success: true,
-      copiedCount,
-      errors: errors.length > 0 ? errors : undefined
-    });
-
-  } catch (error) {
-    console.error('Erreur lors de la copie en lot:', error);
-    res.status(500).json({ error: 'Erreur serveur lors de la copie.' });
-  }
-});
 
 // DELETE /api/bulk-actions/delete - Supprimer des éléments en lot
 router.delete('/delete', authenticateToken, async (req, res) => {

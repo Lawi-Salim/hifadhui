@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { FaFolder, FaPlus } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';
-import FolderTreeView from './FolderTreeView';
-import FolderContentView from './FolderContentView';
-import CreateDossierModal from './CreateDossierModal';
+import FolderContent from './FolderContent';
+import ModalFolder from '../Common/ModalFolder';
 import RenameDossierModal from './RenameDossierModal';
 import DeleteDossierModal from './DeleteDossierModal';
 import UploadZipModal from './UploadZipModal';
-import DeleteBatchModal from '../Common/DeleteBatchModal';
 import BulkActionsManager from '../Common/BulkActionsManager';
+import MoveModal from '../Common/ModalMove';
 import RenameFileModal from '../Common/RenameFileModal';
 import DeleteFileModal from '../Common/DeleteFileModal';
 import ShareModal from '../Files/ShareModal';
@@ -20,6 +19,10 @@ import dossierService from '../../services/dossierService';
 import { useViewMode } from '../../contexts/ViewModeContext';
 import ContentToolbar from '../Common/ContentToolbar';
 import { useDownloadZip } from '../Common/DownloadZip';
+import DeleteBatchModal from '../Common/DeleteBatchModal';
+import { useToast } from '../../hooks/useToast';
+import ToastContainer from '../Common/ToastContainer';
+import FolderDetails from './FolderDetails';
 
 const DossiersPage = () => {
   const [dossiers, setDossiers] = useState([]);
@@ -35,7 +38,8 @@ const DossiersPage = () => {
     try {
       setLoading(true);
       const response = await dossierService.getDossiers({ page });
-      setDossiers(response.data.dossiers || response.data);
+      const fetchedDossiers = response.data.dossiers || response.data;
+      setDossiers(fetchedDossiers);
       
       if (response.data.pagination) {
         setPagination({
@@ -55,14 +59,12 @@ const DossiersPage = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isFileUploadModalOpen, setIsFileUploadModalOpen] = useState(false);
   const [selectedDossier, setSelectedDossier] = useState(null);
+  const [selectedFolder, setSelectedFolder] = useState(null); // dossier sélectionné dans le ContentTree
   const [activeMenu, setActiveMenu] = useState(null);
   const [dossierToRename, setDossierToRename] = useState(null);
   const [dossierToDelete, setDossierToDelete] = useState(null);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedDossiers, setSelectedDossiers] = useState([]);
-  const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
-  const [, setBatchDeleteLoading] = useState(false);
-  const [, setDeleteProgress] = useState(0);
   const [showTreePanel, setShowTreePanel] = useState(false);
   const { viewMode, setViewMode } = useViewMode();
   
@@ -74,79 +76,32 @@ const DossiersPage = () => {
   const [fileToShare, setFileToShare] = useState(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  // États pour la nouvelle interface arborescence + contenu
-  const [selectedFolderId, setSelectedFolderId] = useState(null);
-  const [expandedFolders, setExpandedFolders] = useState([]);
-  const [selectedFolder, setSelectedFolder] = useState(null);
-  
-  // États pour la toolbar du contenu des dossiers
-  const [folderSelectionMode, setFolderSelectionMode] = useState(false);
-  const [selectedFolderItems, setSelectedFolderItems] = useState([]);
-  
+  // Sélection multiple de fichiers dans la vue Mes Dossiers
+  const [isFileSelectionMode, setIsFileSelectionMode] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [isFileBatchDeleteModalOpen, setIsFileBatchDeleteModalOpen] = useState(false);
+
+  // Déplacement ciblé (un seul dossier via le menu ActionFolder)
+  const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+  const [moveItems, setMoveItems] = useState([]);
+  const [moveItemType, setMoveItemType] = useState('file');
+  const [isFolderDetailsOpen, setIsFolderDetailsOpen] = useState(false);
+  const [folderDetails, setFolderDetails] = useState(null);
+
   // Hook pour le téléchargement ZIP
   const { handleDownloadZip } = useDownloadZip();
+
+  // Toasts (succès / erreur)
+  const { toasts, showSuccess, showError, removeToast } = useToast();
+
+  // Compter les éléments visés par la toolbar (fichiers sélectionnés ou dossier courant)
+  const toolbarSelectedCount = selectedFiles.length > 0
+    ? selectedFiles.length
+    : (selectedFolder ? 1 : 0);
 
   useEffect(() => {
     fetchDossiers();
   }, []);
-
-  // Handlers pour la nouvelle interface
-  const handleFolderSelect = async (folder) => {
-    // Si folder est null, désélectionner
-    if (!folder) {
-      setSelectedFolderId(null);
-      setSelectedFolder(null);
-      return;
-    }
-    
-    setSelectedFolderId(folder.id);
-    
-    // Récupérer les détails complets du dossier avec ses sous-dossiers et fichiers
-    try {
-      const response = await dossierService.getDossierById(folder.id);
-      setSelectedFolder(response.data);
-    } catch (error) {
-      console.error('Erreur lors de la récupération du dossier:', error);
-      setSelectedFolder(folder);
-    }
-  };
-
-  const handleToggleExpand = async (folderId) => {
-    const isCurrentlyExpanded = expandedFolders.includes(folderId);
-    
-    if (!isCurrentlyExpanded) {
-      // Récupérer les sous-dossiers avant d'étendre
-      try {
-        const response = await dossierService.getDossierById(folderId);
-        const folderWithSubDossiers = response.data;
-        
-        // Mettre à jour le dossier dans la liste avec ses sous-dossiers
-        setDossiers(prevDossiers => {
-          const updateFolderRecursive = (folders) => {
-            return folders.map(folder => {
-              if (folder.id === folderId) {
-                return { ...folder, subDossiers: folderWithSubDossiers.subDossiers };
-              }
-              if (folder.subDossiers) {
-                return { ...folder, subDossiers: updateFolderRecursive(folder.subDossiers) };
-              }
-              return folder;
-            });
-          };
-          return updateFolderRecursive(prevDossiers);
-        });
-      } catch (error) {
-        console.error('Erreur lors de la récupération des sous-dossiers:', error);
-      }
-    }
-    
-    setExpandedFolders(prev => 
-      isCurrentlyExpanded
-        ? prev.filter(id => id !== folderId)
-        : [...prev, folderId]
-    );
-  };
-
 
   const handleFileDownload = async (file) => {
     try {
@@ -187,10 +142,6 @@ const DossiersPage = () => {
     setIsShareModalOpen(true);
   };
 
-  const handleFolderAction = (folder) => {
-    handleFolderSelect(folder);
-  };
-
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (activeMenu !== null && !event.target.closest(`.dossier-card-link-${activeMenu?.id || activeMenu}`)) {
@@ -204,16 +155,31 @@ const DossiersPage = () => {
     };
   }, [activeMenu]);
 
-  const handleDossierCreated = (newDossier) => {
-    // Ajouter le nouveau dossier à la liste
-    setDossiers([...dossiers, newDossier]);
+  // Réinitialiser la sélection de fichiers lors du changement de dossier sélectionné
+  useEffect(() => {
+    setIsFileSelectionMode(false);
+    setSelectedFiles([]);
+  }, [selectedFolder]);
+
+  const handleDossierCreated = async (newDossier, parentId) => {
+    // Fermer le modal de création
     setIsModalOpen(false);
-    
-    // Si le dossier a été créé dans un dossier parent sélectionné, 
-    // recharger le contenu de ce dossier pour voir le nouveau dossier
-    if (selectedFolder && newDossier.parent_id === selectedFolder.id) {
-      handleFolderSelect(selectedFolder);
+
+    // Rafraîchir la liste des dossiers racine pour mettre à jour l'arborescence
+    await fetchDossiers();
+
+    // Si on est actuellement dans le dossier parent, recharger ses détails
+    if (selectedFolder && parentId && selectedFolder.id === parentId) {
+      try {
+        const response = await dossierService.getDossierById(selectedFolder.id);
+        setSelectedFolder(response.data);
+      } catch (error) {
+        console.error('Erreur lors du rechargement du dossier après création :', error);
+      }
     }
+
+    const nameLabel = newDossier?.name_original || newDossier?.name || 'Dossier';
+    showSuccess(`${nameLabel} créé avec succès`);
   };
 
   const handleOpenUploadModal = (e, dossier) => {
@@ -244,119 +210,35 @@ const DossiersPage = () => {
     setActiveMenu(null);
   };
 
-  // Handlers pour la toolbar du contenu des dossiers
-  const handleToggleFolderSelection = () => {
-    setFolderSelectionMode(!folderSelectionMode);
-    if (folderSelectionMode) {
-      setSelectedFolderItems([]);
-    }
-  };
-
-  const handleFolderBatchDelete = async () => {
-    // Ouvrir le modal de confirmation comme sur FilesPage
-    if (selectedFolderItems.length > 0) {
-      setIsBatchDeleteModalOpen(true);
-    }
-  };
-
-  const handleConfirmFolderBatchDelete = async () => {
-    setBatchDeleteLoading(true);
-    setDeleteProgress(0);
-    
-    try {
-      // Simuler la progression pendant la suppression
-      const progressInterval = setInterval(() => {
-        setDeleteProgress(prev => {
-          if (prev >= 90) return prev;
-          return Math.round(prev + Math.random() * 15);
-        });
-      }, 200);
-      
-      // Supprimer chaque fichier sélectionné
-      for (const item of selectedFolderItems) {
-        if (item.mimetype) { // C'est un fichier
-          await api.delete(`/files/${item.id}`);
-        }
-      }
-      
-      // Compléter la progression
-      clearInterval(progressInterval);
-      setDeleteProgress(100);
-      
-      // Recharger le contenu du dossier
-      if (selectedFolder) {
-        const response = await dossierService.getDossierById(selectedFolder.id);
-        setSelectedFolder(response.data);
-      }
-      
-      // Réinitialiser la sélection après un délai
-      setTimeout(() => {
-        setFolderSelectionMode(false);
-        setSelectedFolderItems([]);
-        setIsBatchDeleteModalOpen(false);
-        setBatchDeleteLoading(false);
-        setDeleteProgress(0);
-      }, 1000);
-      
-    } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
-      setBatchDeleteLoading(false);
-      setDeleteProgress(0);
-    }
-  };
-
-  const handleFolderBatchDownload = async () => {
-    if (selectedFolderItems.length > 0) {
-      // Filtrer seulement les fichiers (pas les dossiers)
-      const selectedFiles = selectedFolderItems.filter(item => item.mimetype);
-      
-      if (selectedFiles.length === 0) {
-        return;
-      }
-
-      try {
-        await handleDownloadZip(selectedFiles, 
-          (result) => {
-            // Réinitialiser la sélection
-            setFolderSelectionMode(false);
-            setSelectedFolderItems([]);
-          },
-          (error) => {
-            console.error('❌ Erreur téléchargement:', error);
-          }
-        );
-      } catch (error) {
-        console.error('Erreur lors du téléchargement:', error);
-      }
-    }
-  };
-
   const handleDossierRenamed = (updatedDossier) => {
     setDossiers(dossiers.map(d => d.id === updatedDossier.id ? updatedDossier : d));
     setDossierToRename(null);
   };
 
   const handleDossierDeleted = (deletedDossierId) => {
+    const deleted = dossiers.find((d) => d.id === deletedDossierId) || dossierToDelete;
+    const nameLabel = deleted?.name_original || deleted?.name || 'Dossier';
+
     setDossiers(dossiers.filter(d => d.id !== deletedDossierId));
     setDossierToDelete(null);
+
+    showSuccess(`${nameLabel} supprimé avec succès`);
   };
 
   const handleFileRenamed = () => {
-    // Recharger le dossier sélectionné pour voir les changements
-    if (selectedFolder) {
-      handleFolderSelect(selectedFolder);
-    }
+    // Recharger la liste des dossiers pour mettre à jour les compteurs
+    fetchDossiers();
     setIsRenameModalOpen(false);
     setFileToRename(null);
   };
 
   const handleFileDeleted = () => {
-    // Recharger le dossier sélectionné pour voir les changements
-    if (selectedFolder) {
-      handleFolderSelect(selectedFolder);
-    }
+    // Recharger la liste des dossiers pour mettre à jour les compteurs
+    fetchDossiers();
+    const nameLabel = fileToDelete?.filename || 'Fichier';
     setIsDeleteModalOpen(false);
     setFileToDelete(null);
+    showSuccess(`${nameLabel} supprimé avec succès`);
   };
 
   const handleUploadFinished = () => {
@@ -364,6 +246,224 @@ const DossiersPage = () => {
     fetchDossiers(); // Rafraîchit la liste pour mettre à jour le compteur de fichiers
   };
 
+
+  // Gestion de la sélection multiple de fichiers (ContentView)
+  const handleToggleFileSelectionMode = () => {
+    setIsFileSelectionMode(prev => !prev);
+    setSelectedFiles([]);
+  };
+
+  const handleSelectFile = (file) => {
+    setSelectedFiles(prev => {
+      const exists = prev.some(f => f.id === file.id);
+      if (exists) {
+        return prev.filter(f => f.id !== file.id);
+      }
+      return [...prev, file];
+    });
+  };
+
+  // Récupérer récursivement tous les fichiers d'un dossier (et de ses sous-dossiers)
+  const collectFilesFromDossier = async (dossierId, visited = new Set()) => {
+    if (!dossierId || visited.has(dossierId)) return [];
+    visited.add(dossierId);
+
+    const response = await dossierService.getDossierById(dossierId);
+    const dossier = response.data;
+
+    const currentFiles = dossier.dossierFiles || [];
+    const subDossiers = dossier.subDossiers || [];
+
+    const nestedFilesArrays = await Promise.all(
+      subDossiers.map(sub => collectFilesFromDossier(sub.id, visited))
+    );
+
+    return currentFiles.concat(...nestedFilesArrays);
+  };
+
+  const handleFileBatchDownload = async () => {
+    try {
+      let filesToDownload = selectedFiles;
+
+      // Si aucun fichier sélectionné mais un dossier est sélectionné, télécharger tout le contenu du dossier
+      if ((!filesToDownload || filesToDownload.length === 0) && selectedFolder) {
+        filesToDownload = await collectFilesFromDossier(selectedFolder.id);
+      }
+
+      if (!filesToDownload || filesToDownload.length === 0) return;
+
+      await handleDownloadZip(
+        filesToDownload,
+        () => {
+          setIsFileSelectionMode(false);
+          setSelectedFiles([]);
+        },
+        (error) => {
+          console.error('Erreur lors du téléchargement ZIP:', error);
+        }
+      );
+    } catch (error) {
+      console.error('Erreur téléchargement ZIP:', error);
+    }
+  };
+
+  const handleFileBatchDelete = () => {
+    // Si des fichiers sont sélectionnés, ouvrir la suppression par lot
+    if (selectedFiles.length > 0) {
+      setIsFileBatchDeleteModalOpen(true);
+      return;
+    }
+
+    // Sinon, si un dossier est sélectionné, ouvrir le modal de suppression de dossier
+    if (selectedFolder) {
+      setDossierToDelete(selectedFolder);
+    }
+  };
+
+  // Ouvrir la modale de déplacement pour un dossier unique (menu ActionFolder)
+  const handleFolderMove = (folder) => {
+    if (!folder) return;
+    setMoveItems([folder]);
+    setMoveItemType('dossier');
+    setIsMoveModalOpen(true);
+  };
+
+  const handleMoveSuccess = () => {
+    // Recharger la liste des dossiers racine et le dossier courant
+    fetchDossiers();
+    if (selectedFolder) {
+      dossierService
+        .getDossierById(selectedFolder.id)
+        .then((response) => {
+          setSelectedFolder(response.data);
+        })
+        .catch((error) => {
+          console.error('Erreur lors du rechargement du dossier après déplacement :', error);
+        });
+    }
+    showSuccess('Dossier déplacé avec succès');
+    setIsMoveModalOpen(false);
+  };
+
+  const handleMoveError = (message) => {
+    showError(message || 'Erreur lors du déplacement du dossier');
+  };
+
+  const handleOpenFolderDetails = async (folder) => {
+    if (!folder || !folder.id) return;
+    try {
+      let fullFolder = folder;
+      if (!folder.dossierFiles) {
+        const response = await dossierService.getDossierById(folder.id);
+        fullFolder = response.data;
+      }
+      const allFiles = await collectFilesFromDossier(fullFolder.id);
+
+      // Ne compter que les images et PDFs pour les statistiques de taille
+      const relevantFiles = allFiles.filter((f) => {
+        if (!f || !f.mimetype) return false;
+        return (
+          f.mimetype.startsWith('image/') ||
+          f.mimetype === 'application/pdf'
+        );
+      });
+
+      const totalFiles = relevantFiles.length;
+      const imagesCount = relevantFiles.filter(
+        (f) => f.mimetype && f.mimetype.startsWith('image/')
+      ).length;
+
+      const pdfCount = relevantFiles.filter(
+        (f) => f.mimetype === 'application/pdf'
+      ).length;
+
+      const totalSizeBytes = relevantFiles.reduce(
+        (total, file) => total + (Number(file.size) || 0),
+        0
+      );
+
+      setFolderDetails({
+        ...fullFolder,
+        recursiveFiles: relevantFiles,
+        recursiveFileCount: totalFiles,
+        recursiveImagesCount: imagesCount,
+        recursivePdfCount: pdfCount,
+        recursiveSizeBytes: totalSizeBytes,
+      });
+      setIsFolderDetailsOpen(true);
+    } catch (error) {
+      console.error('Erreur lors du chargement des détails du dossier :', error);
+    }
+  };
+
+  const handleConfirmFileBatchDelete = async () => {
+    try {
+      const fileIds = selectedFiles.map(file => file.id);
+      if (fileIds.length > 0) {
+        await api.delete('/files/batch-delete', { data: { fileIds } });
+      }
+
+      // Rafraîchir la liste des dossiers racine
+      fetchDossiers();
+
+      // Recharger le dossier sélectionné pour mettre à jour les fichiers
+      if (selectedFolder) {
+        const response = await dossierService.getDossierById(selectedFolder.id);
+        setSelectedFolder(response.data);
+      }
+
+      setIsFileSelectionMode(false);
+      setSelectedFiles([]);
+      showSuccess('Fichiers supprimés avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la suppression par lot de fichiers:', error);
+    } finally {
+      setIsFileBatchDeleteModalOpen(false);
+    }
+  };
+
+  const handleToolbarRename = () => {
+    if (selectedFiles.length === 1) {
+      handleFileRename(selectedFiles[0]);
+    } else if (selectedFiles.length === 0 && selectedFolder) {
+      setDossierToRename(selectedFolder);
+    }
+  };
+
+  // Callback appelé après une action en lot (déplacement/copie) via BulkActionsManager
+  const handleFilesUpdated = () => {
+    // Recharger la liste des dossiers pour mettre à jour les compteurs
+    fetchDossiers();
+
+    // Recharger le dossier sélectionné pour mettre à jour les fichiers
+    if (selectedFolder) {
+      dossierService
+        .getDossierById(selectedFolder.id)
+        .then((response) => {
+          setSelectedFolder(response.data);
+        })
+        .catch((error) => {
+          console.error('Erreur lors du rechargement du dossier après une action en lot:', error);
+        });
+    }
+
+    // Réinitialiser la sélection de fichiers
+    setSelectedFiles([]);
+  };
+
+  // Sélectionner/désélectionner tous les fichiers visibles du dossier courant
+  const handleSelectAllFiles = () => {
+    if (!selectedFolder || !selectedFolder.dossierFiles) {
+      setSelectedFiles([]);
+      return;
+    }
+
+    if (selectedFiles.length === selectedFolder.dossierFiles.length) {
+      setSelectedFiles([]);
+    } else {
+      setSelectedFiles([...(selectedFolder.dossierFiles || [])]);
+    }
+  };
 
   const handleSelectAll = () => {
     if (selectedDossiers.length === dossiers.length) {
@@ -380,13 +480,13 @@ const DossiersPage = () => {
 
   return (
     <BulkActionsManager
-      isSelectionMode={isSelectionMode}
-      selectedItems={selectedDossiers}
-      itemType="dossier"
-      onSelectionModeChange={setIsSelectionMode}
-      onItemsUpdated={() => fetchDossiers()}
-      onSelectAll={handleSelectAll}
-      totalItems={dossiers.length}
+      isSelectionMode={isFileSelectionMode}
+      selectedItems={selectedFiles}
+      itemType="file"
+      onSelectionModeChange={setIsFileSelectionMode}
+      onItemsUpdated={handleFilesUpdated}
+      onSelectAll={handleSelectAllFiles}
+      totalItems={selectedFolder && selectedFolder.dossierFiles ? selectedFolder.dossierFiles.length : 0}
     >
       <div className="container">
         <div className="flex justify-between items-center mb-6">
@@ -420,13 +520,6 @@ const DossiersPage = () => {
             <h2 className="text-lg font-semibold">Arborescence</h2>
           </div>
           <div className="header-right">
-            <button 
-              className="btn btn-secondary mobile-tree-toggle"
-              onClick={() => setShowTreePanel(!showTreePanel)}
-            >
-              <FaFolder /> Dossiers
-            </button>
-
             <ContentToolbar
               viewMode={viewMode}
               setViewMode={setViewMode}
@@ -434,76 +527,45 @@ const DossiersPage = () => {
               showPagination={false}
               showViewSwitcher={true}
               className="inline-toolbar"
-              onToggleSelection={handleToggleFolderSelection}
-              onBatchDelete={handleFolderBatchDelete}
-              onBatchDownload={handleFolderBatchDownload}
-              isSelectionMode={folderSelectionMode}
-              selectedCount={selectedFolderItems.length}
+              onToggleSelection={handleToggleFileSelectionMode}
+              onBatchDelete={handleFileBatchDelete}
+              onBatchDownload={handleFileBatchDownload}
+              isSelectionMode={isFileSelectionMode}
+              selectedCount={toolbarSelectedCount}
               showSelectionTools={true}
+              showRenameIcon={true}
+              onBatchRename={handleToolbarRename}
             />
           </div>
         </div>
 
-        {/* Nouvelle interface arborescence + contenu */}
-        <div className="folders-split-view" onClick={(e) => {
-          // Désélectionner le dossier si on clique en dehors de l'arborescence
-          if (e.target === e.currentTarget) {
-            setSelectedFolderId(null);
-            setSelectedFolder(null);
-          }
-        }}>
-          {/* Overlay pour fermer le drawer sur mobile */}
-          {showTreePanel && (
-            <div 
-              className="tree-overlay" 
-              onClick={() => setShowTreePanel(false)}
-            ></div>
-          )}
-          
-          <div className={`folders-tree-panel ${showTreePanel ? 'mobile-visible' : ''}`}>
-            <FolderTreeView
-              folders={dossiers}
-              selectedFolderId={selectedFolderId}
-              onFolderSelect={handleFolderSelect}
-              expandedFolders={expandedFolders}
-              onToggleExpand={handleToggleExpand}
-              onFolderRename={handleOpenRenameModal}
-              onFolderUpload={handleOpenUploadModal}
-              onFolderDelete={handleOpenDeleteModal}
-            />
-          </div>
-          
-          <div className="folders-content-panel" onClick={(e) => {
-            // Désélectionner le dossier si on clique dans la zone de contenu vide
-            if (e.target === e.currentTarget || e.target.classList.contains('folder-content-empty')) {
-              setSelectedFolderId(null);
-              setSelectedFolder(null);
-            }
-          }}>
-            <FolderContentView
-              selectedFolder={selectedFolder}
-              onFileDownload={handleFileDownload}
-              onFileRename={handleFileRename}
-              onFileDelete={handleFileDelete}
-              onFileShare={handleFileShare}
-              onFileUpload={handleOpenUploadModal}
-              onFolderAction={handleFolderAction}
-              isSelectionMode={folderSelectionMode}
-              selectedItems={selectedFolderItems}
-              onSelectionChange={setSelectedFolderItems}
-              onToggleSelection={handleToggleFolderSelection}
-              onBatchDelete={handleFolderBatchDelete}
-              onBatchDownload={handleFolderBatchDownload}
-              viewMode={viewMode}
-              setViewMode={setViewMode}
-            />
-          </div>
-        </div>
-        <CreateDossierModal 
+        <FolderContent
+          dossiers={dossiers}
+          loadDossierDetails={async (id) => {
+            const response = await dossierService.getDossierById(id);
+            return response.data;
+          }}
+          selectedFolder={selectedFolder}
+          onFolderSelected={setSelectedFolder}
+          onFolderRename={(folder) => handleOpenRenameModal(null, folder)}
+          onFolderDelete={(folder) => handleOpenDeleteModal(null, folder)}
+          onFolderMove={handleFolderMove}
+          onFolderAccessDetails={handleOpenFolderDetails}
+          onFileDownload={handleFileDownload}
+          onFileRename={handleFileRename}
+          onFileDelete={handleFileDelete}
+          onFileShare={handleFileShare}
+          onFileUpload={handleOpenUploadModal}
+          isSelectionMode={isFileSelectionMode}
+          selectedItems={selectedFiles}
+          onSelectItem={handleSelectFile}
+        />
+        <ModalFolder 
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onDossierCreated={handleDossierCreated}
-          parentId={selectedFolderId}
+          initialParentId={selectedFolder ? selectedFolder.id : null}
+          onError={showError}
         />
         {dossierToRename && (
           <RenameDossierModal
@@ -520,6 +582,17 @@ const DossiersPage = () => {
             onClose={() => setDossierToDelete(null)}
             dossier={dossierToDelete}
             onDossierDeleted={handleDossierDeleted}
+          />
+        )}
+
+        {folderDetails && (
+          <FolderDetails
+            isOpen={isFolderDetailsOpen}
+            onClose={() => {
+              setIsFolderDetailsOpen(false);
+              setFolderDetails(null);
+            }}
+            folder={folderDetails}
           />
         )}
 
@@ -540,15 +613,6 @@ const DossiersPage = () => {
             dossierId={selectedDossier.id}
           />
         )}
-
-        <DeleteBatchModal
-          isOpen={isBatchDeleteModalOpen}
-          onClose={() => setIsBatchDeleteModalOpen(false)}
-          onConfirm={handleConfirmFolderBatchDelete}
-          imageCount={selectedFolderItems.length}
-          itemType="file"
-          selectedItems={selectedFolderItems}
-        />
 
       {/* Modals pour les fichiers */}
       {fileToRename && (
@@ -575,6 +639,26 @@ const DossiersPage = () => {
         />
       )}
 
+      {isFileBatchDeleteModalOpen && (
+        <DeleteBatchModal
+          isOpen={isFileBatchDeleteModalOpen}
+          onClose={() => setIsFileBatchDeleteModalOpen(false)}
+          onConfirm={handleConfirmFileBatchDelete}
+          imageCount={selectedFiles.length}
+          itemType="file"
+          selectedItems={selectedFiles}
+        />
+      )}
+
+      <MoveModal
+        isOpen={isMoveModalOpen}
+        onClose={() => setIsMoveModalOpen(false)}
+        selectedItems={moveItems}
+        itemType={moveItemType}
+        onSuccess={handleMoveSuccess}
+        onError={handleMoveError}
+      />
+
       {fileToShare && (
         <ShareModal
           isOpen={isShareModalOpen}
@@ -585,6 +669,7 @@ const DossiersPage = () => {
           file={fileToShare}
         />
       )}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
       </div>
     </BulkActionsManager>
   );

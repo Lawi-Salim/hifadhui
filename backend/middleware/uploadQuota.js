@@ -116,18 +116,25 @@ export const checkUploadQuota = async (req, res, next) => {
  */
 async function getUploadCountToday(userId, startOfDay) {
   try {
-    const { File } = await import('../models/index.js');
-    
-    const count = await File.count({
+    const { ActivityLog } = await import('../models/index.js');
+
+    // On compte les événements d'upload (IMAGE_UPLOAD, PDF_UPLOAD, ZIP_UPLOAD)
+    // plutôt que le nombre de fichiers créés, pour que
+    // - un upload simple = 1 événement
+    // - un upload ZIP avec plusieurs fichiers extraits = 1 événement
+    const count = await ActivityLog.count({
       where: {
-        owner_id: userId, // Correction: c'est owner_id pas user_id
-        date_upload: {   // Correction: c'est date_upload pas created_at
+        userId: userId,
+        actionType: {
+          [Op.in]: ['IMAGE_UPLOAD', 'PDF_UPLOAD', 'ZIP_UPLOAD']
+        },
+        createdAt: {
           [Op.gte]: startOfDay
         }
       }
     });
-    
-    console.log(`📊 [UPLOAD COUNT] Utilisateur ${userId}: ${count} uploads aujourd'hui`);
+
+    console.log(`📊 [UPLOAD COUNT] Utilisateur ${userId}: ${count} upload(s) aujourd'hui (basé sur ActivityLog)`);
     return count;
   } catch (error) {
     console.error('Erreur lors du comptage des uploads:', error);

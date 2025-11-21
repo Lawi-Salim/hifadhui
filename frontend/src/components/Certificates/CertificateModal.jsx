@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import certificateService from '../../services/certificateService';
 import './Certificate.css';
+import { formatFileSize } from '../../utils/fileSize';
 
 /**
  * Modal d'aperçu du certificat d'authenticité
@@ -61,14 +62,6 @@ const CertificateModal = ({ file, isOpen, onClose }) => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  };
-
-  const formatFileSize = (bytes) => {
-    if (!bytes) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    const k = 1024;
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${(bytes / Math.pow(k, i)).toFixed(2)} ${units[i]}`;
   };
 
   const formatDate = (date) => {

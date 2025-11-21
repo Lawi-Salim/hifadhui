@@ -18,23 +18,6 @@ class BulkActionsService {
     }
   }
 
-  // Copier des éléments vers un dossier
-  async copyItems(itemIds, targetDossierId, itemType = 'file') {
-    try {
-      console.log('📋 [FRONTEND] Copie demandée:', { itemIds, targetDossierId, itemType });
-      const response = await api.post('/bulk-actions/copy', {
-        itemIds,
-        targetDossierId,
-        itemType
-      });
-      console.log('✅ [FRONTEND] Copie réussie:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('❌ [FRONTEND] Erreur lors de la copie:', error);
-      throw error;
-    }
-  }
-
   // Supprimer des éléments en lot
   async deleteItems(itemIds, itemType = 'file') {
     try {
@@ -84,7 +67,6 @@ const service = new BulkActionsService();
 // Export par défaut avec toutes les méthodes utiles + alias batch*
 const bulkActionsService = {
   moveItems: (...args) => service.moveItems(...args),
-  copyItems: (...args) => service.copyItems(...args),
   deleteItems: (...args) => service.deleteItems(...args),
   getFoldersForSelection: (...args) => service.getFoldersForSelection(...args),
   checkConflicts: (...args) => service.checkConflicts(...args),
@@ -92,7 +74,6 @@ const bulkActionsService = {
   // Alias historiques utilisés pour les actions en lot
   batchDelete: (...args) => service.deleteItems(...args),
   batchMove: (...args) => service.moveItems(...args),
-  batchCopy: (...args) => service.copyItems(...args),
   batchDownload: null
 };
 
