@@ -76,17 +76,17 @@ export const getContactTemplate = (name, email, subject, message) => {
             body { 
                 font-family: var(--font-family); 
                 margin: 0; 
-                padding: 20px; 
-                background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
+                padding: 12px;
                 min-height: 100vh;
                 line-height: 1.6;
             }
             
             .container { 
-                max-width: 600px; 
-                margin: 0 auto; 
+                max-width: 640px; 
+                margin: 16px auto; 
                 background: var(--white-color); 
                 border-radius: 16px; 
+                border: 1px solid #000;
                 box-shadow: var(--shadow-lg); 
                 overflow: hidden;
                 border: 1px solid rgba(255, 255, 255, 0.2);
@@ -95,7 +95,7 @@ export const getContactTemplate = (name, email, subject, message) => {
             .header { 
                 background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%); 
                 color: var(--white-color); 
-                padding: 40px 30px; 
+                padding: 28px 24px; 
                 text-align: center; 
                 position: relative;
             }
@@ -115,7 +115,7 @@ export const getContactTemplate = (name, email, subject, message) => {
             }
             
             .content { 
-                padding: 40px 30px; 
+                padding: 28px 24px; 
                 color: #1f2937;
             }
             
@@ -134,8 +134,8 @@ export const getContactTemplate = (name, email, subject, message) => {
             .contact-info { 
                 background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); 
                 border-radius: 12px; 
-                padding: 24px; 
-                margin: 24px 0; 
+                padding: 20px; 
+                margin: 20px 0; 
                 border: 1px solid #e2e8f0;
                 box-shadow: var(--shadow-sm);
             }
@@ -152,8 +152,8 @@ export const getContactTemplate = (name, email, subject, message) => {
                 display: flex; 
                 justify-content: space-between; 
                 align-items: flex-start;
-                margin: 12px 0; 
-                padding: 8px 0;
+                margin: 8px 0; 
+                padding: 6px 0;
                 border-bottom: 1px solid #e2e8f0;
             }
             
@@ -177,21 +177,17 @@ export const getContactTemplate = (name, email, subject, message) => {
             }
             
             .message-content {
-                background: linear-gradient(135deg, #fefefe 0%, #f9fafb 100%);
-                border: 1px solid #e5e7eb;
-                border-radius: 12px;
-                padding: 20px;
-                margin: 24px 0;
-                color: #374151;
-                font-size: 16px;
-                line-height: 1.6;
-                white-space: pre-wrap;
-                word-wrap: break-word;
+                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); 
+                border-radius: 12px; 
+                padding: 20px; 
+                margin: 20px 0; 
+                border: 1px solid #e2e8f0;
+                box-shadow: var(--shadow-sm);
             }
             
             .footer { 
                 background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); 
-                padding: 24px 30px; 
+                padding: 20px 24px; 
                 text-align: center; 
                 color: var(--text-muted); 
                 font-size: 14px;
@@ -209,11 +205,11 @@ export const getContactTemplate = (name, email, subject, message) => {
             
             /* Responsive */
             @media (max-width: 640px) {
-                body { padding: 10px; }
-                .container { border-radius: 12px; }
-                .header { padding: 30px 20px; }
-                .content { padding: 30px 20px; }
-                .footer { padding: 20px; }
+                body { padding: 8px; }
+                .container { border-radius: 12px; max-width: 100%; }
+                .header { padding: 24px 18px; }
+                .content { padding: 24px 18px; }
+                .footer { padding: 18px; }
                 .header h1 { font-size: 28px; }
                 .icon { font-size: 56px; }
                 .info-item { flex-direction: column; }
