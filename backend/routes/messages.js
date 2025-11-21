@@ -13,28 +13,67 @@ router.use(authorizeAdmin);
 /**
  * GET /api/v1/messages/stats
  * Récupère les statistiques des messages
+ * - Si req.query.type est défini, les stats sont filtrées sur ce type uniquement
+ * - Sinon, les messages de type "contact_received" sont exclus des stats générales
  */
 router.get('/stats', async (req, res) => {
   try {
+    const { type } = req.query;
+
+    // Filtre de base pour le périmètre des stats (non typé => on exclut les contacts)
+    const baseWhere = type
+      ? { type }
+      : { type: { [Op.ne]: 'contact_received' } };
+
+    // Filtre spécifique pour la carte "Reçus"
+    let receivedWhere;
+    if (!type) {
+      // Vue générale : uniquement les emails reçus classiques
+      receivedWhere = { type: 'email_received' };
+    } else if (type === 'contact_received' || type === 'email_received') {
+      // Vue filtrée : on compte uniquement le type demandé
+      receivedWhere = { type };
+    } else {
+      // Autres types : pas de messages "reçus"
+      receivedWhere = { id: null };
+    }
+
+    // Filtre spécifique pour la carte "Envoyés"
+    let sentWhere;
+    if (!type || type === 'email_sent') {
+      sentWhere = { type: 'email_sent' };
+    } else {
+      // Pour un type différent (ex: contact_received), on renvoie 0 envoyés
+      sentWhere = { id: null };
+    }
+
     const stats = await Promise.all([
-      // Messages non lus
+      // Messages non lus (dans le périmètre défini)
       Message.count({
-        where: { status: 'unread' }
+        where: { 
+          ...baseWhere,
+          status: 'unread' 
+        }
       }),
-      // Messages lus
+      // Messages lus (dans le périmètre défini)
       Message.count({
-        where: { status: ['read', 'replied'] }
+        where: { 
+          ...baseWhere,
+          status: ['read', 'replied'] 
+        }
       }),
       // Messages reçus
       Message.count({
-        where: { type: ['contact_received', 'email_received'] }
+        where: receivedWhere
       }),
       // Emails envoyés
       Message.count({
-        where: { type: 'email_sent' }
+        where: sentWhere
       }),
-      // Total des messages
-      Message.count()
+      // Total des messages dans le périmètre
+      Message.count({
+        where: baseWhere
+      })
     ]);
 
     res.json({
@@ -82,13 +121,23 @@ router.get('/', async (req, res) => {
     } else if (tab === 'read') {
       whereClause.status = ['read', 'replied'];
     } else if (tab === 'received') {
-      whereClause.type = ['contact_received', 'email_received'];
+      // Vue "Reçus" standard : uniquement les emails reçus classiques
+      whereClause.type = 'email_received';
     } else if (tab === 'sent') {
       whereClause.type = 'email_sent';
     }
     
-    // Filtres additionnels
-    if (type) whereClause.type = type;
+    // Filtres additionnels explicites
+    if (type) {
+      // Lorsqu'un type est fourni (ex: contact_received pour /admin/contact),
+      // il devient prioritaire sur le filtre par onglet
+      whereClause.type = type;
+    }
+
+    // Pour la vue générale (sans type explicite), on exclut les messages de contact
+    if (!type && !whereClause.type) {
+      whereClause.type = { [Op.ne]: 'contact_received' };
+    }
     if (status) whereClause.status = status;
     if (priority) whereClause.priority = priority;
     

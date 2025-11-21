@@ -4,7 +4,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import messagesService from '../../services/messagesService';
 import notificationsService from '../../services/notificationsService';
 import { 
-  FiHome, 
   FiUpload, 
   FiFileText, 
   FiFolder, 
@@ -15,14 +14,8 @@ import {
   FiServer, 
   FiPieChart,
   FiShield,
-  FiLock,
-  FiClock,
   FiMonitor,
-  FiSettings,
-  FiLogOut,
   FiAlertTriangle,
-  FiMenu,
-  FiX,
   FiMail,
   FiBell,
   FiMessageSquare
@@ -37,6 +30,7 @@ const Sidebar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [unreadContactMessagesCount, setUnreadContactMessagesCount] = useState(0);
   const [urgentNotificationsCount, setUrgentNotificationsCount] = useState(0);
   const sidebarRef = useRef(null);
 
@@ -90,7 +84,11 @@ const Sidebar = () => {
           // Charger les messages non lus
           const messagesStats = await messagesService.getStats();
           setUnreadMessagesCount(messagesStats.unread || 0);
-          
+
+          // Charger les messages de contact non lus
+          const contactStats = await messagesService.getStats({ type: 'contact_received' });
+          setUnreadContactMessagesCount(contactStats.unread || 0);
+
           // Charger les notifications urgentes (alertes + infos non lues)
           const notificationsStats = await notificationsService.getStats();
           const urgentCount = (notificationsStats.alertsUnread || 0) + (notificationsStats.infoUnread || 0);
@@ -193,6 +191,9 @@ const Sidebar = () => {
                   <item.icon />
                   {item.path === '/admin/messages' && unreadMessagesCount > 0 && (
                     <span className="notification-badge">{unreadMessagesCount}</span>
+                  )}
+                  {item.path === '/admin/contact' && unreadContactMessagesCount > 0 && (
+                    <span className="notification-badge">{unreadContactMessagesCount}</span>
                   )}
                   {item.path === '/admin/notifications' && urgentNotificationsCount > 0 && (
                     <span className="notification-badge">{urgentNotificationsCount}</span>

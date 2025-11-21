@@ -3,7 +3,6 @@ import {
   FiMail, 
   FiSend, 
   FiInbox, 
-  FiArchive,
   FiSearch,
   FiFilter,
   FiRefreshCw,
@@ -122,8 +121,10 @@ const MessagesPage = ({ predefinedType = null, pageTitle = 'Messages', pageIcon:
     setLoading(true);
     setError(null);
     try {
-      // Charger les statistiques
-      const statsData = await messagesService.getStats();
+      // Charger les statistiques (filtrées si un type prédéfini est fourni)
+      const statsData = await messagesService.getStats(
+        predefinedType ? { type: predefinedType } : undefined
+      );
       setStats(statsData);
       
       // Charger les messages
@@ -245,7 +246,9 @@ const MessagesPage = ({ predefinedType = null, pageTitle = 'Messages', pageIcon:
       ));
       
       // Recharger les stats
-      const statsData = await messagesService.getStats();
+      const statsData = await messagesService.getStats(
+        predefinedType ? { type: predefinedType } : undefined
+      );
       setStats(statsData);
       
     } catch (error) {
@@ -272,7 +275,9 @@ const MessagesPage = ({ predefinedType = null, pageTitle = 'Messages', pageIcon:
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // Recharger seulement les stats et la page courante
-      const statsData = await messagesService.getStats();
+      const statsData = await messagesService.getStats(
+        predefinedType ? { type: predefinedType } : undefined
+      );
       setStats(statsData);
       
       // Basculer vers l'onglet "Envoyés" pour voir le message envoyé
@@ -326,7 +331,9 @@ const MessagesPage = ({ predefinedType = null, pageTitle = 'Messages', pageIcon:
           setMessages(prev => prev.filter(msg => msg.id !== messageId));
           
           // Recharger les stats
-          const statsData = await messagesService.getStats();
+          const statsData = await messagesService.getStats(
+            predefinedType ? { type: predefinedType } : undefined
+          );
           setStats(statsData);
           
         } catch (error) {

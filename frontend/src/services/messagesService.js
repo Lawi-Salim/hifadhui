@@ -36,10 +36,20 @@ class MessagesService {
 
   /**
    * Récupère les statistiques des messages
+   * @param {Object} params - Filtres optionnels (ex: { type: 'contact_received' })
    */
-  async getStats() {
+  async getStats(params = {}) {
     try {
-      const response = await fetch(`${API_BASE_URL}/messages/stats`, {
+      const queryParams = new URLSearchParams();
+      if (params.type) {
+        queryParams.append('type', params.type);
+      }
+
+      const url = queryParams.toString()
+        ? `${API_BASE_URL}/messages/stats?${queryParams.toString()}`
+        : `${API_BASE_URL}/messages/stats`;
+
+      const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders()
       });
