@@ -119,7 +119,10 @@ const Profil = ({ isOpen, onClose }) => {
             <label>Rôle</label>
             <p>{user?.role || 'Utilisateur'}</p>
           </div>
-          
+          <div className="info-group">
+            <label>Plan</label>
+            <p>{user?.subscription_type === 'premium' ? 'Premium' : 'Free'}</p>
+          </div>
           <div className="info-group">
             <label>Statut du compte</label>
             {userStats.loading ? (

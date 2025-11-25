@@ -15,7 +15,8 @@ const storage = new CloudinaryStorage({
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB max
+    // Limite technique maximale (10 Mo). Les limites par plan sont gérées dans uploadQuota.js
+    fileSize: 10 * 1024 * 1024
   },
   fileFilter: (req, file, cb) => {
     console.log('=== VALIDATION FICHIER ===');
@@ -55,7 +56,7 @@ const handleUploadError = (error, req, res, next) => {
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
         error: 'Fichier trop volumineux',
-        message: 'La taille maximale autorisée est de 10MB'
+        message: 'La taille maximale autorisée est de 25 Mo'
       });
     }
     if (error.code === 'LIMIT_UNEXPECTED_FILE') {

@@ -84,6 +84,28 @@ const Utilisateur = sequelize.define('Utilisateur', {
     type: DataTypes.DATE,
     allowNull: true,
     comment: 'Expiration du token de récupération'
+  },
+  // Abonnement et quotas d'upload
+  subscription_type: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    defaultValue: 'free',
+    comment: 'Type d\'abonnement: free, premium, etc.'
+  },
+  subscription_expires_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Date de fin d\'abonnement premium (optionnel)'
+  },
+  upload_max_file_size: {
+    type: DataTypes.BIGINT,
+    allowNull: true,
+    comment: 'Taille max par fichier en octets (override du plan)'
+  },
+  upload_max_files_per_day: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    comment: 'Nombre max d\'uploads par jour (override du plan)'
   }
 }, {
   modelName: 'Utilisateur',
@@ -124,7 +146,19 @@ Utilisateur.prototype.toJSON = function() {
   const values = { ...this.get() };
   delete values.password;
   delete values.google_id; // Ne pas exposer l'ID Google
+  // Garder subscription_type pour afficher le plan dans le frontend
   return values;
+};
+
+// Méthode pour savoir si l'utilisateur est premium (en tenant compte d'une éventuelle expiration)
+Utilisateur.prototype.isPremium = function() {
+  if (this.subscription_type !== 'premium') {
+    return false;
+  }
+  if (this.subscription_expires_at && new Date() > this.subscription_expires_at) {
+    return false;
+  }
+  return true;
 };
 
 // Méthode statique pour trouver ou créer un utilisateur Google

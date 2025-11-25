@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaFileAlt } from 'react-icons/fa';
 import { FiUser, FiCalendar, FiHardDrive, FiMenu } from 'react-icons/fi';
 import { getAdminFiles } from '../../services/adminService';
 import FileDetailModal from '../Common/FileDetailModal';
 import ContentToolbar from '../Common/ContentToolbar';
-import useInfiniteScroll from '../../hooks/useInfiniteScroll';
+import Pagination from '../Common/Pagination';
 import SmartAvatar from '../Layout/SmartAvatar';
 import UserDisplayName from '../Layout/UserDisplayName';
 import ProviderIcon from '../Layout/ProviderIcon';
@@ -34,31 +34,49 @@ const UserFiles = () => {
     return spaceBelow < menuHeight ? 'top' : 'bottom';
   };
 
-  // Fonction pour récupérer TOUS les PDFs de TOUS les utilisateurs
-  const fetchAllFilesForAdmin = async (params) => {
-    const adminParams = {
-      ...params,
-      type: 'pdf', // ou 'document' selon votre logique
-      admin_view: true,
-      user_filter: userFilter || undefined,
-      date_filter: dateFilter || undefined,
-      size_filter: sizeFilter || undefined
-    };
-    
-    const response = await getAdminFiles(adminParams);
-    return response;
+  // États pour la pagination admin
+  const [files, setFiles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 30;
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const loadFiles = async (page = 1) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const adminParams = {
+        page,
+        limit: itemsPerPage,
+        type: 'pdf',
+        admin_view: true,
+        user_filter: userFilter || undefined,
+        date_filter: dateFilter || undefined,
+        size_filter: sizeFilter || undefined
+      };
+
+      const response = await getAdminFiles(adminParams);
+      const data = response.data || {};
+      const filesData = data.files || data.data || [];
+      const pagination = data.pagination || {};
+
+      setFiles(filesData);
+      setTotalCount(pagination.total || pagination.totalItems || filesData.length || 0);
+      setTotalPages(pagination.totalPages || 1);
+    } catch (err) {
+      console.error('Erreur lors du chargement des fichiers admin:', err);
+      setError('Erreur lors du chargement des fichiers');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Hook pour le scroll infini
-  const {
-    items: files,
-    loading,
-    hasMore,
-    error,
-    totalCount,
-    lastItemRef,
-    refresh
-  } = useInfiniteScroll(fetchAllFilesForAdmin, { limit: 20 });
+  useEffect(() => {
+    loadFiles(currentPage);
+  }, [currentPage, userFilter, dateFilter, sizeFilter]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -124,7 +142,10 @@ const UserFiles = () => {
               </label>
               <select 
                 value={userFilter} 
-                onChange={(e) => setUserFilter(e.target.value)}
+                onChange={(e) => {
+                  setUserFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="filter-select"
               >
                 <option value="">Tous les utilisateurs</option>
@@ -143,7 +164,10 @@ const UserFiles = () => {
               </label>
               <select 
                 value={dateFilter} 
-                onChange={(e) => setDateFilter(e.target.value)}
+                onChange={(e) => {
+                  setDateFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="filter-select"
               >
                 <option value="">Toutes les dates</option>
@@ -161,7 +185,10 @@ const UserFiles = () => {
               </label>
               <select 
                 value={sizeFilter} 
-                onChange={(e) => setSizeFilter(e.target.value)}
+                onChange={(e) => {
+                  setSizeFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="filter-select"
               >
                 <option value="">Toutes les tailles</option>
@@ -209,7 +236,6 @@ const UserFiles = () => {
                   <div 
                     key={file.id} 
                     className="admin-file-card"
-                    ref={index === files.length - 1 ? lastItemRef : null}
                   >
                     <div className="file-preview" onClick={() => handlePreview(file)}>
                       {file.mimetype?.includes('pdf') ? (
@@ -259,7 +285,6 @@ const UserFiles = () => {
                   <div 
                     key={file.id} 
                     className="admin-list-item"
-                    ref={index === files.length - 1 ? lastItemRef : null}
                   >
                     <div className="list-item-thumbnail">
                       {file.mimetype?.includes('pdf') ? (
@@ -314,22 +339,29 @@ const UserFiles = () => {
         }}
       />
 
-      {/* Indicateur de chargement pour le scroll infini */}
-      {loading && files.length > 0 && (
-        <div className="text-center py-4">
-          <div className="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-indigo-500 transition ease-in-out duration-150">
-            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Chargement...
-          </div>
-        </div>
-      )}
-      
-      {!hasMore && files.length > 0 && (
-        <div className="text-center py-4 text-gray-500">
-          Tous les fichiers ont été chargés
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex justify-center">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            itemsPerPage={itemsPerPage}
+            hasNextPage={currentPage < totalPages}
+            hasPrevPage={currentPage > 1}
+            onPageChange={setCurrentPage}
+            onPrevPage={() => {
+              if (currentPage > 1) {
+                setCurrentPage(currentPage - 1);
+              }
+            }}
+            onNextPage={() => {
+              if (currentPage < totalPages) {
+                setCurrentPage(currentPage + 1);
+              }
+            }}
+            itemName="fichiers"
+          />
         </div>
       )}
     </>

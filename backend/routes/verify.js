@@ -23,7 +23,7 @@ router.get('/:hash', async (req, res) => {
   try {
     const { hash } = req.params;
 
-    // console.log(`🔍 [VERIFY] Vérification du hash: ${hash.substring(0, 16)}...`);
+    // Log supprimé pour réduire le bruit dans les logs
 
     // Valider le format du hash (SHA-256 = 64 caractères hexadécimaux)
     if (!/^[a-f0-9]{64}$/i.test(hash)) {
@@ -44,7 +44,9 @@ router.get('/:hash', async (req, res) => {
     });
 
     if (!file) {
-      console.log(`❌ [VERIFY] Hash non trouvé: ${hash.substring(0, 16)}...`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`❌ [VERIFY] Hash non trouvé: ${hash.substring(0, 16)}...`);
+      }
       return res.json({
         verified: false,
         message: 'Aucun fichier correspondant à ce hash n\'a été trouvé dans notre base de données.'
@@ -74,11 +76,13 @@ router.get('/:hash', async (req, res) => {
       response.message = 'Ce fichier existe dans notre base de données mais le propriétaire a choisi de garder les détails confidentiels.';
     }
 
-    // console.log(`✅ [VERIFY] Fichier vérifié: ${file.filename}`);
+    // Log supprimé pour réduire le bruit dans les logs
     res.json(response);
 
   } catch (error) {
-    console.error('❌ [VERIFY] Erreur lors de la vérification:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('❌ [VERIFY] Erreur lors de la vérification:', error);
+    }
     res.status(500).json({ 
       verified: false,
       error: 'Erreur lors de la vérification'
@@ -100,7 +104,9 @@ router.post('/file', upload.single('file'), async (req, res) => {
       });
     }
 
-    console.log(`🔍 [VERIFY-FILE] Vérification du fichier: ${req.file.originalname}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`🔍 [VERIFY-FILE] Vérification du fichier: ${req.file.originalname}`);
+    }
 
     // Calculer le hash du fichier uploadé
     const fileHash = crypto
@@ -108,7 +114,9 @@ router.post('/file', upload.single('file'), async (req, res) => {
       .update(req.file.buffer)
       .digest('hex');
 
-    console.log(`🔐 [VERIFY-FILE] Hash calculé: ${fileHash.substring(0, 16)}...`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`🔐 [VERIFY-FILE] Hash calculé: ${fileHash.substring(0, 16)}...`);
+    }
 
     // Rechercher le fichier par hash
     const file = await File.findOne({
@@ -121,7 +129,9 @@ router.post('/file', upload.single('file'), async (req, res) => {
     });
 
     if (!file) {
-      console.log(`❌ [VERIFY-FILE] Fichier non trouvé dans la base`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`❌ [VERIFY-FILE] Fichier non trouvé dans la base`);
+      }
       return res.json({
         verified: false,
         hash: fileHash,
@@ -166,11 +176,15 @@ router.post('/file', upload.single('file'), async (req, res) => {
       response.message = 'Ce fichier existe dans notre base de données mais le propriétaire a choisi de garder les détails confidentiels.';
     }
 
-    console.log(`✅ [VERIFY-FILE] Fichier vérifié avec succès: ${file.filename}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`✅ [VERIFY-FILE] Fichier vérifié avec succès: ${file.filename}`);
+    }
     res.json(response);
 
   } catch (error) {
-    console.error('❌ [VERIFY-FILE] Erreur lors de la vérification:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('❌ [VERIFY-FILE] Erreur lors de la vérification:', error);
+    }
     res.status(500).json({ 
       verified: false,
       error: 'Erreur lors de la vérification du fichier'
@@ -194,7 +208,9 @@ router.post('/hash', async (req, res) => {
       });
     }
 
-    console.log(`🔍 [VERIFY-HASH] Vérification du hash: ${hash.substring(0, 16)}...`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`🔍 [VERIFY-HASH] Vérification du hash: ${hash.substring(0, 16)}...`);
+    }
 
     // Valider le format
     if (!/^[a-f0-9]{64}$/i.test(hash)) {
@@ -240,11 +256,15 @@ router.post('/hash', async (req, res) => {
       };
     }
 
-    console.log(`✅ [VERIFY-HASH] Hash vérifié avec succès`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`✅ [VERIFY-HASH] Hash vérifié avec succès`);
+    }
     res.json(response);
 
   } catch (error) {
-    console.error('❌ [VERIFY-HASH] Erreur:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('❌ [VERIFY-HASH] Erreur:', error);
+    }
     res.status(500).json({ 
       verified: false,
       error: 'Erreur lors de la vérification'
@@ -261,7 +281,9 @@ router.get('/product-id/:productId', async (req, res) => {
   try {
     const { productId } = req.params;
 
-    console.log(`🔍 [VERIFY] Vérification du Product ID: ${productId}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`🔍 [VERIFY] Vérification du Product ID: ${productId}`);
+    }
 
     // Rechercher l'empreinte par Product ID
     const empreinte = await Empreinte.findOne({
@@ -269,7 +291,9 @@ router.get('/product-id/:productId', async (req, res) => {
     });
 
     if (!empreinte) {
-      console.log(`❌ [VERIFY] Product ID non trouvé: ${productId}`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`❌ [VERIFY] Product ID non trouvé: ${productId}`);
+      }
       return res.json({
         verified: false,
         message: 'Aucune empreinte correspondant à ce Product ID n\'a été trouvée dans notre base de données.'
@@ -326,11 +350,15 @@ router.get('/product-id/:productId', async (req, res) => {
       response.message = 'Ce fichier existe dans notre base de données mais le propriétaire a choisi de garder les détails confidentiels.';
     }
 
-    console.log(`✅ [VERIFY] Fichier vérifié via Product ID: ${productId}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`✅ [VERIFY] Fichier vérifié via Product ID: ${productId}`);
+    }
     res.json(response);
 
   } catch (error) {
-    console.error('❌ [VERIFY] Erreur lors de la vérification par Product ID:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('❌ [VERIFY] Erreur lors de la vérification par Product ID:', error);
+    }
     res.status(500).json({ 
       verified: false,
       error: 'Une erreur est survenue lors de la vérification'

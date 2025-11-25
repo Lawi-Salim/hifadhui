@@ -43,9 +43,11 @@ class NotificationService {
         });
       }
 
-      // console.log(`✅ [NOTIFICATION] Admins notifiés du nouvel utilisateur: ${newUser.username}`);
+      // Log supprimé pour réduire le bruit dans les logs
     } catch (error) {
-      console.error('❌ [NOTIFICATION] Erreur notification nouvel utilisateur:', error);
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('❌ [NOTIFICATION] Erreur notification nouvel utilisateur:', error);
+      }
     }
   }
 

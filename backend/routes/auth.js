@@ -659,9 +659,7 @@ router.delete('/delete-account', authenticateToken, async (req, res) => {
           deletionInfo.recoveryToken,
           gracePeriodDays
         );
-        console.log(`📧 [EMAIL] Nouveau email de période de grâce envoyé à: ${user.email}`);
       } catch (emailError) {
-        console.error('❌ [EMAIL] Erreur envoi nouveau email période de grâce:', emailError);
       }
       
       return res.status(200).json({

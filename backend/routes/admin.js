@@ -1,7 +1,7 @@
 import express from 'express';
 import { Op, fn, col } from 'sequelize';
 import { sequelize } from '../config/database.js';
-import { Utilisateur, File, Dossier, UserSession, ActivityLog, Message, Notification, Report, ModerationAction } from '../models/index.js';
+import { Utilisateur, File, Dossier, UserSession, ActivityLog, Message, Notification, Report, ModerationAction, Empreinte } from '../models/index.js';
 import { authenticateToken, authorizeAdmin } from '../middleware/auth.js';
 import { calculateUptime } from '../utils/uptimeHelper.js';
 import os from 'os';
@@ -342,22 +342,58 @@ router.get('/files', [authenticateToken, authorizeAdmin], async (req, res) => {
       }
     }
     
-    // Récupérer les fichiers avec les informations utilisateur
+    // Récupérer les fichiers avec les informations utilisateur et l'empreinte associée
     const { count, rows: files } = await File.findAndCountAll({
       where: whereConditions,
-      include: [{
-        model: Utilisateur,
-        as: 'fileUser',
-        attributes: ['id', 'username', 'email', 'provider', 'google_id', 'avatar_url'],
-        required: true
-      }],
+      include: [
+        {
+          model: Utilisateur,
+          as: 'fileUser',
+          attributes: ['id', 'username', 'email', 'provider', 'google_id', 'avatar_url'],
+          required: true
+        },
+        {
+          // Inclure l'empreinte liée au fichier pour exposer product_id au frontend admin
+          model: Empreinte,
+          as: 'empreinte',
+          attributes: ['id', 'product_id', 'hash_pregenere', 'signature_pregeneree', 'generated_at', 'used_at'],
+          required: false
+        },
+        {
+          // Inclure le dossier pour pouvoir calculer le chemin complet (fullPath)
+          model: Dossier,
+          as: 'fileDossier',
+          // Pas de restriction d'attributs ici pour permettre à getFullPath()
+          // d'accéder à parent_id et construire tout le chemin hiérarchique.
+          required: false
+        }
+      ],
       order: [['date_upload', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset),
     });
+
+    // Pour chaque fichier, calculer le chemin complet du dossier comme dans routes/files.js
+    const filesWithPaths = await Promise.all(
+      files.map(async (file) => {
+        let fullPath = 'Racine';
+        if (file.fileDossier) {
+          fullPath = await file.fileDossier.getFullPath();
+        }
+
+        const fileData = file.toJSON();
+        return {
+          ...fileData,
+          dossier: fileData.fileDossier ? {
+            ...fileData.fileDossier,
+            fullPath: fullPath
+          } : null
+        };
+      })
+    );
     
     res.json({
-      files,
+      files: filesWithPaths,
       totalCount: count,
       pagination: {
         total: count,

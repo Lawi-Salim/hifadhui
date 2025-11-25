@@ -523,7 +523,7 @@ const FolderContent = ({
                 loading={false}
               />
               {!hasMoreFiles && (
-                <div className="text-center py-4 text-gray-500 has-more">
+                <div className="folder-all-loaded-message">
                   Tous les fichiers ont été chargés
                 </div>
               )}

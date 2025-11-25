@@ -5,10 +5,9 @@ import { addSystemError } from '../routes/admin.js';
 class SchedulerService {
   
   static init() {
-    console.log('🕐 [SCHEDULER] Initialisation des tâches programmées...');
-    
-    // Le système de capture d'erreurs est maintenant opérationnel
-    console.log('✅ [SCHEDULER] Système de capture d\'erreurs node-cron activé');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🕐 [SCHEDULER] Initialisation des tâches programmées...');
+    }
     
     // Intercepter les warnings node-cron
     const originalConsoleWarn = console.warn;
@@ -34,7 +33,6 @@ class SchedulerService {
     // Vérification de l'espace disque toutes les heures
     cron.schedule('0 * * * *', async () => {
       const startTime = new Date();
-      console.log(`💾 [SCHEDULER] Vérification de l'espace disque... (${startTime.toISOString()})`);
       
       try {
         // Timeout pour éviter les blocages
@@ -47,8 +45,10 @@ class SchedulerService {
           timeoutPromise
         ]);
         
-        const duration = new Date() - startTime;
-        console.log(`✅ [SCHEDULER] Espace disque vérifié en ${duration}ms`);
+        if (process.env.NODE_ENV !== 'production') {
+          const duration = new Date() - startTime;
+          console.log(`✅ [SCHEDULER] Espace disque vérifié en ${duration}ms`);
+        }
         
       } catch (error) {
         const duration = new Date() - startTime;

@@ -32,7 +32,7 @@ const EmpreintesPage = () => {
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 50,
+    limit: 30,
     total: 0,
     totalPages: 0
   });

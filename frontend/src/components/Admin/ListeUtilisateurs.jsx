@@ -3,7 +3,7 @@ import { getUsers } from '../../services/adminService';
 import SmartAvatar from '../Layout/SmartAvatar';
 import UserDisplayName from '../Layout/UserDisplayName';
 import ProviderIcon from '../Layout/ProviderIcon';
-import Pagination from '../Pagination';
+import Pagination from '../Common/Pagination';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -174,6 +174,16 @@ const ListeUtilisateurs = () => {
             hasNextPage={currentPage < pagination.totalPages}
             hasPrevPage={currentPage > 1}
             onPageChange={setCurrentPage}
+            onPrevPage={() => {
+              if (currentPage > 1) {
+                setCurrentPage(currentPage - 1);
+              }
+            }}
+            onNextPage={() => {
+              if (currentPage < pagination.totalPages) {
+                setCurrentPage(currentPage + 1);
+              }
+            }}
             itemName="utilisateurs"
           />
         )}

@@ -175,7 +175,7 @@ class NotificationsService {
   /**
    * Récupère les notifications non lues
    */
-  async getUnreadNotifications(limit = 10) {
+  async getUnreadNotifications(limit = 30) {
     return await this.getNotifications({
       status: 'unread',
       limit,
@@ -186,7 +186,7 @@ class NotificationsService {
   /**
    * Récupère les notifications par type
    */
-  async getNotificationsByType(type, limit = 20) {
+  async getNotificationsByType(type, limit = 30) {
     return await this.getNotifications({
       type,
       limit,
@@ -201,7 +201,7 @@ class NotificationsService {
     return await this.getNotifications({
       priority: 'urgent',
       status: 'unread',
-      limit: 50
+      limit: 30
     });
   }
 

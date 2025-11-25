@@ -146,10 +146,10 @@ router.post('/zip-cloudinary', authenticateToken, checkUploadQuota, behaviorMoni
         });
       }
 
-      const HARD_LIMIT = 10 * 1024 * 1024; // 10MB
+      const HARD_LIMIT = 10 * 1024 * 1024; // 10 Mo
       if (numericSize > HARD_LIMIT) {
         return res.status(413).json({
-          error: 'Fichier ZIP trop volumineux. Taille maximale autorisée: 10MB',
+          error: 'Fichier ZIP trop volumineux. Taille maximale autorisée: 10 Mo',
           code: 'ZIP_FILE_TOO_LARGE'
         });
       }
@@ -227,10 +227,10 @@ router.post('/zip-cloudinary', authenticateToken, checkUploadQuota, behaviorMoni
         });
       }
 
-      const HARD_LIMIT = 10 * 1024 * 1024; // 10MB
+      const HARD_LIMIT = 10 * 1024 * 1024; // 10 Mo
       if (numericBytes > HARD_LIMIT) {
         return res.status(413).json({
-          error: 'Fichier ZIP trop volumineux. Taille maximale autorisée: 10MB',
+          error: 'Fichier ZIP trop volumineux. Taille maximale autorisée: 10 Mo',
           code: 'ZIP_FILE_TOO_LARGE'
         });
       }
@@ -674,7 +674,7 @@ router.post('/upload-cloudinary', authenticateToken, checkUploadQuota, behaviorM
         });
       }
 
-      const HARD_LIMIT = 10 * 1024 * 1024; // 10MB
+      const HARD_LIMIT = 10 * 1024 * 1024; // 10 Mo
       if (numericSize > HARD_LIMIT) {
         return res.status(413).json({
           error: 'Fichier trop volumineux. Taille maximale autorisée: 10MB',

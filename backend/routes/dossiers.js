@@ -1,4 +1,4 @@
-import express from 'express';
+ import express from 'express';
 import { sequelize } from '../config/database.js';
 import { Dossier, File, ActivityLog } from '../models/index.js';
 import { authenticateToken } from '../middleware/auth.js';
@@ -119,11 +119,12 @@ const getAncestors = async (dossierId, userId) => {
   while (currentId) {
     const currentDossier = await Dossier.findOne({
       where: { id: currentId, owner_id: userId },
-      attributes: ['id', 'name', 'parent_id'],
+      attributes: ['id', 'name', 'name_original', 'parent_id'],
     });
 
     if (currentDossier) {
-      ancestors.unshift({ id: currentDossier.id, name: currentDossier.name });
+      const displayName = currentDossier.name_original || currentDossier.name;
+      ancestors.unshift({ id: currentDossier.id, name: displayName });
       currentId = currentDossier.parent_id;
     } else {
       currentId = null;

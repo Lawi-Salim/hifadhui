@@ -10,7 +10,9 @@ const router = express.Router();
 
 // POST /api/bulk-actions/move - Déplacer des éléments en lot
 router.post('/move', authenticateToken, async (req, res) => {
-  console.log('🔄 [BULK-MOVE] Requête reçue:', { itemIds: req.body.itemIds, targetDossierId: req.body.targetDossierId, itemType: req.body.itemType });
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[BULK-MOVE] Traitement de la requête de déplacement en lot');
+  }
   const { itemIds, targetDossierId, itemType = 'file' } = req.body;
   
   if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
@@ -38,13 +40,14 @@ router.post('/move', authenticateToken, async (req, res) => {
       // Déplacer des fichiers (incluant les images)
       for (const fileId of itemIds) {
         try {
-          console.log(`🔍 [BULK-MOVE] Recherche fichier ID: ${fileId}`);
           const file = await File.findOne({
             where: { id: fileId, owner_id: req.user.id }
           });
 
           if (file) {
-            console.log(`✅ [BULK-MOVE] Fichier trouvé: ${file.filename}, déplacement vers dossier ${targetDossierId}`);
+            if (process.env.NODE_ENV !== 'production') {
+              console.log(`[BULK-MOVE] Fichier déplacé: ${file.filename}`);
+            }
             await file.update({ dossier_id: targetDossierId });
             movedCount++;
 
@@ -60,11 +63,13 @@ router.post('/move', authenticateToken, async (req, res) => {
               }
             });
           } else {
-            console.log(`❌ [BULK-MOVE] Fichier ${fileId} non trouvé`);
+            // Log supprimé pour réduire le bruit dans les logs
             errors.push(`Fichier ${fileId} non trouvé`);
           }
         } catch (error) {
-          console.error(`❌ [BULK-MOVE] Erreur fichier ${fileId}:`, error);
+          if (process.env.NODE_ENV !== 'production') {
+            console.error(`[BULK-MOVE] Erreur fichier ${fileId}:`, error.message);
+          }
           errors.push(`Erreur lors du déplacement du fichier ${fileId}: ${error.message}`);
         }
       }
@@ -139,7 +144,9 @@ router.post('/move', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erreur lors du déplacement en lot:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[BULK-MOVE] Erreur:', error);
+    }
     res.status(500).json({ error: 'Erreur serveur lors du déplacement.' });
   }
 });
@@ -170,9 +177,11 @@ router.delete('/delete', authenticateToken, async (req, res) => {
             if (file.file_url) {
               try {
                 await deleteCloudinaryFile(file.file_url, file.mimetype);
-                console.log(`Fichier supprimé de Cloudinary: ${file.file_url}`);
+                // Log supprimé pour réduire le bruit dans les logs
               } catch (cloudinaryError) {
-                console.error(`Erreur suppression Cloudinary pour ${file.file_url}:`, cloudinaryError);
+                if (process.env.NODE_ENV !== 'production') {
+                  console.error(`[BULK-DELETE] Erreur suppression Cloudinary:`, cloudinaryError.message);
+                }
               }
             }
 
@@ -234,7 +243,9 @@ router.delete('/delete', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erreur lors de la suppression en lot:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[BULK-DELETE] Erreur:', error);
+    }
     res.status(500).json({ error: 'Erreur serveur lors de la suppression.' });
   }
 });
@@ -319,7 +330,7 @@ router.get('/folders-tree', authenticateToken, async (req, res) => {
     // Récupérer tous les dossiers de l'utilisateur
     const allFolders = await Dossier.findAll({
       where: { owner_id: req.user.id },
-      attributes: ['id', 'name', 'parent_id'],
+      attributes: ['id', 'name', 'name_original', 'parent_id'],
       order: [['name', 'ASC']]
     });
 
@@ -332,7 +343,9 @@ router.get('/folders-tree', authenticateToken, async (req, res) => {
         .filter(folder => folder.parent_id === parentId)
         .map(folder => ({
           id: folder.id,
+          // Conserver le slug technique dans name, mais exposer aussi name_original
           name: folder.name,
+          name_original: folder.name_original,
           parent_id: folder.parent_id,
           children: buildTree(folders, folder.id)
         }));

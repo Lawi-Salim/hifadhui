@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaPlus, FaFolderOpen, FaUpload, FaCalendar, FaDatabase } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';
 import fileService from '../../services/fileService';
@@ -15,7 +15,7 @@ import { Link } from 'react-router-dom';
 import DeleteBatchModal from '../Common/DeleteBatchModal';
 import BulkActionsManager from '../Common/BulkActionsManager';
 import { useDownloadZip, DownloadProgressIndicator } from '../Common/DownloadZip';
-import useInfiniteScroll from '../../hooks/useInfiniteScroll';
+import Pagination from '../Common/Pagination';
 import './FileList.css';
 import '../Admin/AdminStyles.css'; // Import des styles admin pour les filtres
 import LoadingSpinner from '../Common/LoadingSpinner';
@@ -51,26 +51,51 @@ const FilesPage = () => {
   const [fileToShare, setFileToShare] = useState(null);
   const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
   const [fileToCertify, setFileToCertify] = useState(null);
-  
-  // Fonction pour récupérer les fichiers avec filtres
-  const fetchFilesWithFilters = async (params) => {
-    return fileService.getFiles({
-      ...params,
-      period: periodFilter || undefined,
-      sizeRange: sizeFilter || undefined
-    });
+
+  // États pour la pagination
+  const [files, setFiles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 30;
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const loadFiles = async (page = 1) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fileService.getFiles({
+        page,
+        limit: itemsPerPage,
+        period: periodFilter || undefined,
+        sizeRange: sizeFilter || undefined
+      });
+
+      const data = response.data || {};
+      const filesData = data.files || data.data || [];
+      const pagination = data.pagination || {};
+
+      setFiles(filesData);
+      setTotalCount(pagination.total || pagination.totalItems || filesData.length || 0);
+      setTotalPages(pagination.totalPages || 1);
+    } catch (err) {
+      console.error('Erreur lors du chargement des fichiers:', err);
+      setError('Erreur lors du chargement des fichiers');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Hook pour le scroll infini
-  const {
-    items: files,
-    loading,
-    hasMore,
-    error,
-    totalCount,
-    lastItemRef,
-    refresh
-  } = useInfiniteScroll(fetchFilesWithFilters, { limit: 20 });
+  // Recharger les fichiers quand la page ou les filtres changent
+  useEffect(() => {
+    loadFiles(currentPage);
+  }, [currentPage, periodFilter, sizeFilter]);
+
+  const refresh = () => {
+    loadFiles(currentPage);
+  };
 
   // Hook pour le téléchargement ZIP
   const {
@@ -328,7 +353,7 @@ const FilesPage = () => {
                 value={periodFilter}
                 onChange={(e) => {
                   setPeriodFilter(e.target.value);
-                  refresh();
+                  setCurrentPage(1);
                 }}
               >
                 <option value="">Toutes les dates</option>
@@ -349,7 +374,7 @@ const FilesPage = () => {
                 value={sizeFilter}
                 onChange={(e) => {
                   setSizeFilter(e.target.value);
-                  refresh();
+                  setCurrentPage(1);
                 }}
               >
                 <option value="">Toutes les tailles</option>
@@ -398,10 +423,6 @@ const FilesPage = () => {
         isSelectionMode={isSelectionMode}
         selectedItems={selectedFiles}
         handleSelectItem={handleSelectFile}
-        // Props pour le scroll infini
-        lastItemRef={lastItemRef}
-        hasMore={hasMore}
-        loading={loading}
       />
 
 
@@ -452,22 +473,29 @@ const FilesPage = () => {
         selectedItems={selectedFiles}
       />
 
-      {/* Indicateur de chargement pour le scroll infini */}
-      {loading && files.length > 0 && (
-        <div className="text-center py-4">
-          <div className="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-indigo-500 transition ease-in-out duration-150">
-            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Chargement...
-          </div>
-        </div>
-      )}
-      
-      {!hasMore && files.length > 0 && (
-        <div className="text-center py-4 text-gray-500 has-more">
-          Tous les fichiers ont été chargés
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex justify-center">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            itemsPerPage={itemsPerPage}
+            hasNextPage={currentPage < totalPages}
+            hasPrevPage={currentPage > 1}
+            onPageChange={setCurrentPage}
+            onPrevPage={() => {
+              if (currentPage > 1) {
+                setCurrentPage(currentPage - 1);
+              }
+            }}
+            onNextPage={() => {
+              if (currentPage < totalPages) {
+                setCurrentPage(currentPage + 1);
+              }
+            }}
+            itemName="fichiers"
+          />
         </div>
       )}
 

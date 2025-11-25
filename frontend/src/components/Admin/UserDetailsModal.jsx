@@ -166,6 +166,11 @@ const UserDetailsModal = ({ user, isOpen, onClose, onActionComplete }) => {
           </div>
 
           <div className="info-group">
+            <label>Plan</label>
+            <p>{user.subscription_type === 'premium' ? 'Premium' : 'Free'}</p>
+          </div>
+
+          <div className="info-group">
             <label>Fichiers uploadés</label>
             <p>{userStats.imagesCount} images et {userStats.pdfsCount} PDFs</p>
             {/* Debug: afficher les valeurs dans la console */}

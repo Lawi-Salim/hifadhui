@@ -45,12 +45,13 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete, dossierId }) => {
   };
 
   const handleFile = async (file) => {
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    // Limite technique maximale (les plans free/premium sont gérés côté serveur)
+    const maxSize = 10 * 1024 * 1024; // 10 Mo (limite technique Cloudinary)
     const allowedTypes = ['image/jpeg', 'image/png', 'image/svg+xml', 'application/pdf'];
     const SMALL_LIMIT = 4 * 1024 * 1024; // ~4MB: au-delà, utiliser l'upload direct Cloudinary
 
     if (file.size > maxSize) {
-      setMessage({ type: 'error', text: 'Fichier trop volumineux (max 10MB).' });
+      setMessage({ type: 'error', text: 'Le fichier est trop volumineux. Taille maximale technique: 10 Mo' });
       return;
     }
     if (!allowedTypes.includes(file.type)) {
@@ -179,7 +180,10 @@ const FileUploadModal = ({ isOpen, onClose, onUploadComplete, dossierId }) => {
         <div className="upload-text">
           {uploadProgressBar.isActive ? `Upload en cours... ${uploadProgressBar.progress}%` : 'Cliquez ou glissez-déposez'}
         </div>
-        <div className="upload-subtext">Formats acceptés: JPG, PNG, SVG, PDF (max. 10MB) <br />Les dossiers zip ne sont pas acceptés ici. </div>
+        <p className="text-secondary text-sm mt-2">
+          Formats acceptés: JPG, PNG, SVG, PDF, ZIP (taille maximale technique: 10 Mo).<br />
+          Les limites de votre plan (Free/Premium) peuvent être inférieures.
+        </p>
         {uploadProgressBar.isActive && (
           <div style={{ marginTop: '1rem' }}>
             <ProgressBar

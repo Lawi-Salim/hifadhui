@@ -44,15 +44,16 @@ const PORT = process.env.PORT || 5000;
 // Configuration trust proxy pour express-rate-limit
 app.set('trust proxy', 1);
 
-// Logs de démarrage (diagnostic)
-console.log('🟢 [BOOT] Démarrage du serveur Hifadhui');
-console.log('🟢 [BOOT] NODE_ENV =', process.env.NODE_ENV);
-console.log('🟢 [BOOT] VERCEL =', process.env.VERCEL ? '1' : '0');
-console.log('🟢 [BOOT] DATABASE_URL défini =', Boolean(process.env.DATABASE_URL));
-console.log('🟢 [BOOT] DB_HOST =', process.env.DB_HOST || '(non défini)');
+// Logs de démarrage essentiels
+if (process.env.NODE_ENV !== 'production') {
+  console.log('🟢 [BOOT] Démarrage du serveur Hifadhui');
+  console.log('🟢 [BOOT] NODE_ENV =', process.env.NODE_ENV);
+}
 
 // Middlewares de sécurité
-console.log('🔧 [SECURITY] Configuration Helmet avec CSP désactivée temporairement pour OAuth');
+if (process.env.NODE_ENV !== 'production') {
+  console.log('🔧 [SECURITY] Configuration Helmet avec CSP désactivée temporairement pour OAuth');
+}
 
 // Middleware pour ajouter des headers permissifs pour OAuth
 app.use((req, res, next) => {
@@ -391,7 +392,9 @@ const initializeDatabase = async () => {
 
 // Initialiser seulement en production (Vercel)
 if (process.env.VERCEL) {
-  console.log('🚀 [BOOT] Environnement Vercel détecté: initialisation DB sans app.listen()');
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🚀 [BOOT] Initialisation de la base de données...');
+  }
   initializeDatabase();
 } else {
   // En développement local, démarrer le serveur normalement

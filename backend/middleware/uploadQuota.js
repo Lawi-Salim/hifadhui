@@ -6,17 +6,16 @@
 import { Utilisateur } from '../models/index.js';
 import { Op } from 'sequelize';
 
-// Configuration des quotas
+// Configuration des quotas (valeurs par défaut des plans)
+// Les colonnes upload_max_file_size et upload_max_files_per_day permettent de surcharger par utilisateur
 const QUOTAS = {
   FREE: {
-    maxFilesPerDay: 10,
-    maxFileSize: 5 * 1024 * 1024, // 5MB
-    allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'application/pdf']
+    maxFilesPerDay: 15,
+    maxFileSize: 10 * 1024 * 1024 // 10 Mo (limite technique)
   },
   PREMIUM: {
-    maxFilesPerDay: 1000,
-    maxFileSize: 50 * 1024 * 1024, // 50MB
-    allowedTypes: ['*'] // Tous types
+    maxFilesPerDay: 25,
+    maxFileSize: 10 * 1024 * 1024 // 10 Mo (limite technique Cloudinary)
   }
 };
 
@@ -43,8 +42,18 @@ export const checkUploadQuota = async (req, res, next) => {
       });
     }
 
-    const isPremium = user.subscription_type === 'premium' || false; // Par défaut gratuit
-    const quota = isPremium ? QUOTAS.PREMIUM : QUOTAS.FREE;
+    const isPremium = typeof user.isPremium === 'function'
+      ? user.isPremium()
+      : user.subscription_type === 'premium';
+
+    const baseQuota = isPremium ? QUOTAS.PREMIUM : QUOTAS.FREE;
+
+    // Appliquer d'éventuels overrides spécifiques à l'utilisateur
+    const quota = {
+      maxFilesPerDay: user.upload_max_files_per_day || baseQuota.maxFilesPerDay,
+      maxFileSize: user.upload_max_file_size || baseQuota.maxFileSize,
+      allowedTypes: baseQuota.allowedTypes
+    };
 
     // Vérifier le quota journalier
     const today = new Date();
@@ -73,7 +82,7 @@ export const checkUploadQuota = async (req, res, next) => {
     // Vérifier la taille du fichier (si présent)
     if (req.file && req.file.size > quota.maxFileSize) {
       return res.status(413).json({
-        error: `Fichier trop volumineux. Taille max: ${formatFileSize(quota.maxFileSize)}`,
+        error: `Fichier trop volumineux. Taille maximale autorisée: ${formatFileSize(quota.maxFileSize)}`,
         code: 'FILE_TOO_LARGE',
         maxSize: quota.maxFileSize,
         fileSize: req.file.size,
@@ -166,7 +175,7 @@ function isFileTypeAllowed(mimeType, allowedTypes) {
 function formatFileSize(bytes) {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const sizes = ['octets', 'Ko', 'Mo', 'Go'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }

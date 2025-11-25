@@ -67,13 +67,25 @@ const AdminDashboard = () => {
       recentActivities: []
     }
   });
-  
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('7d'); // 7d, 30d, 90d
 
   useEffect(() => {
     fetchDashboardData();
   }, [timeRange]);
+
+  // Détection simple de la taille d'écran pour adapter les labels de l'axe X
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSmallScreen(window.innerWidth <= 768);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Actualisation automatique toutes les 5 minutes
   useEffect(() => {
@@ -114,8 +126,11 @@ const AdminDashboard = () => {
 
       if (metricsResponse.ok && chartsResponse.ok && alertsResponse.ok) {
         const metrics = await metricsResponse.json();
-        const charts = await chartsResponse.json();
+        const rawCharts = await chartsResponse.json();
         const alerts = await alertsResponse.json();
+        
+        // Normaliser les données de graphiques pour remplir les jours manquants
+        const charts = normalizeCharts(rawCharts, timeRange);
         
         setDashboardData({
           metrics,
@@ -134,6 +149,54 @@ const AdminDashboard = () => {
     }
   };
 
+  const selectMonthlyKeyPoints = (series = []) => {
+    if (!series.length) return [];
+
+    const sorted = [...series].filter(p => p.fullDate).sort((a, b) => {
+      return String(a.fullDate).localeCompare(String(b.fullDate));
+    });
+
+    const monthKeysInOrder = [];
+    const monthKeySet = new Set();
+
+    sorted.forEach((p) => {
+      const d = new Date(p.fullDate);
+      if (Number.isNaN(d.getTime())) return;
+      const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!monthKeySet.has(mk)) {
+        monthKeySet.add(mk);
+        monthKeysInOrder.push(mk);
+      }
+    });
+
+    const lastThreeKeys = monthKeysInOrder.slice(-3);
+    const allowedMonths = new Set(lastThreeKeys);
+
+    const result = [];
+
+    sorted.forEach((p) => {
+      const d = new Date(p.fullDate);
+      if (Number.isNaN(d.getTime())) return;
+      const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!allowedMonths.has(mk)) return;
+
+      const day = d.getDate();
+      const lastDayOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+
+      if (day === 1 || day === 15 || day === lastDayOfMonth) {
+        const weekdayLabel = WEEKDAY_LABELS[d.getDay()];
+        const dayStr = String(day).padStart(2, '0');
+        result.push({
+          ...p,
+          // ex: "Lun 01"
+          date: `${weekdayLabel} ${dayStr}`,
+        });
+      }
+    });
+
+    return result;
+  };
+
   const formatNumber = (num) => {
     if (num >= 1000000) {
       return (num / 1000000).toFixed(1) + 'M';
@@ -146,6 +209,251 @@ const AdminDashboard = () => {
   const formatBytes = (bytes) => formatFileSize(bytes);
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+  const WEEKDAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+  const MONTH_LABELS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+  const getDaysForRange = (range) => {
+    switch (range) {
+      case '7d':
+        return 7;
+      case '30d':
+        return 30;
+      case '90d':
+        return 90;
+      default:
+        return 7;
+    }
+  };
+
+  const generateDateRange = (days, range) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Pour 7 jours, on veut toujours la semaine en cours Lundi -> Dimanche
+    if (range === '7d') {
+      // getDay(): 0 = Dimanche, 1 = Lundi, ... 6 = Samedi
+      const dayOfWeek = today.getDay();
+      // Calculer l'offset pour obtenir le lundi de la semaine courante
+      const diffToMonday = (dayOfWeek + 6) % 7; // 0 si lundi, 1 si mardi, ... 6 si dimanche
+
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - diffToMonday);
+
+      const dates = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        dates.push(d);
+      }
+      return dates;
+    }
+
+    // Pour 30d / 90d: plage glissante se terminant aujourd'hui
+    const dates = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      dates.push(d);
+    }
+
+    return dates;
+  };
+
+  const normalizeTimeSeries = (rawData = [], range, valueKeys = []) => {
+    const days = getDaysForRange(range);
+    const dates = generateDateRange(days, range);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Indexer les données brutes par date ISO (YYYY-MM-DD)
+    const map = new Map();
+    rawData.forEach((item) => {
+      if (item && item.date) {
+        map.set(item.date, item);
+      }
+    });
+
+    return dates.map((d) => {
+      const isoDate = d.toISOString().slice(0, 10); // YYYY-MM-DD
+      const weekdayLabel = WEEKDAY_LABELS[d.getDay()];
+      const base = map.get(isoDate) || {};
+
+      const normalized = {
+        ...base,
+        // Affiché sur l'axe X
+        date: weekdayLabel,
+        // Date complète conservée pour d'éventuels tooltips avancés
+        fullDate: isoDate,
+      };
+
+      const isFutureDayFor7d = range === '7d' && d.getTime() > today.getTime();
+
+      valueKeys.forEach((key) => {
+        if (isFutureDayFor7d) {
+          // Pas de valeur pour les jours futurs: la courbe s'arrête au jour actuel
+          normalized[key] = null;
+        } else {
+          normalized[key] = base[key] != null ? base[key] : 0;
+        }
+      });
+
+      return normalized;
+    });
+  };
+
+  const filterMondaysAndSundays = (series = []) => {
+    return series.filter((point) => {
+      if (!point.fullDate) return false;
+      const d = new Date(point.fullDate);
+      if (Number.isNaN(d.getTime())) return false;
+      const day = d.getDay();
+      // 1 = Lundi, 0 = Dimanche
+      return day === 1 || day === 0;
+    });
+  };
+
+  const aggregateMonthly = (rawData = [], valueKeys = []) => {
+    const buckets = {};
+
+    rawData.forEach((item) => {
+      if (!item || !item.date) return;
+      const d = new Date(item.date);
+      if (Number.isNaN(d.getTime())) return;
+
+      const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!buckets[monthKey]) {
+        buckets[monthKey] = {};
+        valueKeys.forEach((key) => {
+          buckets[monthKey][key] = 0;
+        });
+      }
+
+      valueKeys.forEach((key) => {
+        const val = Number(item[key] || 0);
+        buckets[monthKey][key] += Number.isNaN(val) ? 0 : val;
+      });
+    });
+
+    const monthKeys = Object.keys(buckets).sort();
+    const lastThree = monthKeys.slice(-3);
+
+    return lastThree.map((key) => {
+      const [year, monthStr] = key.split('-');
+      const monthIndex = Math.max(0, Math.min(11, parseInt(monthStr, 10) - 1));
+
+      return {
+        date: MONTH_LABELS[monthIndex],
+        fullMonth: key,
+        ...buckets[key],
+      };
+    });
+  };
+
+  const normalizeCharts = (charts, range) => {
+    if (!charts) {
+      return {
+        userRegistrations: [],
+        dailyUploads: [],
+        fileTypes: [],
+        userActivity: [],
+      };
+    }
+
+    if (range === '7d') {
+      // Vue quotidienne sur la semaine courante, Lun → Dim
+      return {
+        userRegistrations: normalizeTimeSeries(
+          charts.userRegistrations,
+          range,
+          ['count']
+        ),
+        dailyUploads: normalizeTimeSeries(
+          charts.dailyUploads,
+          range,
+          ['images', 'pdfs']
+        ),
+        userActivity: normalizeTimeSeries(
+          charts.userActivity,
+          range,
+          ['activeUsers']
+        ),
+        fileTypes: charts.fileTypes || [],
+      };
+    }
+
+    if (range === '30d') {
+      // 30 jours: ne garder que les points de Lundi et Dimanche pour une meilleure lisibilité
+      const registrations30 = normalizeTimeSeries(
+        charts.userRegistrations,
+        range,
+        ['count']
+      );
+      const uploads30 = normalizeTimeSeries(
+        charts.dailyUploads,
+        range,
+        ['images', 'pdfs']
+      );
+      const activity30 = normalizeTimeSeries(
+        charts.userActivity,
+        range,
+        ['activeUsers']
+      );
+
+      return {
+        userRegistrations: filterMondaysAndSundays(registrations30),
+        dailyUploads: filterMondaysAndSundays(uploads30),
+        userActivity: filterMondaysAndSundays(activity30),
+        fileTypes: charts.fileTypes || [],
+      };
+    }
+
+    if (range === '90d') {
+      // 90 jours: afficher 1er, 15e et dernier jour de chaque mois (pour les 3 derniers mois)
+      const registrations90 = normalizeTimeSeries(
+        charts.userRegistrations,
+        range,
+        ['count']
+      );
+      const uploads90 = normalizeTimeSeries(
+        charts.dailyUploads,
+        range,
+        ['images', 'pdfs']
+      );
+      const activity90 = normalizeTimeSeries(
+        charts.userActivity,
+        range,
+        ['activeUsers']
+      );
+
+      return {
+        userRegistrations: selectMonthlyKeyPoints(registrations90),
+        dailyUploads: selectMonthlyKeyPoints(uploads90),
+        userActivity: selectMonthlyKeyPoints(activity90),
+        fileTypes: charts.fileTypes || [],
+      };
+    }
+
+    // Fallback par défaut: même logique que 7d
+    return {
+      userRegistrations: normalizeTimeSeries(
+        charts.userRegistrations,
+        range,
+        ['count']
+      ),
+      dailyUploads: normalizeTimeSeries(
+        charts.dailyUploads,
+        range,
+        ['images', 'pdfs']
+      ),
+      userActivity: normalizeTimeSeries(
+        charts.userActivity,
+        range,
+        ['activeUsers']
+      ),
+      fileTypes: charts.fileTypes || [],
+    };
+  };
 
   // Composant de fallback pour les graphiques
   const ChartFallback = ({ title, data, type = 'line' }) => (
@@ -294,7 +602,11 @@ const AdminDashboard = () => {
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={dashboardData.charts.userRegistrations}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
+                  <XAxis 
+                    dataKey="date" 
+                    interval={0}
+                    tick={{ angle: isSmallScreen ? -45 : 0, textAnchor: isSmallScreen ? 'end' : 'middle' }}
+                  />
                   <YAxis />
                   <Tooltip />
                   <Line 
@@ -331,7 +643,7 @@ const AdminDashboard = () => {
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={dashboardData.charts.dailyUploads}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
+                  <XAxis dataKey="date" interval={0} />
                   <YAxis />
                   <Tooltip />
                   <Line 
@@ -405,7 +717,7 @@ const AdminDashboard = () => {
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={dashboardData.charts.userActivity}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
+                  <XAxis dataKey="date" interval={0} />
                   <YAxis />
                   <Tooltip />
                   <Line 

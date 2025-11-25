@@ -56,7 +56,7 @@ const NotificationsPage = () => {
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
-    itemsPerPage: 50,
+    itemsPerPage: 30,
     hasNextPage: false,
     hasPrevPage: false
   });
@@ -100,7 +100,7 @@ const NotificationsPage = () => {
       // Préparer les paramètres de filtrage selon l'onglet actif
       const params = {
         page: parseInt(page) || 1,
-        limit: 50
+        limit: 30
       };
 
       // Utiliser le nouveau paramètre 'category' pour un filtrage plus précis

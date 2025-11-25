@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaPlus, FaFolderOpen, FaUpload, FaCalendar, FaDatabase, FaDownload } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';
 import api from '../../services/api';
@@ -13,7 +13,7 @@ import BulkActionsManager from '../Common/BulkActionsManager';
 import { useDownloadZip, DownloadProgressIndicator } from '../Common/DownloadZip';
 import CertificateModal from '../Certificates/CertificateModal';
 import certificateService from '../../services/certificateService';
-import useInfiniteScroll from '../../hooks/useInfiniteScroll';
+import Pagination from '../Common/Pagination';
 import { Link } from 'react-router-dom';
 import './Images.css';
 import '../Admin/AdminStyles.css'; // Import des styles admin pour les filtres
@@ -38,29 +38,52 @@ const ImageList = () => {
     return spaceBelow < menuHeight ? 'top' : 'bottom';
   };
 
-  // Fonction pour récupérer les images avec le bon format pour useInfiniteScroll
-  const fetchImagesForInfiniteScroll = async (params) => {
-    const response = await api.get('/files', { 
-      params: { 
-        ...params, 
-        type: 'image',
-        period: periodFilter || undefined,
-        sizeRange: sizeFilter || undefined
-      }
-    });
-    return response;
+  // États pour la pagination
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 30;
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const loadImages = async (page = 1) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await api.get('/files', {
+        params: {
+          page,
+          limit: itemsPerPage,
+          type: 'image',
+          period: periodFilter || undefined,
+          sizeRange: sizeFilter || undefined
+        }
+      });
+
+      const data = response.data || {};
+      const imagesData = data.files || data.data || [];
+      const pagination = data.pagination || {};
+
+      setImages(imagesData);
+      setTotalCount(pagination.total || pagination.totalItems || imagesData.length || 0);
+      setTotalPages(pagination.totalPages || 1);
+    } catch (err) {
+      console.error('Erreur lors du chargement des images:', err);
+      setError('Erreur lors du chargement des images');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Hook pour le scroll infini
-  const {
-    items: images,
-    loading,
-    hasMore,
-    error,
-    totalCount,
-    lastItemRef,
-    refresh
-  } = useInfiniteScroll(fetchImagesForInfiniteScroll, { limit: 20 });
+  useEffect(() => {
+    loadImages(currentPage);
+  }, [currentPage, periodFilter, sizeFilter]);
+
+  const refresh = () => {
+    loadImages(currentPage);
+  };
 
   // Hook pour le téléchargement ZIP
   const {
@@ -289,7 +312,7 @@ const ImageList = () => {
                 value={periodFilter}
                 onChange={(e) => {
                   setPeriodFilter(e.target.value);
-                  refresh();
+                  setCurrentPage(1);
                 }}
               >
                 <option value="">Toutes les dates</option>
@@ -310,7 +333,7 @@ const ImageList = () => {
                 value={sizeFilter}
                 onChange={(e) => {
                   setSizeFilter(e.target.value);
-                  refresh();
+                  setCurrentPage(1);
                 }}
               >
                 <option value="">Toutes les tailles</option>
@@ -401,10 +424,6 @@ const ImageList = () => {
             isSelectionMode={isSelectionMode}
             selectedItems={selectedImages}
             handleSelectItem={handleSelectImage}
-            // Props pour le scroll infini
-            lastItemRef={lastItemRef}
-            hasMore={hasMore}
-            loading={loading}
           />
         )}
       </div>
@@ -442,22 +461,29 @@ const ImageList = () => {
       />
 
 
-      {/* Indicateur de chargement pour le scroll infini */}
-      {loading && images.length > 0 && (
-        <div className="text-center py-4">
-          <div className="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-indigo-500 transition ease-in-out duration-150">
-            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Chargement...
-          </div>
-        </div>
-      )}
-      
-      {!hasMore && images.length > 0 && (
-        <div className="text-center py-4 text-gray-500">
-          Toutes les images ont été chargées
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex justify-center">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            itemsPerPage={itemsPerPage}
+            hasNextPage={currentPage < totalPages}
+            hasPrevPage={currentPage > 1}
+            onPageChange={setCurrentPage}
+            onPrevPage={() => {
+              if (currentPage > 1) {
+                setCurrentPage(currentPage - 1);
+              }
+            }}
+            onNextPage={() => {
+              if (currentPage < totalPages) {
+                setCurrentPage(currentPage + 1);
+              }
+            }}
+            itemName="images"
+          />
         </div>
       )}
 

@@ -53,7 +53,7 @@ router.post('/', contactLimiter, contactValidation, async (req, res) => {
 
     const finalSubject = subject || 'Nouveau message de contact';
 
-    // Envoyer l'email de contact
+    // Envoyer l'email de contact (avec le template HTML complet)
     await emailService.sendContactMessage({
       name,
       email,
@@ -61,21 +61,15 @@ router.post('/', contactLimiter, contactValidation, async (req, res) => {
       message
     });
 
-    // Générer également le HTML complet pour l'enregistrement admin
-    const htmlContent = emailService.getContactTemplate(
-      name,
-      email,
-      finalSubject,
-      message
-    );
-
-    // Enregistrer le message de contact dans la base de données
+    // Enregistrer le message de contact dans la base de données pour l'admin
+    // Ici on garde uniquement le texte simple afin que /admin/contact affiche
+    // un contenu minimaliste (sans le gros template d'email).
     try {
       await Message.create({
         type: 'contact_received',
         subject: finalSubject,
         content: message,
-        htmlContent,
+        htmlContent: null,
         senderEmail: email,
         senderName: name,
         recipientEmail: process.env.CONTACT_EMAIL || process.env.SMTP_FROM || process.env.SMTP_USER,

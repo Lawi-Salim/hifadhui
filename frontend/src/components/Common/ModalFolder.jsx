@@ -112,7 +112,7 @@ const ModalFolder = ({ isOpen, onClose, initialParentId = null, onDossierCreated
             )}
           </div>
           <FiFolder className="folder-row-icon" />
-          <span className="folder-row-name">{folder.name}</span>
+          <span className="folder-row-name">{folder.name_original || folder.name}</span>
         </button>
         {folder.children && folder.children.length > 0 && expandedFolders.has(folder.id) && (
           <div className="folder-row-children">
@@ -146,10 +146,10 @@ const ModalFolder = ({ isOpen, onClose, initialParentId = null, onDossierCreated
 
     const pathNodes = buildFolderPath(folders || [], selectedFolder.id);
     if (!pathNodes || pathNodes.length === 0) {
-      return selectedFolder.name;
+      return selectedFolder.name_original || selectedFolder.name;
     }
 
-    const names = pathNodes.map((f) => f.name);
+    const names = pathNodes.map((f) => f.name_original || f.name);
     return names.join(' / ');
   };
 

@@ -8,8 +8,9 @@ const DeleteDossierModal = ({ isOpen, onClose, dossier, onDossierDeleted }) => {
   const [progress, setProgress] = useState(0);
 
   const handleDelete = async () => {
+    const expectedName = dossier?.name_original || dossier?.name;
     // Vérifier que le nom saisi correspond au nom du dossier
-    if (confirmationName !== dossier?.name) {
+    if (confirmationName !== expectedName) {
       setError('Le nom saisi ne correspond pas au nom du dossier.');
       return;
     }
@@ -92,7 +93,7 @@ const DeleteDossierModal = ({ isOpen, onClose, dossier, onDossierDeleted }) => {
             fontWeight: '500',
             color: 'var(--text-primary)' 
           }}>
-            Pour confirmer, tapez le nom du dossier : <strong>"{dossier?.name}"</strong>
+            Pour confirmer, tapez le nom du dossier : <strong>"{dossier?.name_original || dossier?.name}"</strong>
           </label>
           <input
             id="confirmationName"
@@ -101,11 +102,12 @@ const DeleteDossierModal = ({ isOpen, onClose, dossier, onDossierDeleted }) => {
             onChange={(e) => {
               setConfirmationName(e.target.value);
               // Effacer l'erreur si le nom correspond
-              if (e.target.value === dossier?.name) {
+              const expected = dossier?.name_original || dossier?.name;
+              if (e.target.value === expected) {
                 setError('');
               }
             }}
-            placeholder={dossier?.name}
+            placeholder={dossier?.name_original || dossier?.name}
             style={{
               width: '100%',
               padding: '0.75rem',
@@ -169,7 +171,7 @@ const DeleteDossierModal = ({ isOpen, onClose, dossier, onDossierDeleted }) => {
             type="button" 
             className="btn btn-danger" 
             onClick={handleDelete} 
-            disabled={isSubmitting || confirmationName !== dossier?.name}
+            disabled={isSubmitting || confirmationName !== (dossier?.name_original || dossier?.name)}
           >
             {isSubmitting ? 'Suppression...' : 'Supprimer'}
           </button>

@@ -79,7 +79,7 @@ const FileDetailModal = ({ file, onClose, type = 'file', isOpen }) => {
     return filename.substring(0, maxLength) + '...';
   };
 
-  const title = isImage ? 'Détails de l\'image' : 'Détails du fichier';
+  const title = isImage ? 'Détails de l\'image' : 'Détails du PDF';
 
   return (
     <div className="modal-overlay" onClick={onClose}>

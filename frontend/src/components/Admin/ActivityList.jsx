@@ -3,7 +3,7 @@ import './ActivityList.css';
 import { getActivitySummary } from '../../services/adminService';
 import Modal from '../Modal';
 import UserActivityDetails from './UserActivityDetails';
-import Pagination from '../Pagination';
+import Pagination from '../Common/Pagination';
 import SmartAvatar from '../Layout/SmartAvatar';
 import UserDisplayName from '../Layout/UserDisplayName';
 import LoadingSpinner from '../Common/LoadingSpinner';
@@ -43,11 +43,6 @@ const ActivityList = () => {
 
   return (
     <div className="activity-list">
-      <Pagination 
-        currentPage={currentPage}
-        totalPages={pagination.totalPages}
-        onPageChange={setCurrentPage}
-      />
       <table>
         <thead>
           <tr>
@@ -87,7 +82,28 @@ const ActivityList = () => {
           )}
         </tbody>
       </table>
-      <Pagination pagination={pagination} onPageChange={fetchSummary} />
+      {pagination && pagination.totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={pagination.totalPages}
+          totalItems={pagination.totalItems || summary.length}
+          itemsPerPage={pagination.limit || 10}
+          hasNextPage={currentPage < pagination.totalPages}
+          hasPrevPage={currentPage > 1}
+          onPageChange={setCurrentPage}
+          onPrevPage={() => {
+            if (currentPage > 1) {
+              setCurrentPage(currentPage - 1);
+            }
+          }}
+          onNextPage={() => {
+            if (currentPage < pagination.totalPages) {
+              setCurrentPage(currentPage + 1);
+            }
+          }}
+          itemName="activités"
+        />
+      )}
       {selectedUser && (
         <Modal isOpen={!!selectedUser} onClose={() => setSelectedUser(null)} title={`Détails pour ${selectedUser.username}`}>
           <UserActivityDetails userId={selectedUser.id} />

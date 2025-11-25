@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { FiUpload, FiClock, FiLock, FiEdit3, FiFileText, FiMenu } from 'react-icons/fi';
+import { FaFileImage, FaFilePdf, FaFileAlt, FaCheck } from 'react-icons/fa';
 import ProgressBar from '../Common/ProgressBar';
 import { useProgressBar } from '../../hooks/useProgressBar';
 import './FileList.css';
@@ -11,6 +12,8 @@ const FileUpload = () => {
   const [dragActive, setDragActive] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const fileInputRef = useRef(null);
+  const { user } = useAuth();
+  const [batchFiles, setBatchFiles] = useState([]);
 
   // Hook centralisé pour la progression globale (upload + extraction)
   const globalProgressBar = useProgressBar({ 
@@ -29,26 +32,117 @@ const FileUpload = () => {
     }
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
     
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
+    if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) {
+      return;
+    }
+
+    const files = Array.from(e.dataTransfer.files);
+    const isPremium = user?.subscription_type === 'premium';
+    const maxPerBatch = isPremium ? 5 : 1;
+
+    if (files.length > maxPerBatch) {
+      setMessage({
+        type: 'warning',
+        text: isPremium
+          ? `Avec le plan Premium, vous pouvez uploader jusqu'à ${maxPerBatch} fichiers à la fois. Seuls les ${maxPerBatch} premiers seront pris en compte.`
+          : `Avec le plan Free, vous ne pouvez uploader qu'un fichier à la fois. Seul le premier fichier sera pris en compte.`
+      });
+    }
+
+    const filesToUpload = files.slice(0, maxPerBatch);
+
+    if (isPremium) {
+      setBatchFiles(filesToUpload.map(f => ({
+        name: f.name,
+        type: f.type,
+        status: 'pending'
+      })));
+    } else {
+      setBatchFiles([]);
+    }
+
+    for (let index = 0; index < filesToUpload.length; index++) {
+      const file = filesToUpload[index];
+
+      if (isPremium) {
+        setBatchFiles(prev => prev.map((item, i) => (
+          i === index ? { ...item, status: 'uploading' } : item
+        )));
+      }
+
+      // Traiter chaque fichier séquentiellement pour réutiliser toute la logique existante
+      // (quotas, limites techniques, flows Cloudinary/ZIP, etc.)
+      // eslint-disable-next-line no-await-in-loop
+      await handleFile(file);
+
+      if (isPremium) {
+        setBatchFiles(prev => prev.map((item, i) => (
+          i === index ? { ...item, status: 'done' } : item
+        )));
+      }
     }
   };
 
-  const handleChange = (e) => {
+  const handleChange = async (e) => {
     e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0]);
+    if (!e.target.files || e.target.files.length === 0) {
+      return;
+    }
+
+    const files = Array.from(e.target.files);
+    const isPremium = user?.subscription_type === 'premium';
+    const maxPerBatch = isPremium ? 5 : 1;
+
+    if (files.length > maxPerBatch) {
+      setMessage({
+        type: 'warning',
+        text: isPremium
+          ? `Avec le plan Premium, vous pouvez uploader jusqu'à ${maxPerBatch} fichiers à la fois. Seuls les ${maxPerBatch} premiers seront pris en compte.`
+          : `Avec le plan Free, vous ne pouvez uploader qu'un fichier à la fois. Seul le premier fichier sera pris en compte.`
+      });
+    }
+
+    const filesToUpload = files.slice(0, maxPerBatch);
+
+    if (isPremium) {
+      setBatchFiles(filesToUpload.map(f => ({
+        name: f.name,
+        type: f.type,
+        status: 'pending'
+      })));
+    } else {
+      setBatchFiles([]);
+    }
+
+    for (let index = 0; index < filesToUpload.length; index++) {
+      const file = filesToUpload[index];
+
+      if (isPremium) {
+        setBatchFiles(prev => prev.map((item, i) => (
+          i === index ? { ...item, status: 'uploading' } : item
+        )));
+      }
+
+      // Traitement séquentiel pour conserver la logique actuelle de handleFile
+      // eslint-disable-next-line no-await-in-loop
+      await handleFile(file);
+
+      if (isPremium) {
+        setBatchFiles(prev => prev.map((item, i) => (
+          i === index ? { ...item, status: 'done' } : item
+        )));
+      }
     }
   };
 
   const handleFile = async (file) => {
-    // Vérifications
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    // Vérifications (limite technique max, les plans free/premium sont gérés côté serveur)
+    const maxSize = 10 * 1024 * 1024; // 10 Mo (limite technique Cloudinary)
     const allowedTypes = [
       'image/jpeg',
       'image/png',
@@ -62,7 +156,7 @@ const FileUpload = () => {
     if (file.size > maxSize) {
       setMessage({
         type: 'error',
-        text: 'Le fichier est trop volumineux. Taille maximale: 10MB'
+        text: 'Le fichier est trop volumineux. Taille maximale technique: 10 Mo'
       });
       return;
     }
@@ -89,10 +183,21 @@ const FileUpload = () => {
       // Choisir la route selon le type de fichier
       const isZip = file.type === 'application/zip' || file.type === 'application/x-zip-compressed';
       const ZIP_DIRECT_THRESHOLD = 4 * 1024 * 1024; // ~4MB: au-delà, utiliser le flux zip-cloudinary
+      const ZIP_CLOUDINARY_MAX = 10 * 1024 * 1024; // Limite pratique pour le flux ZIP Cloudinary (plan Cloudinary 10 Mo)
       
       if (isZip) {
         // Gros ZIP : upload direct vers Cloudinary puis traitement côté backend
         if (file.size > ZIP_DIRECT_THRESHOLD) {
+
+          // Protection : ne pas envoyer à Cloudinary un ZIP supérieur à la limite pratique
+          if (file.size > ZIP_CLOUDINARY_MAX) {
+            setMessage({
+              type: 'error',
+              text: 'Fichier ZIP trop volumineux pour ce mode d\'upload. Taille maximale: 20 Mo.'
+            });
+            globalProgressBar.resetProgress();
+            return;
+          }
           try {
             globalProgressBar.updateCurrentItem('Upload du ZIP vers Cloudinary...');
 
@@ -140,11 +245,26 @@ const FileUpload = () => {
 
             globalProgressBar.updateCurrentItem('Traitement du ZIP en cours...');
 
+            // Timeout dynamique basé sur la taille du ZIP :
+            // - minimum 60s
+            // - +15s par Mo
+            // - maximum 5 minutes
+            const sizeInMB = file.size / (1024 * 1024);
+            const baseTimeout = 60000; // 60s
+            const perMBTimeout = 15000; // 15s par Mo
+            const maxTimeout = 300000; // 5 minutes
+            const zipProcessTimeout = Math.min(
+              maxTimeout,
+              baseTimeout + Math.round(sizeInMB) * perMBTimeout
+            );
+
             const response = await api.post('/files/zip-cloudinary', {
               step: 'process',
               secure_url,
               bytes,
               originalname: original_filename || file.name
+            }, {
+              timeout: zipProcessTimeout
             });
 
             globalProgressBar.completeProgress();
@@ -163,10 +283,20 @@ const FileUpload = () => {
             return;
           } catch (zipCloudinaryError) {
             console.error('Erreur upload ZIP direct Cloudinary:', zipCloudinaryError);
-            setMessage({
-              type: 'error',
-              text: 'Erreur lors de l\'upload du fichier ZIP (flux direct Cloudinary)'
-            });
+
+            // Cas particulier : timeout côté client alors que le serveur peut continuer le traitement
+            if (zipCloudinaryError.code === 'ECONNABORTED') {
+              setMessage({
+                type: 'warning',
+                text: 'Le traitement du ZIP prend plus de temps que prévu. Patientez quelques instants puis rafraîchissez vos dossiers pour vérifier que les fichiers ont bien été créés.'
+              });
+            } else {
+              setMessage({
+                type: 'error',
+                text: 'Erreur lors de l\'upload du fichier ZIP (flux direct Cloudinary)'
+              });
+            }
+
             globalProgressBar.resetProgress();
             return;
           }
@@ -447,6 +577,7 @@ const FileUpload = () => {
               <input
                 ref={fileInputRef}
                 type="file"
+                multiple
                 style={{ display: 'none' }}
                 onChange={handleChange}
                 accept=".jpg,.jpeg,.png,.svg,.pdf,.zip"
@@ -462,8 +593,89 @@ const FileUpload = () => {
               </div>
               
               <div className="upload-subtext">
-                Formats acceptés: JPG, PNG, SVG, PDF, ZIP (max. 10MB) <br /> Veuillez rester sur cette page jusqu'à la fin de l'upload.
+                Formats acceptés: JPG, PNG, SVG, PDF, ZIP (taille maximale technique: 10 Mo) <br />
+                {user?.subscription_type === 'premium'
+                  ? 'Possibilité d\'uploader jusqu\'à 5 fichiers à la fois.'
+                  : '1 fichier à uploader à la fois.'}
               </div>
+
+              {user?.subscription_type === 'premium' && batchFiles.length > 0 && (
+                <div
+                  className="upload-batch-status"
+                  style={{
+                    marginTop: '1.5rem',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: '0.75rem'
+                  }}
+                >
+                  {batchFiles.map((item, index) => {
+                    let IconComponent = FaFileAlt;
+                    if (item.type && item.type.startsWith('image/')) {
+                      IconComponent = FaFileImage;
+                    } else if (item.type === 'application/pdf') {
+                      IconComponent = FaFilePdf;
+                    }
+
+                    const isDone = item.status === 'done';
+
+                    return (
+                      <div
+                        key={`${item.name}-${index}`}
+                        className="upload-batch-item"
+                        style={{
+                          width: '100px',
+                          height: '72px',
+                          borderRadius: '14px',
+                          background: isDone
+                            ? 'var(--navbar-hover-bg)'
+                            : 'var(--navbar-active-bg)',
+                          border: isDone
+                            ? '1px solid var(--success-color)'
+                            : '0',
+                          boxShadow: isDone
+                            ? 'var(--shadow-sm)'
+                            : 'var(--shadow-md)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          position: 'relative'
+                        }}
+                      >
+                        <IconComponent className="text-secondary" style={{ fontSize: '1.25rem' }} />
+                        {isDone && (
+                          <FaCheck
+                            className="text-green-500"
+                            style={{
+                              position: 'absolute',
+                              top: '5px',
+                              right: '5px',
+                              borderRadius: '50%',
+                              background: 'var(--success-color)',
+                              padding: '2px'
+                            }}
+                          />
+                        )}
+                        <span
+                          className="text-xs text-secondary"
+                          style={{
+                            marginTop: '0.35rem',
+                            textAlign: 'center',
+                            maxWidth: '64px',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}
+                          title={item.name}
+                        >
+                          {item.name}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {globalProgressBar.isActive && (
                 <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>

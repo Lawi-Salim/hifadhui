@@ -173,6 +173,29 @@
   margin: 0;
 }
 
+/* Bloc quotas du plan */
+.plan-quotas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 220px;
+}
+
+.plan-quota-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.875rem;
+}
+
+.plan-quota-row span {
+  color: var(--text-secondary);
+}
+
+.plan-quota-row strong {
+  color: var(--text-primary);
+}
+
 /* Section Zone de danger */
 .danger-section {
   border-top: 3px solid var(--error-color);

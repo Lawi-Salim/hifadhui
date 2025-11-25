@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FiUser, FiLock, FiTrash2, FiEye, FiEyeOff, FiAlertTriangle } from 'react-icons/fi';
+import { FiUser, FiLock, FiTrash2, FiEye, FiEyeOff } from 'react-icons/fi';
 import SmartAvatar from '../Layout/SmartAvatar';
 import UserDisplayName from '../Layout/UserDisplayName';
 import ProviderIcon from '../Layout/ProviderIcon';
+import PlanSettings from './PlanSettings';
 import './SettingsPage.css';
 
 const SettingsPage = () => {
@@ -80,6 +81,7 @@ const SettingsPage = () => {
 
   const sections = [
     { id: 'profile', label: 'Profil', icon: FiUser },
+    { id: 'plan', label: 'Plan & quotas', icon: FiLock },
     { id: 'security', label: 'Sécurité', icon: FiLock },
     { id: 'danger', label: 'Zone de danger', icon: FiTrash2 }
   ];
@@ -184,6 +186,11 @@ const SettingsPage = () => {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Section Sécurité */}
+          {activeSection === 'plan' && (
+            <PlanSettings />
           )}
 
           {/* Section Sécurité */}

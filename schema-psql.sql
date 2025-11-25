@@ -36,6 +36,11 @@ CREATE TABLE Utilisateur (
     deletion_scheduled_at TIMESTAMP NULL, -- Date programmée de suppression définitive
     recovery_token VARCHAR(255) UNIQUE, -- Token pour récupération du compte
     recovery_token_expires_at TIMESTAMP NULL, -- Expiration du token de récupération
+    -- Abonnement et quotas d'upload
+    subscription_type VARCHAR(20) NOT NULL DEFAULT 'free', -- free, premium, etc.
+    subscription_expires_at TIMESTAMP NULL, -- Date de fin d'abonnement premium (optionnel)
+    upload_max_file_size BIGINT NULL, -- Taille max par fichier en octets (override du plan)
+    upload_max_files_per_day INT NULL, -- Nombre max d'uploads par jour (override du plan)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -52,7 +52,7 @@ const GenerateEmpreintes = () => {
       const response = await api.get('/empreintes', {
         params: { 
           status: filter === 'all' ? undefined : filter,
-          limit: 100,
+          limit: 30,
           sortBy: 'sequence_number',
           sortOrder: 'DESC'
         }
