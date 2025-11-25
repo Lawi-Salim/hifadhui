@@ -49,7 +49,7 @@ router.get('/users', [authenticateToken, authorizeAdmin], async (req, res) => {
 
     const { count, rows: users } = await Utilisateur.findAndCountAll({
       where: { role: { [Op.ne]: 'admin' } },
-      attributes: ['id', 'username', 'email', 'role', 'created_at', 'google_id', 'provider', 'avatar_url'],
+      attributes: ['id', 'username', 'email', 'role', 'created_at', 'google_id', 'provider', 'avatar_url', 'subscription_type'],
       order: [['created_at', 'DESC']],
       limit: limitNum,
       offset: offset,
