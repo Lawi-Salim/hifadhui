@@ -522,11 +522,12 @@ const processSingleFile = async (fileData, user, req, dossierId = null, options 
     signature = options.empreinte.signature_pregeneree;
     empreinteId = options.empreinte.id;
     
-    console.log(`🔖 [UPLOAD] Utilisation empreinte pré-générée: ${options.empreinte.product_id}`);
+    // Utilisation d'une empreinte pré-générée
   } else {
-    // Générer hash et signature comme avant (ancien système)
+    // Générer hash et signature de manière cohérente
     const timestamp = Date.now();
-    fileHash = crypto.createHash('sha256').update(filePath + timestamp).digest('hex');
+    const fileBuffer = fs.readFileSync(filePath);
+    fileHash = File.generateFileHash(fileBuffer);
     const signatureData = `${originalname}-${user.id}-${timestamp}`;
     signature = crypto.createHash('sha256').update(signatureData).digest('hex');
     

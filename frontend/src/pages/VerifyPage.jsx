@@ -16,6 +16,7 @@ const VerifyPage = () => {
 
   const [activeTab, setActiveTab] = useState('file'); // 'file', 'hash' ou 'productId'
   const [file, setFile] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [hashInput, setHashInput] = useState(urlHash || '');
   const PRODUCT_ID_PREFIX = 'HFD-LW-';
   const [productIdInput, setProductIdInput] = useState(PRODUCT_ID_PREFIX);
@@ -33,11 +34,26 @@ const VerifyPage = () => {
   }, [urlHash]);
 
   const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setResult(null);
-      setError(null);
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setFile(e.dataTransfer.files[0]);
     }
   };
 
@@ -178,17 +194,29 @@ const VerifyPage = () => {
                 cryptographique et la comparerons à notre base de données.
               </p>
 
-              <div className="verify-upload-zone">
+              <div 
+                className={`verify-upload-zone ${isDragging ? 'dragging' : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
                 <input
                   type="file"
                   id="file-upload"
                   onChange={handleFileChange}
                   style={{ display: 'none' }}
                 />
-                <label htmlFor="file-upload" className="verify-upload-label">
+                <label 
+                  htmlFor="file-upload" 
+                  className="verify-upload-label"
+                >
                   <FaUpload className="verify-upload-icon" />
                   <span className="verify-upload-text">
-                    {file ? file.name : 'Cliquez pour sélectionner un fichier'}
+                    {file 
+                      ? file.name 
+                      : isDragging 
+                        ? 'Relâchez le fichier ici' 
+                        : 'Glissez-déposez un fichier ou cliquez pour sélectionner'}
                   </span>
                   {file && (
                     <span className="verify-upload-size">

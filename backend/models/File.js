@@ -110,9 +110,26 @@ const File = sequelize.define('File', {
   }
 });
 
-// Méthode statique pour générer un hash de fichier
+// Méthode statique pour générer un hash de fichier de manière cohérente
 File.generateFileHash = (buffer) => {
-  return crypto.createHash('sha256').update(buffer).digest('hex');
+  const startTime = Date.now();
+  
+  if (!Buffer.isBuffer(buffer)) {
+    console.log('🔄 [HASH] Conversion du buffer en Buffer (actuel:', typeof buffer, ')');
+    buffer = Buffer.from(buffer);
+  }
+  
+  const hash = crypto.createHash('sha256').update(buffer).digest('hex');
+  
+  console.log('🔢 [HASH] Génération du hash:', {
+    bufferType: buffer.constructor.name,
+    bufferLength: buffer.length,
+    firstBytes: buffer.length > 0 ? buffer.slice(0, 16).toString('hex') : 'empty',
+    generatedHash: hash,
+    duration: `${Date.now() - startTime}ms`
+  });
+  
+  return hash;
 };
 
 // Méthode pour vérifier l'intégrité du fichier
