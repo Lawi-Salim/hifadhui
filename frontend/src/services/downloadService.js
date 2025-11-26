@@ -16,6 +16,52 @@ const getFileType = (mimetype) => {
 };
 
 /**
+ * S'assure que le nom de fichier possède une extension cohérente avec son mimetype.
+ * Si aucune extension n'est détectée, ajoute une extension basée sur le type MIME.
+ * @param {string} filename - Nom de fichier d'origine
+ * @param {string} mimetype - Type MIME du fichier
+ * @returns {string} - Nom de fichier avec extension correcte si possible
+ */
+const ensureFilenameHasExtension = (filename = 'fichier', mimetype = '') => {
+  if (!filename || typeof filename !== 'string') {
+    filename = 'fichier';
+  }
+
+  // Si le nom contient déjà un point (extension), on le laisse tel quel
+  if (filename.includes('.')) {
+    return filename;
+  }
+
+  if (!mimetype || typeof mimetype !== 'string') {
+    return filename;
+  }
+
+  // Déterminer l'extension à partir du mimetype
+  if (mimetype === 'application/pdf') {
+    return `${filename}.pdf`;
+  }
+
+  if (mimetype === 'image/jpeg' || mimetype === 'image/jpg') {
+    return `${filename}.jpg`;
+  }
+
+  if (mimetype === 'image/png') {
+    return `${filename}.png`;
+  }
+
+  if (mimetype === 'image/webp') {
+    return `${filename}.webp`;
+  }
+
+  if (mimetype === 'image/gif') {
+    return `${filename}.gif`;
+  }
+
+  // Par défaut, on ne modifie pas le nom
+  return filename;
+};
+
+/**
  * Génère le nom du fichier ZIP basé sur les types de fichiers sélectionnés
  * @param {Array} selectedItems - Liste des éléments sélectionnés
  * @returns {string} - Nom du fichier ZIP
@@ -129,7 +175,8 @@ const addWatermarkToImage = async (imageBlob, productId) => {
       try {
         const canvas = await html2canvas(wrapper, {
           backgroundColor: null,
-          scale: 2,
+          // Réduire l'échelle pour améliorer les performances et diminuer la taille du fichier
+          scale: 1,
           useCORS: true,
           logging: false
         });
@@ -348,17 +395,13 @@ export const downloadSelectedItemsAsZip = async (selectedItems, onProgress = nul
             console.warn(`Impossible d'ajouter le watermark sur ${item.filename}:`, error);
             // Continuer avec l'image sans watermark
           }
-        } else {
-          console.log('[downloadSelectedItemsAsZip] no watermark for item', {
-            filename: item.filename,
-            withWatermark,
-            isImage,
-            productId
-          });
         }
 
+        // S'assurer que le nom de fichier a une extension cohérente
+        const safeFilename = ensureFilenameHasExtension(item.filename, item.mimetype);
+
         // Ajouter le fichier au ZIP
-        zip.file(item.filename, blob);
+        zip.file(safeFilename, blob);
         updateProgress();
         
       } catch (error) {

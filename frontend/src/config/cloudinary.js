@@ -62,5 +62,3 @@ export const buildCloudinaryUrl = (fileUrl, resourceType) => {
 // Fonctions utilitaires spécialisées
 export const buildImageUrl = (fileUrl) => buildCloudinaryUrl(fileUrl, 'image');
 export const buildPdfUrl = (fileUrl) => buildCloudinaryUrl(fileUrl, 'raw');
-
-console.log('Cloudinary Config:', getCloudinaryConfig());

@@ -84,7 +84,7 @@ const ProgressBar = ({
 
   // Contenu de la barre de progression
   const progressContent = (
-    <div className="progress-bar-content">
+    <div className="progress-bar-content" data-type={type}>
       {/* En-tête avec icône et titre */}
       <div className="progress-header">
         <div className="progress-icon">
@@ -127,6 +127,13 @@ const ProgressBar = ({
             animated={!completed}
             animationDuration={1.5}
           />
+
+          {/* Message d'aide supplémentaire pour les téléchargements ZIP */}
+          {type === 'download' && !completed && !error && (
+            <div className="progress-hint">
+              Le téléchargement du fichier ZIP peut prendre un peu de temps en fonction du nombre et de la taille des images sélectionnées.
+            </div>
+          )}
 
           {/* Message de completion */}
           {completed && (

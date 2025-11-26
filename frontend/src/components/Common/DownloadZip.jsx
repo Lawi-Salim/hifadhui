@@ -77,6 +77,21 @@ const useDownloadZip = () => {
  * Utilise maintenant le composant ProgressBar centralisé
  */
 const DownloadProgressIndicator = ({ progressBar, onClose }) => {
+  const handleCancel = () => {
+    // Arrêter et réinitialiser la progression côté UI
+    if (progressBar.stopProgress) {
+      progressBar.stopProgress();
+    }
+    if (progressBar.resetProgress) {
+      progressBar.resetProgress();
+    }
+
+    // Propager éventuellement la fermeture si un handler externe est fourni
+    if (onClose) {
+      onClose();
+    }
+  };
+
   return (
     <ProgressBar
       isVisible={progressBar.isActive}
@@ -86,7 +101,7 @@ const DownloadProgressIndicator = ({ progressBar, onClose }) => {
       stats={progressBar.stats}
       error={progressBar.error}
       completed={progressBar.completed}
-      onClose={onClose || progressBar.resetProgress}
+      onClose={handleCancel}
       showAsModal={true}
     />
   );

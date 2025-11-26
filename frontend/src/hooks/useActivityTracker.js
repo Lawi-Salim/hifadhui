@@ -98,7 +98,6 @@ export const useActivityTracker = () => {
   const handleBeforeUnload = useCallback((event) => {
     // Ne pas fermer la session sur beforeunload car cela inclut les actualisations
     // Les sessions seront fermées par inactivité ou déconnexion explicite
-    console.log('🔄 [ACTIVITY] Page fermée/actualisée - session maintenue');
     
     // Optionnel : Afficher un message de confirmation
     // event.preventDefault();
@@ -160,10 +159,6 @@ export const useActivityTracker = () => {
     // Ne rien démarrer tant qu'il n'y a pas de token
     const token = localStorage.getItem('token');
     if (!token) {
-      // En dev uniquement, log discret pour debug éventuel
-      if (process.env.NODE_ENV === 'development') {
-        console.debug('[ACTIVITY] Tracker inactif (pas de token)');
-      }
       return;
     }
 

@@ -41,7 +41,7 @@ const FilesPage = () => {
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [selectedFiles, setSelectedFiles] = useState([]); // Contiendra des objets fichier complets
   const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
   const [, setBatchDeleteLoading] = useState(false);
   const [, setDeleteProgress] = useState(0);
@@ -195,21 +195,22 @@ const FilesPage = () => {
     setSelectedFiles([]); // Réinitialiser la sélection en changeant de mode
   };
 
-  const handleSelectFile = (fileId) => {
-    setSelectedFiles(prevSelected =>
-      prevSelected.includes(fileId)
-        ? prevSelected.filter(id => id !== fileId)
-        : [...prevSelected, fileId]
-    );
+  const handleSelectFile = (file) => {
+    setSelectedFiles((prevSelected) => {
+      const isSelected = prevSelected.some((f) => f.id === file.id);
+      if (isSelected) {
+        return prevSelected.filter((f) => f.id !== file.id);
+      }
+      return [...prevSelected, file];
+    });
   };
 
   // Fonction pour gérer le téléchargement ZIP
   const handleBatchDownload = async () => {
     if (selectedFiles.length === 0) return;
 
-    // Récupérer les objets fichiers complets à partir des IDs sélectionnés
-    const selectedFileObjects = files.filter(file => selectedFiles.includes(file.id));
-
+    // Les éléments sélectionnés sont déjà des objets fichier complets
+    const selectedFileObjects = selectedFiles;
     try {
       await handleDownloadZip(
         selectedFileObjects,
@@ -233,8 +234,7 @@ const FilesPage = () => {
   const handleBatchDownloadWithWatermark = async () => {
     if (selectedFiles.length === 0) return;
 
-    const selectedFileObjects = files.filter(file => selectedFiles.includes(file.id));
-
+    const selectedFileObjects = selectedFiles;
     try {
       await handleDownloadZip(
         selectedFileObjects,
@@ -296,8 +296,8 @@ const FilesPage = () => {
       // Si tous sont sélectionnés, désélectionner tout
       setSelectedFiles([]);
     } else {
-      // Sinon, sélectionner tous les fichiers visibles
-      setSelectedFiles(files.map(file => file.id));
+      // Sinon, sélectionner tous les fichiers visibles (objets complets)
+      setSelectedFiles([...files]);
     }
   };
 

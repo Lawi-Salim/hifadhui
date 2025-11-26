@@ -9,11 +9,8 @@ const ActivityTracker = ({ children }) => {
     // Ne pas activer le tracker si l'utilisateur n'est pas connecté
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
-      console.log('ActivityTracker: Pas de token, tracker désactivé');
       return;
     }
-
-    console.log('ActivityTracker: Token trouvé, activation du tracker');
     // Écouter les événements de déconnexion personnalisés
     const handleCustomLogout = () => {
       if (!sessionEndSentRef.current) {
@@ -35,12 +32,10 @@ const ActivityTracker = ({ children }) => {
 
     // Écouter les changements de statut de connexion
     const handleOnline = () => {
-      console.log('Connexion rétablie');
       sessionEndSentRef.current = false; // Réinitialiser pour permettre de nouveaux envois
     };
 
     const handleOffline = () => {
-      console.log('Connexion perdue');
       if (!sessionEndSentRef.current) {
         sessionEndSentRef.current = true;
         sendSessionEnd('network_offline');
@@ -51,7 +46,6 @@ const ActivityTracker = ({ children }) => {
     const handleBeforeUnload = (event) => {
       // Ne pas fermer la session sur beforeunload car cela inclut les actualisations
       // Les sessions seront fermées par déconnexion explicite ou inactivité prolongée
-      console.log('🔄 [ACTIVITY-TRACKER] Page fermée/actualisée - session maintenue');
     };
 
     // Gérer la perte de focus de la page (changement d'onglet)

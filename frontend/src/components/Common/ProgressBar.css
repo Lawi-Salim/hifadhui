@@ -20,8 +20,10 @@
   background: var(--bg-primary);
   border-radius: 12px;
   padding: 0;
-  min-width: 400px;
-  max-width: 500px;
+  /* Largeur plus stable et légèrement plus large sur desktop */
+  min-width: 480px;
+  width: 520px;
+  max-width: 520px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   border: 1px solid var(--border-color);
   position: relative;
@@ -51,6 +53,7 @@
 /* Contenu principal */
 .progress-bar-content {
   padding: 1.5rem;
+  height: 280px;
 }
 
 /* En-tête */
@@ -120,6 +123,13 @@
   color: var(--text-primary);
   font-weight: 500;
   margin-left: 1rem;
+}
+
+/* Message d'information sous la barre (par ex. pour les téléchargements ZIP) */
+.progress-hint {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
 }
 
 /* Barre de progression visuelle */
@@ -246,6 +256,8 @@
 @media (max-width: 480px) {
   .progress-modal {
     min-width: 300px;
+    width: auto;
+    max-width: calc(100% - 40px);
     margin: 20px;
   }
   

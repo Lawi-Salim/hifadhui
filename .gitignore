@@ -61,6 +61,8 @@ add-table-empreinte.sql
 # Dossier de build de production
 /frontend/build
 
+Fiche-produit-licence.md
+
 # Fichiers de logs
 logs
 *.log
