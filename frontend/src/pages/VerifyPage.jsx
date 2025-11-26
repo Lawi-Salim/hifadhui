@@ -24,6 +24,8 @@ const VerifyPage = () => {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
+  const isProd = process.env.NODE_ENV === 'production';
+
   // Si un hash est dans l'URL, vérifier automatiquement
   useEffect(() => {
     if (urlHash) {
@@ -35,8 +37,25 @@ const VerifyPage = () => {
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      console.log('[VERIFY-FRONT] Fichier sélectionné:', {
+        name: selectedFile.name,
+        size: selectedFile.size,
+        type: selectedFile.type
+      });
+      setFile(selectedFile);
     }
+  };
+
+  // Calculer le hash SHA-256 du fichier côté client
+  const computeFileHash = async (file) => {
+    console.log('[VERIFY-FRONT] Début du calcul de hash côté client pour:', file.name);
+    const arrayBuffer = await file.arrayBuffer();
+    const hashBuffer = await window.crypto.subtle.digest('SHA-256', arrayBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    console.log('[VERIFY-FRONT] Hash SHA-256 calculé:', hashHex);
+    return hashHex;
   };
 
   const handleDragOver = (e) => {
@@ -68,11 +87,23 @@ const VerifyPage = () => {
       setError(null);
       setResult(null);
 
-      const data = await certificateService.verifyByFile(file);
-      setResult(data);
+      // En production : calculer le hash côté client et utiliser la vérification par hash
+      if (isProd) {
+        const hash = await computeFileHash(file);
+        console.log('[VERIFY-FRONT] Envoi de la vérification par hash (prod):', { hash });
+        const data = await certificateService.verifyHashManually(hash);
+        console.log('[VERIFY-FRONT] Réponse API /verify/hash:', data);
+        setResult(data);
+      } else {
+        // En développement : conserver le comportement actuel (upload du fichier)
+        console.log('[VERIFY-FRONT] Envoi de la vérification par fichier (dev)...');
+        const data = await certificateService.verifyByFile(file);
+        console.log('[VERIFY-FRONT] Réponse API /verify/file:', data);
+        setResult(data);
+      }
 
     } catch (err) {
-      console.error('Erreur vérification:', err);
+      console.error('[VERIFY-FRONT] Erreur vérification:', err);
       setError('Erreur lors de la vérification du fichier');
     } finally {
       setVerifying(false);
