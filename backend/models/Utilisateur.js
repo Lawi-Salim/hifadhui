@@ -106,6 +106,16 @@ const Utilisateur = sequelize.define('Utilisateur', {
     type: DataTypes.INTEGER,
     allowNull: true,
     comment: 'Nombre max d\'uploads par jour (override du plan)'
+  },
+  license_template_txt: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Template de licence au format texte (placeholders autorisés)'
+  },
+  license_template_md: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Template de licence au format Markdown (placeholders autorisés)'
   }
 }, {
   modelName: 'Utilisateur',

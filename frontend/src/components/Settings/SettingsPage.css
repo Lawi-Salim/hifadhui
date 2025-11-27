@@ -88,22 +88,47 @@
   padding: 2rem;
 }
 
-.section-header {
-  margin-bottom: 2rem;
+.license-header {
+  margin-bottom: 1rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-color);
 }
 
-.section-header h2 {
+.license-header h2 {
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 
-.section-header p {
+.license-header p {
   color: var(--text-secondary);
   font-size: 0.875rem;
+}
+
+.license-actions-row, .license-textarea-zone {
+  margin-bottom: 0 !important;
+}
+
+/* Aide pour le template de licence */
+.license-help-text {
+  margin-top: 0.5rem;
+}
+
+.license-placeholders-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.license-placeholders-list li {
+  margin-bottom: 0.2rem;
+}
+
+.license-placeholders-list code {
+  font-family: monospace;
+  font-size: 0.8rem;
 }
 
 /* Section Profil */
@@ -471,6 +496,22 @@
   background-color: var(--bg-tertiary);
   color: var(--text-secondary);
   cursor: not-allowed;
+}
+
+/* Textarea du template de licence : même style de scrollbar que le modal de téléchargement */
+.license-settings-textarea {
+  font-family: monospace;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  height: 420px;
+  overflow: auto;
+  scrollbar-width: none; /* Firefox */
+  resize: none;
+}
+
+.license-settings-textarea::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 /* Amélioration des alertes */

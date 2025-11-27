@@ -131,7 +131,7 @@ const ProgressBar = ({
           {/* Message d'aide supplémentaire pour les téléchargements ZIP */}
           {type === 'download' && !completed && !error && (
             <div className="progress-hint">
-              Le téléchargement du fichier ZIP peut prendre un peu de temps en fonction du nombre et de la taille des images sélectionnées.
+              Le téléchargement du fichier ZIP peut prendre un peu de temps en fonction du nombre et de la taille des éléments sélectionnés.
             </div>
           )}
 

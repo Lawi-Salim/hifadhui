@@ -41,6 +41,9 @@ CREATE TABLE Utilisateur (
     subscription_expires_at TIMESTAMP NULL, -- Date de fin d'abonnement premium (optionnel)
     upload_max_file_size BIGINT NULL, -- Taille max par fichier en octets (override du plan)
     upload_max_files_per_day INT NULL, -- Nombre max d'uploads par jour (override du plan)
+    -- Templates de licence personnalisés
+    license_template_txt TEXT NULL, -- Template de licence au format texte brut (placeholders autorisés)
+    license_template_md TEXT NULL, -- Template de licence au format Markdown (placeholders autorisés)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

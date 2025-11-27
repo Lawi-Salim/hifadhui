@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaFolderOpen, FaUpload, FaCalendar, FaDatabase } from 'react-icons/fa';
+import { useAuth } from '../../contexts/AuthContext';
+import { FaUpload, FaCalendar, FaDatabase } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';
 import fileService from '../../services/fileService';
 import api from '../../services/api';
 import downloadService from '../../services/downloadService';
+import { generateLicenseForSelection } from '../../services/licenseService';
+import LicenseDownloadModal from '../Common/LicenseDownloadModal';
 import ItemList from '../Common/ItemList';
 import DeleteFileModal from '../Common/DeleteFileModal';
 import RenameFileModal from '../Common/RenameFileModal';
@@ -21,6 +24,7 @@ import '../Admin/AdminStyles.css'; // Import des styles admin pour les filtres
 import LoadingSpinner from '../Common/LoadingSpinner';
 
 const FilesPage = () => {
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState('grid');
   const [activeMenu, setActiveMenu] = useState(null);
   const [periodFilter, setPeriodFilter] = useState('');
@@ -51,13 +55,15 @@ const FilesPage = () => {
   const [fileToShare, setFileToShare] = useState(null);
   const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
   const [fileToCertify, setFileToCertify] = useState(null);
+  const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
+  const [pendingSelection, setPendingSelection] = useState([]);
 
   // États pour la pagination
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 30;
+  const itemsPerPage = 15;
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -209,25 +215,8 @@ const FilesPage = () => {
   const handleBatchDownload = async () => {
     if (selectedFiles.length === 0) return;
 
-    // Les éléments sélectionnés sont déjà des objets fichier complets
-    const selectedFileObjects = selectedFiles;
-    try {
-      await handleDownloadZip(
-        selectedFileObjects,
-        (result) => {
-          console.log(`${result.fileCount} fichier(s) téléchargé(s) dans ${result.fileName}`);
-          // Optionnel: quitter le mode sélection après téléchargement
-          setIsSelectionMode(false);
-          setSelectedFiles([]);
-        },
-        (error) => {
-          console.error(`Erreur lors du téléchargement: ${error}`);
-        },
-        { withWatermark: false }
-      );
-    } catch (error) {
-      console.error('Erreur téléchargement ZIP:', error);
-    }
+    setPendingSelection(selectedFiles);
+    setIsLicenseModalOpen(true);
   };
 
   // Téléchargement ZIP avec filigrane (pour les fichiers sélectionnés, watermark seulement sur les images)
@@ -235,7 +224,21 @@ const FilesPage = () => {
     if (selectedFiles.length === 0) return;
 
     const selectedFileObjects = selectedFiles;
+    const creatorName = user?.username
+      ? `Créateur : ${user.username}`
+      : 'Créateur : Soma Digital';
     try {
+      let extraFiles = [];
+
+      try {
+        const { txtContent } = generateLicenseForSelection(selectedFileObjects, {}, { creatorName });
+        extraFiles = [
+          { name: 'LICENCE.txt', content: txtContent }
+        ];
+      } catch (e) {
+        console.error('[FilesPage.handleBatchDownloadWithWatermark] Erreur génération licence, téléchargement sans fichier de licence', e);
+      }
+
       await handleDownloadZip(
         selectedFileObjects,
         (result) => {
@@ -246,7 +249,7 @@ const FilesPage = () => {
         (error) => {
           console.error(`Erreur lors du téléchargement avec filigrane: ${error}`);
         },
-        { withWatermark: true }
+        { withWatermark: true, extraFiles }
       );
     } catch (error) {
       console.error('Erreur téléchargement ZIP avec filigrane:', error);
@@ -303,6 +306,40 @@ const FilesPage = () => {
 
   if (loading && files.length === 0) return <LoadingSpinner message="Chargement des PDFs..." />;
   if (error) return <div className="files-error">{error}</div>;
+
+  const handleConfirmLicenseDownload = async (options) => {
+    const items = pendingSelection && pendingSelection.length > 0 ? pendingSelection : selectedFiles;
+    if (!items || items.length === 0) {
+      return;
+    }
+
+    let extraFiles = [];
+
+    if (options?.includeLicense) {
+      const text = options.licenseText || '';
+      if (options.includeTxt) {
+        extraFiles.push({ name: 'LICENCE.txt', content: text });
+      }
+    }
+
+    try {
+      await handleDownloadZip(
+        items,
+        (result) => {
+          console.log(`${result.fileCount} fichier(s) téléchargé(s) dans ${result.fileName}`);
+          setIsSelectionMode(false);
+          setSelectedFiles([]);
+          setPendingSelection([]);
+        },
+        (error) => {
+          console.error(`Erreur lors du téléchargement: ${error}`);
+        },
+        { withWatermark: false, extraFiles }
+      );
+    } catch (error) {
+      console.error('Erreur téléchargement ZIP:', error);
+    }
+  };
 
   return (
     <BulkActionsManager
@@ -503,6 +540,12 @@ const FilesPage = () => {
       <DownloadProgressIndicator
         progressBar={progressBar}
         onClose={clearError}
+      />
+      <LicenseDownloadModal
+        isOpen={isLicenseModalOpen}
+        onClose={() => setIsLicenseModalOpen(false)}
+        selectedItems={pendingSelection}
+        onConfirm={handleConfirmLicenseDownload}
       />
       </div>
     </BulkActionsManager>

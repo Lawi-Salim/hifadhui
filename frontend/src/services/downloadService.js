@@ -1,6 +1,5 @@
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import html2canvas from 'html2canvas';
 import { buildCloudinaryUrl } from '../config/cloudinary';
 import api from './api';
 
@@ -94,130 +93,21 @@ const generateDataExportFileName = () => {
 };
 
 /**
- * Ajoute un watermark Product ID sur une image à partir d'un Blob
- * Utilise html2canvas pour capturer un mini DOM avec l'image + texte overlay
- * @param {Blob} imageBlob - Le blob de l'image originale
- * @param {string} productId - Le Product ID complet
- * @returns {Promise<Blob>} - Le blob PNG de l'image avec watermark
+ * Télécharge une image déjà filigranée via l'API backend (sharp)
+ * @param {string|number} fileId - ID du fichier
+ * @param {string} filename - Nom du fichier (pour les logs uniquement)
+ * @returns {Promise<Blob>} - Blob PNG de l'image avec filigrane
  */
-const addWatermarkToImage = async (imageBlob, productId) => {
-  if (!productId) {
-    return imageBlob;
+const downloadWatermarkedImageViaAPI = async (fileId, filename) => {
+  try {
+    const response = await api.get(`/files/${fileId}/watermarked`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Erreur téléchargement API watermarked ${filename}:`, error);
+    throw error;
   }
-
-  // On n'affiche que les deux dernières parties du Product ID (ex: 000005-271684)
-  const displayProductId = productId.includes('-')
-    ? productId.split('-').slice(-2).join('-')
-    : productId;
-
-  console.log('[downloadService.addWatermarkToImage] start', { productId, displayProductId });
-
-  return new Promise((resolve, reject) => {
-    // Créer un conteneur hors écran pour html2canvas
-    const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.left = '-10000px';
-    container.style.top = '-10000px';
-    container.style.zIndex = '-1';
-
-    // Image (chargée depuis un DataURL pour éviter les restrictions CSP sur blob:)
-    const img = document.createElement('img');
-    img.style.display = 'block';
-    img.style.maxWidth = '100%';
-
-    // Wrapper positionné
-    const wrapper = document.createElement('div');
-    wrapper.style.position = 'relative';
-    wrapper.style.display = 'inline-block';
-    wrapper.appendChild(img);
-
-    // Overlay texte type watermark (style proche de SharedFilePage)
-    const overlay = document.createElement('div');
-    overlay.style.position = 'absolute';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.right = '0';
-    overlay.style.bottom = '0';
-    overlay.style.display = 'flex';
-    overlay.style.alignItems = 'center';
-    overlay.style.justifyContent = 'center';
-    overlay.style.pointerEvents = 'none';
-
-    const textSpan = document.createElement('span');
-    textSpan.textContent = displayProductId;
-    // Styles de base (la taille exacte sera ajustée dynamiquement après chargement de l'image)
-    textSpan.style.fontWeight = 'bold';
-    // Blanc un peu plus transparent pour diminuer le contraste tout en restant visible
-    textSpan.style.color = 'rgba(255, 255, 255, 0.12)';
-    textSpan.style.textShadow = '2px 2px 4px rgba(65, 52, 52, 0.8), -2px -2px 4px rgba(0,0,0,0.8), 2px -2px 4px rgba(0,0,0,0.8), -2px 2px 4px rgba(0,0,0,0.8)';
-    textSpan.style.transform = 'rotate(-45deg)';
-    textSpan.style.whiteSpace = 'nowrap';
-    textSpan.style.letterSpacing = '0.2em';
-
-    overlay.appendChild(textSpan);
-    wrapper.appendChild(overlay);
-    container.appendChild(wrapper);
-    document.body.appendChild(container);
-
-    img.onload = async () => {
-      // Adapter la taille du texte en fonction de la taille de l'image
-      const baseSize = Math.min(img.naturalWidth || img.width || 0, img.naturalHeight || img.height || 0);
-      if (baseSize > 0) {
-        const fontSizePx = Math.max(24, Math.round(baseSize * 0.08)); // ~8% du côté le plus petit
-        textSpan.style.fontSize = `${fontSizePx}px`;
-        // Ajuster légèrement l'espacement des lettres en fonction de la taille
-        textSpan.style.letterSpacing = `${Math.round(fontSizePx * 0.08)}px`;
-      } else {
-        // Fallback raisonnable
-        textSpan.style.fontSize = '32px';
-      }
-
-      try {
-        const canvas = await html2canvas(wrapper, {
-          backgroundColor: null,
-          // Réduire l'échelle pour améliorer les performances et diminuer la taille du fichier
-          scale: 1,
-          useCORS: true,
-          logging: false
-        });
-
-        canvas.toBlob((blob) => {
-          document.body.removeChild(container);
-          if (!blob) {
-            reject(new Error('Échec de la génération du blob watermark'));
-            return;
-          }
-          console.log('[downloadService.addWatermarkToImage] success, blob size =', blob.size);
-          resolve(blob);
-        }, 'image/png');
-      } catch (error) {
-        document.body.removeChild(container);
-        console.error('[downloadService.addWatermarkToImage] error', error);
-        reject(error);
-      }
-    };
-
-    img.onerror = () => {
-      document.body.removeChild(container);
-      const err = new Error("Erreur lors du chargement de l'image pour watermark");
-      console.error('[downloadService.addWatermarkToImage] img.onerror', err);
-      reject(err);
-    };
-
-    // Charger le Blob en DataURL pour contourner la restriction CSP sur blob:
-    const reader = new FileReader();
-    reader.onload = () => {
-      img.src = reader.result;
-    };
-    reader.onerror = () => {
-      document.body.removeChild(container);
-      const err = new Error('Erreur lors de la lecture du Blob image');
-      console.error('[downloadService.addWatermarkToImage] FileReader.onerror', err);
-      reject(err);
-    };
-
-    reader.readAsDataURL(imageBlob);
-  });
 };
 
 /**
@@ -269,22 +159,6 @@ const downloadSingleFile = async (file, { withWatermark = false } = {}) => {
   }
 
   try {
-    let blob;
-
-    // Essayer d'abord l'URL Cloudinary directe si disponible
-    const cloudinaryUrl = getCloudinaryUrlForItem(file);
-    if (cloudinaryUrl) {
-      try {
-        blob = await downloadFileAsBlob(cloudinaryUrl, file.filename);
-      } catch (error) {
-        console.warn(`Échec téléchargement direct pour ${file.filename}, essai via API`);
-        blob = await downloadFileViaAPI(file.id, file.filename);
-      }
-    } else {
-      // Utiliser l'API backend comme fallback
-      blob = await downloadFileViaAPI(file.id, file.filename);
-    }
-
     const isImage = file.mimetype && file.mimetype.startsWith('image/');
     const productId = file.empreinte?.product_id;
 
@@ -296,14 +170,40 @@ const downloadSingleFile = async (file, { withWatermark = false } = {}) => {
       mimetype: file.mimetype
     });
 
-    // Appliquer le watermark uniquement si demandé, que c'est une image et qu'un product_id existe
+    let blob;
+
+    // Si watermark demandé pour une image avec Product ID, utiliser directement l'endpoint backend sharp
     if (withWatermark && isImage && productId) {
       try {
-        blob = await addWatermarkToImage(blob, productId);
-        console.log(`✓ Watermark ajouté sur ${file.filename} (${productId})`);
+        blob = await downloadWatermarkedImageViaAPI(file.id, file.filename);
+        console.log(`✓ Watermark (sharp) téléchargé pour ${file.filename} (${productId})`);
       } catch (error) {
-        console.warn(`Impossible d'ajouter le watermark sur ${file.filename}:`, error);
-        // Continuer avec le fichier original sans watermark
+        console.warn(`Impossible de récupérer l'image filigranée pour ${file.filename}, fallback sans watermark:`, error);
+        // Fallback : télécharger le fichier original sans watermark
+        const cloudinaryUrl = getCloudinaryUrlForItem(file);
+        if (cloudinaryUrl) {
+          try {
+            blob = await downloadFileAsBlob(cloudinaryUrl, file.filename);
+          } catch (e) {
+            console.warn(`Échec téléchargement direct pour ${file.filename}, essai via API`);
+            blob = await downloadFileViaAPI(file.id, file.filename);
+          }
+        } else {
+          blob = await downloadFileViaAPI(file.id, file.filename);
+        }
+      }
+    } else {
+      // Comportement standard sans watermark
+      const cloudinaryUrl = getCloudinaryUrlForItem(file);
+      if (cloudinaryUrl) {
+        try {
+          blob = await downloadFileAsBlob(cloudinaryUrl, file.filename);
+        } catch (error) {
+          console.warn(`Échec téléchargement direct pour ${file.filename}, essai via API`);
+          blob = await downloadFileViaAPI(file.id, file.filename);
+        }
+      } else {
+        blob = await downloadFileViaAPI(file.id, file.filename);
       }
     }
 
@@ -337,9 +237,12 @@ const getCloudinaryUrlForItem = (item) => {
  * Crée et télécharge un fichier ZIP contenant les éléments sélectionnés
  * @param {Array} selectedItems - Liste des éléments à inclure dans le ZIP
  * @param {Function} onProgress - Callback pour le suivi du progrès (optionnel)
+ * @param {Object} options
+ * @param {boolean} options.withWatermark - Active ou non le filigrane sur les images avec Product ID
+ * @param {Array<{name: string, content: string|Blob}>} options.extraFiles - Fichiers supplémentaires à ajouter dans le ZIP (ex: LICENCE.txt)
  * @returns {Promise<void>}
  */
-export const downloadSelectedItemsAsZip = async (selectedItems, onProgress = null, { withWatermark = true } = {}) => {
+export const downloadSelectedItemsAsZip = async (selectedItems, onProgress = null, { withWatermark = true, extraFiles = [] } = {}) => {
   if (!selectedItems || selectedItems.length === 0) {
     throw new Error('Aucun élément sélectionné pour le téléchargement');
   }
@@ -360,40 +263,49 @@ export const downloadSelectedItemsAsZip = async (selectedItems, onProgress = nul
 
   console.log('[downloadService.downloadSelectedItemsAsZip] start', {
     count: selectedItems.length,
-    withWatermark
+    withWatermark,
+    hasExtraFiles: Array.isArray(extraFiles) && extraFiles.length > 0
   });
 
   try {
     // Télécharger tous les fichiers en parallèle
     const downloadPromises = selectedItems.map(async (item) => {
       try {
-        let blob;
-        
-        // Essayer d'abord l'URL Cloudinary directe
-        const cloudinaryUrl = getCloudinaryUrlForItem(item);
-        if (cloudinaryUrl) {
-          try {
-            blob = await downloadFileAsBlob(cloudinaryUrl, item.filename);
-          } catch (error) {
-            console.warn(`Échec téléchargement direct pour ${item.filename}, essai via API`);
-            blob = await downloadFileViaAPI(item.id, item.filename);
-          }
-        } else {
-          // Utiliser l'API backend comme fallback
-          blob = await downloadFileViaAPI(item.id, item.filename);
-        }
-
-        // Ajouter watermark si c'est une image avec Product ID et que l'option est activée
         const isImage = item.mimetype && item.mimetype.startsWith('image/');
         const productId = item.empreinte?.product_id;
-        
+        let blob;
+
         if (withWatermark && isImage && productId) {
+          // Utiliser directement l'endpoint backend qui applique le filigrane avec sharp
           try {
-            blob = await addWatermarkToImage(blob, productId);
-            console.log(`✓ Watermark ajouté sur ${item.filename} (${productId})`);
+            blob = await downloadWatermarkedImageViaAPI(item.id, item.filename);
+            console.log(`✓ Watermark (sharp) téléchargé pour ${item.filename} (${productId})`);
           } catch (error) {
-            console.warn(`Impossible d'ajouter le watermark sur ${item.filename}:`, error);
-            // Continuer avec l'image sans watermark
+            console.warn(`Impossible de récupérer l'image filigranée pour ${item.filename}, fallback sans watermark:`, error);
+            const cloudinaryUrl = getCloudinaryUrlForItem(item);
+            if (cloudinaryUrl) {
+              try {
+                blob = await downloadFileAsBlob(cloudinaryUrl, item.filename);
+              } catch (e) {
+                console.warn(`Échec téléchargement direct pour ${item.filename}, essai via API`);
+                blob = await downloadFileViaAPI(item.id, item.filename);
+              }
+            } else {
+              blob = await downloadFileViaAPI(item.id, item.filename);
+            }
+          }
+        } else {
+          // Comportement standard sans watermark
+          const cloudinaryUrl = getCloudinaryUrlForItem(item);
+          if (cloudinaryUrl) {
+            try {
+              blob = await downloadFileAsBlob(cloudinaryUrl, item.filename);
+            } catch (error) {
+              console.warn(`Échec téléchargement direct pour ${item.filename}, essai via API`);
+              blob = await downloadFileViaAPI(item.id, item.filename);
+            }
+          } else {
+            blob = await downloadFileViaAPI(item.id, item.filename);
           }
         }
 
@@ -413,6 +325,23 @@ export const downloadSelectedItemsAsZip = async (selectedItems, onProgress = nul
 
     // Attendre que tous les téléchargements soient terminés
     await Promise.all(downloadPromises);
+
+    // Ajouter éventuellement des fichiers supplémentaires (ex: fichier de licence)
+    if (Array.isArray(extraFiles) && extraFiles.length > 0) {
+      extraFiles.forEach((file) => {
+        if (!file || !file.name || !file.content) {
+          return;
+        }
+
+        try {
+          const name = file.name.toString();
+          // Le contenu peut être une string ou un Blob/Uint8Array
+          zip.file(name, file.content);
+        } catch (e) {
+          console.error('[downloadSelectedItemsAsZip] erreur lors de l\'ajout d\'un fichier supplémentaire au ZIP', e);
+        }
+      });
+    }
 
     // Générer et télécharger le ZIP
     const zipBlob = await zip.generateAsync({ 

@@ -16,6 +16,7 @@ import AdmZip from 'adm-zip';
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
+import sharp from 'sharp';
 
 const router = express.Router();
 
@@ -118,6 +119,107 @@ router.get('/by-empreinte/:hash', async (req, res) => {
       success: false,
       message: 'Erreur lors de la récupération du fichier',
       error: error.message
+    });
+  }
+});
+
+// Route pour télécharger une image avec filigrane (Product ID) généré côté serveur
+router.get('/:id/watermarked', authenticateToken, async (req, res) => {
+  try {
+    const file = await File.findOne({
+      where: {
+        id: req.params.id,
+        owner_id: req.user.id
+      },
+      include: [
+        {
+          model: Empreinte,
+          as: 'empreinte',
+          attributes: ['product_id']
+        }
+      ]
+    });
+
+    if (!file) {
+      return res.status(404).json({
+        error: 'Fichier non trouvé'
+      });
+    }
+
+    if (!file.mimetype || !file.mimetype.startsWith('image/')) {
+      return res.status(400).json({
+        error: 'Le filigrane est uniquement disponible pour les images'
+      });
+    }
+
+    const productId = file.empreinte?.product_id;
+    if (!productId) {
+      return res.status(400).json({
+        error: 'Aucun Product ID associé à ce fichier'
+      });
+    }
+
+    // Construire l'URL Cloudinary complète si nécessaire (même logique que /:id/download)
+    let downloadUrl = file.file_url;
+
+    if (!file.file_url.startsWith('http')) {
+      const cloudinaryBaseUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}`;
+      const resourceType = file.mimetype.startsWith('image/') ? 'image' : 'raw';
+      downloadUrl = `${cloudinaryBaseUrl}/${resourceType}/upload/${file.file_url}`;
+    }
+
+    // Télécharger l'image originale depuis Cloudinary
+    const response = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
+    const originalBuffer = Buffer.from(response.data);
+
+    // Préparer le texte du filigrane (on affiche seulement les deux dernières parties du Product ID si séparé par '-')
+    const displayProductId = productId.includes('-')
+      ? productId.split('-').slice(-2).join('-')
+      : productId;
+
+    const image = sharp(originalBuffer);
+    const metadata = await image.metadata();
+    const width = metadata.width || 1000;
+    const height = metadata.height || 1000;
+
+    // SVG pour le texte en diagonale, semi-transparent mais lisible sur fonds clairs et foncés
+    const svg = `
+      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <style>
+          .wm {
+            font: bold ${Math.round(Math.min(width, height) * 0.08)}px sans-serif;
+            fill: rgba(255, 255, 255, 0.18);
+            stroke: rgba(0, 0, 0, 0.35);
+            stroke-width: 1.5px;
+            paint-order: stroke fill;
+          }
+        </style>
+        <g transform="rotate(-30 ${width / 2} ${height / 2})">
+          <text x="50%" y="50%" text-anchor="middle" class="wm">${displayProductId}</text>
+        </g>
+      </svg>
+    `;
+
+    const resultBuffer = await image
+      .composite([
+        {
+          input: Buffer.from(svg),
+          gravity: 'centre'
+        }
+      ])
+      .toFormat('png')
+      .toBuffer();
+
+    const baseName = path.basename(file.filename, path.extname(file.filename));
+    const downloadName = `${baseName}-wm.png`;
+
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
+    res.send(resultBuffer);
+  } catch (error) {
+    console.error('Erreur lors du téléchargement avec filigrane:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la génération de l\'image avec filigrane'
     });
   }
 });

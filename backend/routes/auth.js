@@ -247,6 +247,74 @@ router.put('/profile', authenticateToken, [
   }
 });
 
+// Route pour récupérer le template de licence de l'utilisateur connecté
+// GET /auth/license-template
+router.get('/license-template', authenticateToken, async (req, res) => {
+  try {
+    const user = req.user;
+
+    res.json({
+      success: true,
+      data: {
+        txt: user.license_template_txt || null,
+        md: user.license_template_md || null
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération du template de licence:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de la récupération du template de licence'
+    });
+  }
+});
+
+// Route pour mettre à jour le template de licence de l'utilisateur connecté
+// PUT /auth/license-template
+router.put('/license-template', authenticateToken, [
+  body('txt')
+    .optional({ nullable: true })
+    .isString()
+    .withMessage('Le template texte doit être une chaîne de caractères'),
+  body('md')
+    .optional({ nullable: true })
+    .isString()
+    .withMessage('Le template Markdown doit être une chaîne de caractères')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Données invalides',
+        details: errors.array()
+      });
+    }
+
+    const { txt, md } = req.body;
+
+    await req.user.update({
+      license_template_txt: typeof txt === 'string' ? txt : null,
+      license_template_md: typeof md === 'string' ? md : null
+    });
+
+    res.json({
+      success: true,
+      message: 'Template de licence mis à jour avec succès',
+      data: {
+        txt: req.user.license_template_txt,
+        md: req.user.license_template_md
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du template de licence:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de la mise à jour du template de licence'
+    });
+  }
+});
+
 // Validation pour la demande de réinitialisation
 const forgotPasswordValidation = [
   body('email')

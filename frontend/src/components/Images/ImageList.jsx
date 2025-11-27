@@ -11,6 +11,7 @@ import ContentToolbar from '../Common/ContentToolbar';
 import DeleteBatchModal from '../Common/DeleteBatchModal';
 import BulkActionsManager from '../Common/BulkActionsManager';
 import { useDownloadZip, DownloadProgressIndicator } from '../Common/DownloadZip';
+import LicenseDownloadModal from '../Common/LicenseDownloadModal';
 import CertificateModal from '../Certificates/CertificateModal';
 import certificateService from '../../services/certificateService';
 import Pagination from '../Common/Pagination';
@@ -43,7 +44,7 @@ const ImageList = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 30;
+  const itemsPerPage = 15;
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -104,6 +105,9 @@ const ImageList = () => {
   const [fileToShare, setFileToShare] = useState(null);
   const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
   const [fileToCertify, setFileToCertify] = useState(null);
+  const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
+  const [pendingSelection, setPendingSelection] = useState([]);
+  const [pendingWithWatermark, setPendingWithWatermark] = useState(false);
 
   const handleDownload = async (image) => {
     try {
@@ -217,47 +221,58 @@ const ImageList = () => {
 
   const handleBatchDownload = async () => {
     if (selectedImages.length === 0) return;
-
-    try {
-      await handleDownloadZip(
-        selectedImages,
-        (result) => {
-          // Optionnel: quitter le mode sélection après téléchargement
-          setIsSelectionMode(false);
-          setSelectedImages([]);
-        },
-        (error) => {
-        },
-        { withWatermark: false }
-      );
-    } catch (error) {
-      console.error('Erreur téléchargement ZIP:', error);
-    }
+    setPendingSelection(selectedImages);
+    setPendingWithWatermark(false);
+    setIsLicenseModalOpen(true);
   };
 
   // Téléchargement ZIP avec filigrane (watermark seulement sur les images avec Product ID)
   const handleBatchDownloadWithWatermark = async () => {
     if (selectedImages.length === 0) return;
-
-    try {
-      await handleDownloadZip(
-        selectedImages,
-        (result) => {
-          setIsSelectionMode(false);
-          setSelectedImages([]);
-        },
-        (error) => {
-        },
-        { withWatermark: true }
-      );
-    } catch (error) {
-      console.error('Erreur téléchargement ZIP avec filigrane:', error);
-    }
+    setPendingSelection(selectedImages);
+    setPendingWithWatermark(true);
+    setIsLicenseModalOpen(true);
   };
 
   const handleToggleSelectionMode = () => {
     setIsSelectionMode(!isSelectionMode);
     setSelectedImages([]); // Réinitialiser la sélection en changeant de mode
+  };
+
+  const handleConfirmLicenseDownload = async (options) => {
+    const items = pendingSelection && pendingSelection.length > 0 ? pendingSelection : selectedImages;
+    if (!items || items.length === 0) {
+      return;
+    }
+
+    let extraFiles = [];
+
+    if (options?.includeLicense) {
+      const text = options.licenseText || '';
+      if (options.includeTxt) {
+        extraFiles.push({ name: 'LICENCE.txt', content: text });
+      }
+      if (options.includeMd) {
+        extraFiles.push({ name: 'LICENCE.md', content: text });
+      }
+    }
+
+    try {
+      await handleDownloadZip(
+        items,
+        (result) => {
+          setIsSelectionMode(false);
+          setSelectedImages([]);
+          setPendingSelection([]);
+          setPendingWithWatermark(false);
+        },
+        (error) => {
+        },
+        { withWatermark: pendingWithWatermark, extraFiles }
+      );
+    } catch (error) {
+      console.error('Erreur téléchargement ZIP:', error);
+    }
   };
 
   if (loading && images.length === 0) {
@@ -503,6 +518,13 @@ const ImageList = () => {
         file={fileToCertify}
         isOpen={isCertificateModalOpen}
         onClose={() => setIsCertificateModalOpen(false)}
+      />
+
+      <LicenseDownloadModal
+        isOpen={isLicenseModalOpen}
+        onClose={() => setIsLicenseModalOpen(false)}
+        selectedItems={pendingSelection}
+        onConfirm={handleConfirmLicenseDownload}
       />
     </BulkActionsManager>
   );

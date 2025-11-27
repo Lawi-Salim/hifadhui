@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FiUser, FiLock, FiTrash2, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiUser, FiLayers, FiFileText, FiShield, FiTrash2, FiEye, FiEyeOff } from 'react-icons/fi';
 import SmartAvatar from '../Layout/SmartAvatar';
 import UserDisplayName from '../Layout/UserDisplayName';
 import ProviderIcon from '../Layout/ProviderIcon';
 import PlanSettings from './PlanSettings';
+import api from '../../services/api';
+import { DEFAULT_MD_TEMPLATE } from '../../services/licenseService';
 import './SettingsPage.css';
 
 const SettingsPage = () => {
@@ -28,6 +30,15 @@ const SettingsPage = () => {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
+
+  // État pour le template de licence (unique, utilisé pour TXT et Markdown)
+  const [licenseTemplate, setLicenseTemplate] = useState('');
+  const [licenseLoading, setLicenseLoading] = useState(false);
+  const [licenseSaving, setLicenseSaving] = useState(false);
+  const [licenseError, setLicenseError] = useState('');
+  const [licenseSuccess, setLicenseSuccess] = useState('');
+  const [licenseLoaded, setLicenseLoaded] = useState(false);
+  const [licenseDirty, setLicenseDirty] = useState(false);
 
 
   const handlePasswordChange = async (e) => {
@@ -79,10 +90,98 @@ const SettingsPage = () => {
     setPasswordLoading(false);
   };
 
+  // Charger le template de licence une seule fois
+  useEffect(() => {
+    const fetchLicenseTemplate = async () => {
+      try {
+        setLicenseLoading(true);
+        setLicenseError('');
+
+        const response = await api.get('/auth/license-template');
+        const data = response.data && response.data.data ? response.data.data : {};
+
+        const valueFromApi = data.md || data.txt || '';
+        // Si aucun template personnalisé n'est enregistré, pré-remplir avec le template Markdown par défaut
+        setLicenseTemplate(valueFromApi || DEFAULT_MD_TEMPLATE);
+        setLicenseLoaded(true);
+        setLicenseDirty(false);
+      } catch (error) {
+        console.error('Erreur lors du chargement du template de licence:', error);
+        setLicenseError(
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Erreur lors du chargement du template de licence'
+        );
+      } finally {
+        setLicenseLoading(false);
+      }
+    };
+
+    // Ne charger qu'une fois, lorsque l'utilisateur est disponible
+    if (user && !licenseLoaded && !licenseLoading) {
+      fetchLicenseTemplate();
+    }
+  }, [user, licenseLoaded, licenseLoading]);
+
+  const handleSaveLicenseTemplate = async (e) => {
+    e.preventDefault();
+    setLicenseSaving(true);
+    setLicenseError('');
+    setLicenseSuccess('');
+
+    try {
+      // Validation : s'assurer que les placeholders critiques sont présents
+      const filesSectionPattern = /{{\s*FILES_SECTION\s*}}/;
+      const packNamePattern = /{{\s*PACK_NAME\s*}}/;
+
+      if (!packNamePattern.test(licenseTemplate || '')) {
+        setLicenseError('Le template doit contenir le placeholder {{PACK_NAME}} pour afficher le nom du pack.');
+        setLicenseSaving(false);
+        return;
+      }
+
+      if (!filesSectionPattern.test(licenseTemplate || '')) {
+        setLicenseError('Le template doit contenir le placeholder {{FILES_SECTION}} pour lister les fichiers sélectionnés.');
+        setLicenseSaving(false);
+        return;
+      }
+
+      const payload = {
+        txt: licenseTemplate || null,
+        md: licenseTemplate || null
+      };
+
+      const response = await api.put('/auth/license-template', payload);
+      const data = response.data && response.data.data ? response.data.data : {};
+
+      const valueFromApi = data.md || data.txt || '';
+      setLicenseTemplate(valueFromApi || DEFAULT_MD_TEMPLATE);
+      setLicenseDirty(false);
+      setLicenseSuccess('Template de licence enregistré avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde du template de licence:', error);
+      setLicenseError(
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        'Erreur lors de la sauvegarde du template de licence'
+      );
+    } finally {
+      setLicenseSaving(false);
+    }
+  };
+
+  const handleResetLicenseTemplate = () => {
+    // On remet à vide côté UI : le backend utilisera alors les templates par défaut
+    setLicenseTemplate(DEFAULT_MD_TEMPLATE);
+    setLicenseDirty(true);
+    setLicenseSuccess('Contenu réinitialisé. Cliquez sur Enregistrer pour appliquer.');
+  };
+
   const sections = [
     { id: 'profile', label: 'Profil', icon: FiUser },
-    { id: 'plan', label: 'Plan & quotas', icon: FiLock },
-    { id: 'security', label: 'Sécurité', icon: FiLock },
+    { id: 'plan', label: 'Plan & quotas', icon: FiLayers },
+    { id: 'license', label: 'Licence', icon: FiFileText },
+    { id: 'security', label: 'Sécurité', icon: FiShield },
     { id: 'danger', label: 'Zone de danger', icon: FiTrash2 }
   ];
 
@@ -191,6 +290,80 @@ const SettingsPage = () => {
           {/* Section Sécurité */}
           {activeSection === 'plan' && (
             <PlanSettings />
+          )}
+
+          {/* Section Template de licence */}
+          {activeSection === 'license' && (
+            <div className="settings-section">
+              <div className="settings-header license-header">
+                <h2>Template de licence</h2>
+                <p>
+                  Personnalisez le texte de la licence ajoutée automatiquement à vos téléchargements ZIP.&nbsp;
+                  Les placeholders <code>{"{{PACK_NAME}}"}</code> et <code>{"{{FILES_SECTION}}"}</code>
+                  &nbsp;sont remplis automatiquement par le système et doivent être conservés tels quels.&nbsp;
+                  Vous pouvez surtout adapter le nom du créateur et le header via les placeholders <code>{"{{CREATOR_NAME}}"}</code>, <code>{"{{HEADER}}"}</code>.
+                </p>
+              </div>
+
+              <form onSubmit={handleSaveLicenseTemplate}>
+                {licenseError && (
+                  <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
+                    {licenseError}
+                  </div>
+                )}
+                {licenseSuccess && (
+                  <div className="alert alert-success" style={{ marginBottom: '1rem' }}>
+                    {licenseSuccess}
+                  </div>
+                )}
+
+                <div className="form-group license-textarea-zone">
+                  <label className="form-label">Template de licence</label>
+                  <textarea
+                    className="form-input license-settings-textarea"
+                    rows={16}
+                    value={licenseTemplate}
+                    onChange={(e) => {
+                      setLicenseTemplate(e.target.value);
+                      setLicenseDirty(true);
+                    }}
+                    disabled={licenseLoading}
+                  />
+                </div>
+
+                <div
+                  className="form-group license-actions-row"
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '1rem', 
+                  }}
+                >
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '5px' }}>
+                    {licenseLoading && 'Chargement du template...'}
+                    {!licenseLoading && licenseDirty && 'Modifications non enregistrées.'}
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleResetLicenseTemplate}
+                      disabled={licenseLoading || licenseSaving}
+                    >
+                      Réinitialiser le contenu
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={licenseLoading || licenseSaving || !licenseDirty}
+                    >
+                      {licenseSaving ? 'Enregistrement...' : 'Enregistrer'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
           )}
 
           {/* Section Sécurité */}
