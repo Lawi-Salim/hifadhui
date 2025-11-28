@@ -16,7 +16,7 @@ import AdmZip from 'adm-zip';
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
-import sharp from 'sharp';
+import Jimp from 'jimp';
 
 const router = express.Router();
 
@@ -168,52 +168,81 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
       downloadUrl = `${cloudinaryBaseUrl}/${resourceType}/upload/${file.file_url}`;
     }
 
-    // Télécharger l'image originale depuis Cloudinary
+    // Télécharger l'image originale via URL
     const response = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
     const originalBuffer = Buffer.from(response.data);
 
-    // Préparer le texte du filigrane : afficher uniquement les deux dernières parties (séparées par '-')
+    // Texte du filigrane : deux dernières parties du product_id
     const displayProductId = productId.includes('-')
       ? productId.split('-').slice(-2).join('-')
       : productId;
 
-    const image = sharp(originalBuffer);
-    const metadata = await image.metadata();
-    const width = metadata.width || 1000;
-    const height = metadata.height || 1000;
+    // Charger l'image avec Jimp
+    const image = await Jimp.read(originalBuffer);
+    const width = image.bitmap.width || 1000;
+    const height = image.bitmap.height || 1000;
 
-    // SVG pour le texte en diagonale, avec styles directement sur la balise <text>
-    const fontSize = Math.round(Math.min(width, height) * 0.1);
-    const centerX = width / 2;
-    const centerY = height / 2;
+    // Créer des couches overlay pour ombre + texte (style proche de Sharp)
+    const baseOverlay = new Jimp(width, height, 0x00000000);
 
-    const svg = `
-      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-        <text
-          x="50%"
-          y="50%"
-          text-anchor="middle"
-          dominant-baseline="middle"
-          font-family="sans-serif"
-          font-size="${fontSize}px"
-          fill="rgba(255, 255, 255, 0.18)"
-          stroke="rgba(0, 0, 0, 0.35)"
-          stroke-width="1.5"
-          paint-order="stroke fill"
-          transform="rotate(-30 ${centerX} ${centerY})"
-        >${displayProductId}</text>
-      </svg>
-    `;
+    // Choix de taille de police en fonction de la résolution (approximation de 0.1 * min(width,height))
+    const minDim = Math.min(width, height);
+    const useBigFont = minDim >= 1200; // grandes images => police 128
+    const fontWhite = await Jimp.loadFont(
+      useBigFont ? Jimp.FONT_SANS_128_WHITE : Jimp.FONT_SANS_64_WHITE
+    );
+    const fontBlack = await Jimp.loadFont(
+      useBigFont ? Jimp.FONT_SANS_128_BLACK : Jimp.FONT_SANS_64_BLACK
+    );
 
-    const resultBuffer = await image
-      .composite([
-        {
-          input: Buffer.from(svg),
-          gravity: 'centre'
-        }
-      ])
-      .toFormat('png')
-      .toBuffer();
+    // Ombre sombre légèrement décalée
+    const shadowOverlay = baseOverlay.clone();
+    shadowOverlay.print(
+      fontBlack,
+      3, // léger décalage pour simuler un contour
+      3,
+      {
+        text: displayProductId,
+        alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+        alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
+      },
+      width,
+      height
+    );
+    shadowOverlay.rotate(-30, false);
+    shadowOverlay.opacity(0.35);
+
+    // Texte clair par-dessus
+    const textOverlay = baseOverlay.clone();
+    textOverlay.print(
+      fontWhite,
+      0,
+      0,
+      {
+        text: displayProductId,
+        alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+        alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
+      },
+      width,
+      height
+    );
+    textOverlay.rotate(-30, false);
+    textOverlay.opacity(0.18);
+
+    // Appliquer les overlays sur l'image originale (ombre puis texte clair)
+    image.composite(shadowOverlay, 0, 0, {
+      mode: Jimp.BLEND_SOURCE_OVER,
+      opacitySource: 1,
+      opacityDest: 1
+    });
+
+    image.composite(textOverlay, 0, 0, {
+      mode: Jimp.BLEND_SOURCE_OVER,
+      opacitySource: 1,
+      opacityDest: 1
+    });
+
+    const resultBuffer = await image.getBufferAsync(Jimp.MIME_PNG);
 
     const baseName = path.basename(file.filename, path.extname(file.filename));
     const downloadName = `${baseName}-wm.png`;
