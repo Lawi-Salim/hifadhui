@@ -185,15 +185,9 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
     // Créer des couches overlay pour ombre + texte (style proche de Sharp)
     const baseOverlay = new Jimp(width, height, 0x00000000);
 
-    // Choix de taille de police en fonction de la résolution (approximation de 0.1 * min(width,height))
-    const minDim = Math.min(width, height);
-    const useBigFont = minDim >= 1200; // grandes images => police 128
-    const fontWhite = await Jimp.loadFont(
-      useBigFont ? Jimp.FONT_SANS_128_WHITE : Jimp.FONT_SANS_64_WHITE
-    );
-    const fontBlack = await Jimp.loadFont(
-      useBigFont ? Jimp.FONT_SANS_128_BLACK : Jimp.FONT_SANS_64_BLACK
-    );
+    // Utiliser uniquement les fontes 64 (les fontes 128 ne sont pas disponibles en production)
+    const fontWhite = await Jimp.loadFont(Jimp.FONT_SANS_64_WHITE);
+    const fontBlack = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
 
     // Ombre sombre légèrement décalée
     const shadowOverlay = baseOverlay.clone();
