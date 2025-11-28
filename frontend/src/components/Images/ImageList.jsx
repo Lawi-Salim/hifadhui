@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaFolderOpen, FaUpload, FaCalendar, FaDatabase, FaDownload } from 'react-icons/fa';
+import { FaPlus, FaFolderOpen, FaUpload, FaCalendar, FaDatabase, FaDownload, FaSearch } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';
 import api from '../../services/api';
 import ItemList from '../Common/ItemList';
@@ -26,6 +26,8 @@ const ImageList = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [periodFilter, setPeriodFilter] = useState('');
   const [sizeFilter, setSizeFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState(''); // valeur réellement envoyée à l’API
+  const [searchInput, setSearchInput] = useState(''); // valeur tapée dans le champ
 
   // Fonction pour calculer la position du menu avec hauteur dynamique
   const getMenuPosition = (buttonElement, optionsCount = 5) => {
@@ -59,7 +61,8 @@ const ImageList = () => {
           limit: itemsPerPage,
           type: 'image',
           period: periodFilter || undefined,
-          sizeRange: sizeFilter || undefined
+          sizeRange: sizeFilter || undefined,
+          search: searchTerm || undefined
         }
       });
 
@@ -80,7 +83,18 @@ const ImageList = () => {
 
   useEffect(() => {
     loadImages(currentPage);
-  }, [currentPage, periodFilter, sizeFilter]);
+  }, [currentPage, periodFilter, sizeFilter, searchTerm]);
+
+  // Mettre à jour searchTerm avec un petit délai pour éviter les rechargements à chaque frappe
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchTerm(searchInput.trim() || '');
+      // Quand on change réellement le critère de recherche, repartir de la page 1
+      setCurrentPage(1);
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [searchInput]);
 
   const refresh = () => {
     loadImages(currentPage);
@@ -356,6 +370,22 @@ const ImageList = () => {
                 <option value="medium">Moyen (1-10 Mo)</option>
                 <option value="large">Grand (&gt; 10 Mo)</option>
               </select>
+            </div>
+
+            <div className="filter-group filter-group--no-hover">
+              <label className="filter-label">
+                <FaSearch className="filter-icon" />
+                Nom du fichier
+              </label>
+              <input
+                type="text"
+                className="filter-select"
+                placeholder="Rechercher par nom..."
+                value={searchInput}
+                onChange={(e) => {
+                  setSearchInput(e.target.value);
+                }}
+              />
             </div>
           </div>
         </div>

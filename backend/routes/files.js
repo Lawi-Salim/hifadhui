@@ -172,7 +172,7 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
     const response = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
     const originalBuffer = Buffer.from(response.data);
 
-    // Préparer le texte du filigrane (on affiche seulement les deux dernières parties du Product ID si séparé par '-')
+    // Préparer le texte du filigrane : afficher uniquement les deux dernières parties (séparées par '-')
     const displayProductId = productId.includes('-')
       ? productId.split('-').slice(-2).join('-')
       : productId;
@@ -187,7 +187,7 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
       <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
         <style>
           .wm {
-            font: bold ${Math.round(Math.min(width, height) * 0.08)}px sans-serif;
+            font: bold ${Math.round(Math.min(width, height) * 0.1)}px sans-serif;
             fill: rgba(255, 255, 255, 0.18);
             stroke: rgba(0, 0, 0, 0.35);
             stroke-width: 1.5px;
@@ -1183,7 +1183,7 @@ router.get('/', authenticateToken, async (req, res) => {
     // Gérer les paramètres de pagination avec différents formats
     let page = req.query.page || req.query['page[page]'] || 1;
     let limit = req.query.limit || req.query['page[limit]'] || 10;
-    const { type, dossier_id } = req.query;
+    const { type, dossier_id, search } = req.query;
     
     // Convertir en nombres et valider
     page = parseInt(page, 10);
@@ -1218,6 +1218,13 @@ router.get('/', authenticateToken, async (req, res) => {
       } else {
         whereClause.dossier_id = dossier_id;
       }
+    }
+
+    // Filtre par nom de fichier si un terme de recherche est fourni
+    if (search && typeof search === 'string' && search.trim() !== '') {
+      whereClause.filename = {
+        [Op.like]: `%${search.trim()}%`
+      };
     }
 
     const { count, rows: files } = await File.findAndCountAll({

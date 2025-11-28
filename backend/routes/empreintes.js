@@ -453,7 +453,7 @@ router.post('/cleanup/manual', authenticateToken, async (req, res) => {
 // ========================================
 router.get('/admin/all', authenticateToken, isAdmin, extractRequestInfo, async (req, res) => {
   try {
-    const { status, search, userId, page = 1, limit = 50 } = req.query;
+    const { status, search, userId, period, page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
 
     // Construction des filtres
@@ -467,11 +467,45 @@ router.get('/admin/all', authenticateToken, isAdmin, extractRequestInfo, async (
       where.owner_id = userId;
     }
 
+    // Filtre de période sur la date de génération
+    if (period) {
+      const now = new Date();
+      let fromDate = null;
+
+      switch (period) {
+        case 'today': {
+          fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        }
+        case 'week': {
+          fromDate = new Date();
+          fromDate.setDate(fromDate.getDate() - 7);
+          break;
+        }
+        case 'month': {
+          fromDate = new Date();
+          fromDate.setMonth(fromDate.getMonth() - 1);
+          break;
+        }
+        case 'year': {
+          fromDate = new Date();
+          fromDate.setFullYear(fromDate.getFullYear() - 1);
+          break;
+        }
+        default:
+          fromDate = null;
+      }
+
+      if (fromDate) {
+        where.generated_at = { [Op.gte]: fromDate };
+      }
+    }
+
     if (search) {
       where[Op.or] = [
         { product_id: { [Op.iLike]: `%${search}%` } },
-        { hash_pregenere: { [Op.iLike]: `%${search}%` } },
-        { signature_pregeneree: { [Op.iLike]: `%${search}%` } }
+        { '$owner.email$': { [Op.iLike]: `%${search}%` } },
+        { '$owner.username$': { [Op.iLike]: `%${search}%` } }
       ];
     }
 
@@ -502,8 +536,6 @@ router.get('/admin/all', authenticateToken, isAdmin, extractRequestInfo, async (
       ipAddress: req.clientInfo.ipAddress,
       userAgent: req.clientInfo.userAgent
     });
-
-    console.log(`📊 [ADMIN] ${req.user.username} a consulté ${count} empreintes`);
 
     res.json({
       success: true,
@@ -612,8 +644,6 @@ router.get('/admin/stats', authenticateToken, isAdmin, extractRequestInfo, async
       userAgent: req.clientInfo.userAgent
     });
 
-    console.log(`📊 [ADMIN] ${req.user.username} a consulté les statistiques globales`);
-
     res.json({
       success: true,
       data: {
@@ -685,8 +715,6 @@ router.get('/admin/users', authenticateToken, isAdmin, extractRequestInfo, async
       userAgent: req.clientInfo.userAgent
     });
 
-    console.log(`📊 [ADMIN] ${req.user.username} a consulté les stats utilisateurs`);
-
     res.json({
       success: true,
       data: usersWithStats
@@ -740,8 +768,6 @@ router.get('/admin/:id', authenticateToken, isAdmin, extractRequestInfo, async (
       ipAddress: req.clientInfo.ipAddress,
       userAgent: req.clientInfo.userAgent
     });
-
-    console.log(`📊 [ADMIN] ${req.user.username} a consulté l'empreinte ${empreinte.product_id}`);
 
     res.json({
       success: true,

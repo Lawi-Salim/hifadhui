@@ -14,9 +14,11 @@ export const useActivityTracker = () => {
   // Fonction pour envoyer l'activité au serveur
   const sendActivityUpdate = useCallback(async (type = 'active', timestamp = Date.now()) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       if (!token) {
-        console.warn('Pas de token d\'authentification - activité non envoyée');
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Pas de token d\'authentification - activité non envoyée');
+        }
         return;
       }
 
@@ -48,9 +50,11 @@ export const useActivityTracker = () => {
   // Fonction pour envoyer fin de session
   const sendSessionEnd = useCallback(async (reason = 'unknown') => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       if (!token) {
-        console.warn('Pas de token d\'authentification - fin de session non envoyée');
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Pas de token d\'authentification - fin de session non envoyée');
+        }
         return;
       }
 
@@ -112,9 +116,11 @@ export const useActivityTracker = () => {
   // Fonction heartbeat pour vérifier la connexion serveur
   const sendHeartbeat = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       if (!token) {
-        console.warn('Pas de token d\'authentification - heartbeat non envoyé');
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Pas de token d\'authentification - heartbeat non envoyé');
+        }
         return;
       }
 

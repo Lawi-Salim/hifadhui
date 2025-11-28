@@ -171,6 +171,15 @@
   background: rgba(0, 123, 255, 0.1);
 }
 
+/* Empêcher l'effet de survol spécial sur le champ de recherche par nom */
+.filter-group--no-hover .filter-select {
+  cursor: text;
+}
+
+.filter-group--no-hover .filter-select:hover {
+  border-color: var(--border-color);
+}
+
 /* Bouton de suppression en lot */
 .btn-delete-batch {
   display: flex;

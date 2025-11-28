@@ -16,6 +16,7 @@ import {
   FiTrendingUp,
   FiPackage
 } from 'react-icons/fi';
+import { FaCalendar } from 'react-icons/fa';
 import { FaFingerprint } from 'react-icons/fa';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import empreinteAdminService from '../../services/empreinteAdminService';
@@ -40,9 +41,12 @@ const EmpreintesPage = () => {
   // Filtres
   const [filters, setFilters] = useState({
     status: 'all',
-    search: '',
-    userId: ''
+    userId: '',
+    period: ''
   });
+  // Recherche debouncée (comme sur Fichiers/Images)
+  const [searchInput, setSearchInput] = useState(''); // valeur tapée
+  const [searchTerm, setSearchTerm] = useState('');   // valeur réellement envoyée à l'API
   
   // États pour les statistiques (onglet 2)
   const [stats, setStats] = useState({
@@ -75,7 +79,7 @@ const EmpreintesPage = () => {
     fetchUsers(); // Charger les users pour avoir le bon compteur
   }, []);
 
-  // Charger les données au montage et quand les filtres changent
+  // Charger les données quand onglet / filtres / page / terme de recherche changent
   useEffect(() => {
     if (activeTab === 'all') {
       fetchEmpreintes();
@@ -84,13 +88,24 @@ const EmpreintesPage = () => {
     } else if (activeTab === 'users') {
       fetchUsers();
     }
-  }, [activeTab, filters, pagination.page]);
+  }, [activeTab, filters, pagination.page, searchTerm]);
+
+  // Debounce pour la recherche (stabilise la saisie)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchTerm(searchInput.trim() || '');
+      setPagination(prev => ({ ...prev, page: 1 }));
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [searchInput]);
 
   const fetchEmpreintes = async () => {
     try {
       setLoading(true);
       const data = await empreinteAdminService.getAllEmpreintes({
         ...filters,
+        search: searchTerm,
         page: pagination.page,
         limit: pagination.limit
       });
@@ -306,6 +321,24 @@ const EmpreintesPage = () => {
               <div className="filters-grid">
                 <div className="filter-group">
                   <label className="filter-label">
+                    <FaCalendar className="filter-icon" />
+                    Période
+                  </label>
+                  <select 
+                    value={filters.period}
+                    onChange={(e) => handleFilterChange('period', e.target.value)}
+                    className="filter-select"
+                  >
+                    <option value="">Toutes les dates</option>
+                    <option value="today">Aujourd'hui</option>
+                    <option value="week">Cette semaine</option>
+                    <option value="month">Ce mois-ci</option>
+                    <option value="year">Cette année</option>
+                  </select>
+                </div>
+
+                <div className="filter-group">
+                  <label className="filter-label">
                     <FiFilter className="filter-icon" />
                     Statut
                   </label>
@@ -321,16 +354,16 @@ const EmpreintesPage = () => {
                   </select>
                 </div>
 
-                <div className="filter-group">
+                <div className="filter-group filter-group--no-hover">
                   <label className="filter-label">
                     <FiSearch className="filter-icon" />
                     Recherche
                   </label>
                   <input
                     type="text"
-                    placeholder="Product ID, Hash, Signature..."
-                    value={filters.search}
-                    onChange={(e) => handleFilterChange('search', e.target.value)}
+                    placeholder="Product ID, Email, Nom d'utilisateur..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
                     className="filter-select"
                   />
                 </div>
