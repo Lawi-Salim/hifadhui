@@ -182,11 +182,26 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
     const width = metadata.width || 1000;
     const height = metadata.height || 1000;
 
-    // SVG DIAGNOSTIQUE : grand rectangle rouge semi-transparent couvrant toute l'image
-    // (permet de vérifier que la composition Sharp fonctionne bien en production)
+    // SVG pour le texte en diagonale, avec styles directement sur la balise <text>
+    const fontSize = Math.round(Math.min(width, height) * 0.1);
+    const centerX = width / 2;
+    const centerY = height / 2;
+
     const svg = `
       <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-        <rect x="0" y="0" width="100%" height="100%" fill="rgba(255, 0, 0, 0.35)" />
+        <text
+          x="50%"
+          y="50%"
+          text-anchor="middle"
+          dominant-baseline="middle"
+          font-family="sans-serif"
+          font-size="${fontSize}px"
+          fill="rgba(255, 255, 255, 0.18)"
+          stroke="rgba(0, 0, 0, 0.35)"
+          stroke-width="1.5"
+          paint-order="stroke fill"
+          transform="rotate(-30 ${centerX} ${centerY})"
+        >${displayProductId}</text>
       </svg>
     `;
 
