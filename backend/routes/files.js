@@ -177,71 +177,81 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
       ? productId.split('-').slice(-2).join('-')
       : productId;
 
-    // Charger l'image avec Jimp
-    const image = await Jimp.read(originalBuffer);
-    const width = image.bitmap.width || 1000;
-    const height = image.bitmap.height || 1000;
+    let resultBuffer = originalBuffer;
+    let downloadName = file.filename;
 
-    // Créer des couches overlay pour ombre + texte (style proche de Sharp)
-    const baseOverlay = new Jimp(width, height, 0x00000000);
+    try {
+      // Charger l'image avec Jimp
+      const image = await Jimp.read(originalBuffer);
+      const width = image.bitmap.width || 1000;
+      const height = image.bitmap.height || 1000;
 
-    // Utiliser uniquement les fontes 64 (les fontes 128 ne sont pas disponibles en production)
-    const fontWhite = await Jimp.loadFont(Jimp.FONT_SANS_64_WHITE);
-    const fontBlack = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
+      // Créer des couches overlay pour ombre + texte (style proche de Sharp)
+      const baseOverlay = new Jimp(width, height, 0x00000000);
 
-    // Ombre sombre légèrement décalée
-    const shadowOverlay = baseOverlay.clone();
-    shadowOverlay.print(
-      fontBlack,
-      3, // léger décalage pour simuler un contour
-      3,
-      {
-        text: displayProductId,
-        alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-        alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
-      },
-      width,
-      height
-    );
-    shadowOverlay.rotate(-30, false);
-    shadowOverlay.opacity(0.35);
+      // Utiliser uniquement les fontes 64 (les fontes 128 ne sont pas disponibles en production)
+      const fontWhite = await Jimp.loadFont(Jimp.FONT_SANS_64_WHITE);
+      const fontBlack = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
 
-    // Texte clair par-dessus
-    const textOverlay = baseOverlay.clone();
-    textOverlay.print(
-      fontWhite,
-      0,
-      0,
-      {
-        text: displayProductId,
-        alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-        alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
-      },
-      width,
-      height
-    );
-    textOverlay.rotate(-30, false);
-    textOverlay.opacity(0.18);
+      // Ombre sombre légèrement décalée
+      const shadowOverlay = baseOverlay.clone();
+      shadowOverlay.print(
+        fontBlack,
+        3, // léger décalage pour simuler un contour
+        3,
+        {
+          text: displayProductId,
+          alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+          alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
+        },
+        width,
+        height
+      );
+      shadowOverlay.rotate(-30, false);
+      shadowOverlay.opacity(0.35);
 
-    // Appliquer les overlays sur l'image originale (ombre puis texte clair)
-    image.composite(shadowOverlay, 0, 0, {
-      mode: Jimp.BLEND_SOURCE_OVER,
-      opacitySource: 1,
-      opacityDest: 1
-    });
+      // Texte clair par-dessus
+      const textOverlay = baseOverlay.clone();
+      textOverlay.print(
+        fontWhite,
+        0,
+        0,
+        {
+          text: displayProductId,
+          alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+          alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
+        },
+        width,
+        height
+      );
+      textOverlay.rotate(-30, false);
+      textOverlay.opacity(0.18);
 
-    image.composite(textOverlay, 0, 0, {
-      mode: Jimp.BLEND_SOURCE_OVER,
-      opacitySource: 1,
-      opacityDest: 1
-    });
+      // Appliquer les overlays sur l'image originale (ombre puis texte clair)
+      image.composite(shadowOverlay, 0, 0, {
+        mode: Jimp.BLEND_SOURCE_OVER,
+        opacitySource: 1,
+        opacityDest: 1
+      });
 
-    const resultBuffer = await image.getBufferAsync(Jimp.MIME_PNG);
+      image.composite(textOverlay, 0, 0, {
+        mode: Jimp.BLEND_SOURCE_OVER,
+        opacitySource: 1,
+        opacityDest: 1
+      });
 
-    const baseName = path.basename(file.filename, path.extname(file.filename));
-    const downloadName = `${baseName}-wm.png`;
+      resultBuffer = await image.getBufferAsync(Jimp.MIME_PNG);
 
-    res.setHeader('Content-Type', 'image/png');
+      const baseName = path.basename(file.filename, path.extname(file.filename));
+      downloadName = `${baseName}-wm.png`;
+
+      res.setHeader('Content-Type', 'image/png');
+    } catch (wmError) {
+      // En cas d'erreur Jimp (fonts manquantes, etc.), fallback sur l'image originale sans filigrane
+      console.error('Erreur watermark Jimp, fallback image originale sans filigrane:', wmError);
+      res.setHeader('Content-Type', file.mimetype || 'application/octet-stream');
+    }
+
     res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
     res.send(resultBuffer);
   } catch (error) {
