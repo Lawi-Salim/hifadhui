@@ -195,10 +195,11 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
 
       // Charger les fontes bitmap locales (open-sans-128) depuis backend/assets/fonts
       const fontWhite = await Jimp.loadFont(
-        path.join(__dirname, '../assets/fonts/open-sans-128-white/open-sans-128-white.fnt')
+        path.join(process.cwd(), 'backend/assets/fonts/open-sans-128-white/open-sans-128-white.fnt')
       );
+
       const fontBlack = await Jimp.loadFont(
-        path.join(__dirname, '../assets/fonts/open-sans-128-black/open-sans-128-black.fnt')
+        path.join(process.cwd(), 'backend/assets/fonts/open-sans-128-black/open-sans-128-black.fnt')
       );
 
       // Ombre sombre légèrement décalée
