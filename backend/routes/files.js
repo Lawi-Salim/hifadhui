@@ -185,6 +185,14 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
     let downloadName = file.filename;
 
     try {
+      console.log('🔍 [WATERMARK] Début génération watermark Jimp', {
+        fileId: file.id,
+        filename: file.filename,
+        productId: displayProductId,
+        cwd: process.cwd(),
+        dirname: __dirname
+      });
+
       // Charger l'image avec Jimp
       const image = await Jimp.read(originalBuffer);
       const width = image.bitmap.width || 1000;
@@ -193,14 +201,19 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
       // Créer des couches overlay pour ombre + texte (style proche de Sharp)
       const baseOverlay = new Jimp(width, height, 0x00000000);
 
-      // Charger les fontes bitmap locales (open-sans-128) depuis backend/assets/fonts
-      const fontWhite = await Jimp.loadFont(
-        path.join(process.cwd(), 'backend/assets/fonts/open-sans-128-white/open-sans-128-white.fnt')
-      );
+      // Chemins des fontes bitmap locales (open-sans-128) depuis backend/assets/fonts
+      const whiteFontPath = path.join(process.cwd(), 'backend/assets/fonts/open-sans-128-white/open-sans-128-white.fnt');
+      const blackFontPath = path.join(process.cwd(), 'backend/assets/fonts/open-sans-128-black/open-sans-128-black.fnt');
 
-      const fontBlack = await Jimp.loadFont(
-        path.join(process.cwd(), 'backend/assets/fonts/open-sans-128-black/open-sans-128-black.fnt')
-      );
+      console.log('🔍 [WATERMARK] Chemins fontes Jimp', {
+        whiteFontPath,
+        blackFontPath,
+        whiteFontExists: fs.existsSync(whiteFontPath),
+        blackFontExists: fs.existsSync(blackFontPath)
+      });
+
+      const fontWhite = await Jimp.loadFont(whiteFontPath);
+      const fontBlack = await Jimp.loadFont(blackFontPath);
 
       // Ombre sombre légèrement décalée
       const shadowOverlay = baseOverlay.clone();
@@ -255,9 +268,17 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
       downloadName = `${baseName}-wm.png`;
 
       res.setHeader('Content-Type', 'image/png');
+
+      console.log('✅ [WATERMARK] Watermark généré avec succès', {
+        fileId: file.id,
+        filename: file.filename,
+        productId: displayProductId,
+        width,
+        height
+      });
     } catch (wmError) {
       // En cas d'erreur Jimp (fonts manquantes, etc.), fallback sur l'image originale sans filigrane
-      console.error('Erreur watermark Jimp, fallback image originale sans filigrane:', wmError);
+      console.error('❌ [WATERMARK] Erreur watermark Jimp, fallback image originale sans filigrane:', wmError);
       res.setHeader('Content-Type', file.mimetype || 'application/octet-stream');
     }
 

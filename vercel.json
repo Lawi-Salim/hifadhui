@@ -14,7 +14,7 @@
     }
   ],
   "functions": {
-    "api/index.js": {
+    "backend/server.js": {
       "includeFiles": "backend/assets/fonts/**/*"
     }
   },
