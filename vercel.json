@@ -13,11 +13,6 @@
       "use": "@vercel/node"
     }
   ],
-  "functions": {
-    "backend/server.js": {
-      "includeFiles": "backend/assets/fonts/**/*"
-    }
-  },
   "routes": [
     {
       "src": "/api/(.*)",
