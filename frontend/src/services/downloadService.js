@@ -102,7 +102,7 @@ const downloadWatermarkedImageViaAPI = async (fileId, filename) => {
   try {
     const response = await api.get(`/files/${fileId}/watermarked`, {
       responseType: 'blob',
-      timeout: 60000,
+      timeout: 120000
     });
     return response.data;
   } catch (error) {

@@ -15,7 +15,7 @@
   ],
   "functions": {
     "backend/server.js": {
-      "includeFiles": "backend/assets/fonts/**"
+      "includeFiles": "backend/assets/fonts/**/*"
     }
   },
   "routes": [
