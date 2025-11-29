@@ -16,7 +16,6 @@ import AdmZip from 'adm-zip';
 import fs from 'fs';
 import path, { dirname } from 'path';
 import axios from 'axios';
-import Jimp from 'jimp';
 import { fileURLToPath } from 'url';
 
 const router = express.Router();
@@ -127,7 +126,7 @@ router.get('/by-empreinte/:hash', async (req, res) => {
   }
 });
 
-// Route pour télécharger une image avec filigrane (Product ID) généré côté serveur
+// Route pour télécharger une image avec filigrane (Product ID) via transformation Cloudinary
 router.get('/:id/watermarked', authenticateToken, async (req, res) => {
   try {
     const file = await File.findOne({
@@ -163,129 +162,64 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
       });
     }
 
-    // Construire l'URL Cloudinary complète si nécessaire (même logique que /:id/download)
-    let downloadUrl = file.file_url;
-
-    if (!file.file_url.startsWith('http')) {
-      const cloudinaryBaseUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}`;
-      const resourceType = file.mimetype.startsWith('image/') ? 'image' : 'raw';
-      downloadUrl = `${cloudinaryBaseUrl}/${resourceType}/upload/${file.file_url}`;
-    }
-
-    // Télécharger l'image originale via URL
-    const response = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
-    const originalBuffer = Buffer.from(response.data);
-
     // Texte du filigrane : deux dernières parties du product_id
     const displayProductId = productId.includes('-')
       ? productId.split('-').slice(-2).join('-')
       : productId;
 
-    let resultBuffer = originalBuffer;
-    let downloadName = file.filename;
+    // Récupérer le public_id Cloudinary à partir de file_url
+    // file_url est déjà de la forme "<public_id>" ou "<folder>/<public_id>"
+    const publicId = file.file_url;
 
-    try {
-      console.log('🔍 [WATERMARK] Début génération watermark Jimp', {
-        fileId: file.id,
-        filename: file.filename,
-        productId: displayProductId,
-        cwd: process.cwd(),
-        dirname: __dirname
-      });
+    // Construction de l'URL Cloudinary avec overlay texte via le SDK
+    // On utilise un texte blanc avec léger contour noir via deux overlays
+    const fontSpec = 'Arial_60_bold';
 
-      // Charger l'image avec Jimp
-      const image = await Jimp.read(originalBuffer);
-      const width = image.bitmap.width || 1000;
-      const height = image.bitmap.height || 1000;
+    const resourceType = file.mimetype.startsWith('image/') ? 'image' : 'raw';
 
-      // Créer des couches overlay pour ombre + texte (style proche de Sharp)
-      const baseOverlay = new Jimp(width, height, 0x00000000);
-
-      // Chemins des fontes bitmap locales (open-sans-128) depuis backend/assets/fonts
-      const whiteFontPath = path.join(process.cwd(), 'backend/assets/fonts/open-sans-128-white/open-sans-128-white.fnt');
-      const blackFontPath = path.join(process.cwd(), 'backend/assets/fonts/open-sans-128-black/open-sans-128-black.fnt');
-
-      console.log('🔍 [WATERMARK] Chemins fontes Jimp', {
-        whiteFontPath,
-        blackFontPath,
-        whiteFontExists: fs.existsSync(whiteFontPath),
-        blackFontExists: fs.existsSync(blackFontPath)
-      });
-
-      const fontWhite = await Jimp.loadFont(whiteFontPath);
-      const fontBlack = await Jimp.loadFont(blackFontPath);
-
-      // Ombre sombre légèrement décalée
-      const shadowOverlay = baseOverlay.clone();
-      shadowOverlay.print(
-        fontBlack,
-        3, // léger décalage pour simuler un contour
-        3,
+    const cloudinaryUrl = cloudinary.url(publicId, {
+      resource_type: resourceType,
+      transformation: [
         {
-          text: displayProductId,
-          alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-          alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
+          overlay: {
+            font_family: 'Poppins',
+            font_size: 130,
+            font_weight: 'bold',
+            text: displayProductId
+          },
+          color: '#000000',
+          gravity: 'center',
+          x: 4,
+          y: 4,
+          opacity: 35,
+          angle: -30
         },
-        width,
-        height
-      );
-      shadowOverlay.rotate(-30, false);
-      shadowOverlay.opacity(0.35);
-
-      // Texte clair par-dessus
-      const textOverlay = baseOverlay.clone();
-      textOverlay.print(
-        fontWhite,
-        0,
-        0,
         {
-          text: displayProductId,
-          alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-          alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
-        },
-        width,
-        height
-      );
-      textOverlay.rotate(-30, false);
-      textOverlay.opacity(0.18);
+          overlay: {
+            font_family: 'Poppins',
+            font_size: 130,
+            font_weight: 'bold',
+            text: displayProductId
+          },
+          color: '#FFFFFF',
+          gravity: 'center',
+          opacity: 18,
+          angle: -30
+        }
+      ]
+    });
 
-      // Appliquer les overlays sur l'image originale (ombre puis texte clair)
-      image.composite(shadowOverlay, 0, 0, {
-        mode: Jimp.BLEND_SOURCE_OVER,
-        opacitySource: 1,
-        opacityDest: 1
-      });
+    console.log('✅ [WATERMARK] URL Cloudinary générée', {
+      fileId: file.id,
+      filename: file.filename,
+      productId: displayProductId,
+      cloudinaryUrl
+    });
 
-      image.composite(textOverlay, 0, 0, {
-        mode: Jimp.BLEND_SOURCE_OVER,
-        opacitySource: 1,
-        opacityDest: 1
-      });
-
-      resultBuffer = await image.getBufferAsync(Jimp.MIME_PNG);
-
-      const baseName = path.basename(file.filename, path.extname(file.filename));
-      downloadName = `${baseName}-wm.png`;
-
-      res.setHeader('Content-Type', 'image/png');
-
-      console.log('✅ [WATERMARK] Watermark généré avec succès', {
-        fileId: file.id,
-        filename: file.filename,
-        productId: displayProductId,
-        width,
-        height
-      });
-    } catch (wmError) {
-      // En cas d'erreur Jimp (fonts manquantes, etc.), fallback sur l'image originale sans filigrane
-      console.error('❌ [WATERMARK] Erreur watermark Jimp, fallback image originale sans filigrane:', wmError);
-      res.setHeader('Content-Type', file.mimetype || 'application/octet-stream');
-    }
-
-    res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
-    res.send(resultBuffer);
+    // Rediriger le client vers l'URL transformée (Cloudinary gère le rendu et le download)
+    return res.redirect(cloudinaryUrl);
   } catch (error) {
-    console.error('Erreur lors du téléchargement avec filigrane:', error);
+    console.error('Erreur lors du téléchargement avec filigrane (Cloudinary):', error);
     res.status(500).json({
       error: 'Erreur lors de la génération de l\'image avec filigrane'
     });
