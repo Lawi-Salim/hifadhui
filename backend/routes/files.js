@@ -178,6 +178,7 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
     const resourceType = file.mimetype.startsWith('image/') ? 'image' : 'raw';
 
     const cloudinaryUrl = cloudinary.url(publicId, {
+      secure: true,
       resource_type: resourceType,
       transformation: [
         {
