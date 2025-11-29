@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import { FiCopy } from 'react-icons/fi';
 import Modal from '../Modal';
 import { useAuth } from '../../contexts/AuthContext';
-import { generateLicenseForSelection } from '../../services/licenseService';
+import api from '../../services/api';
+import { DEFAULT_MD_TEMPLATE, generateLicenseForSelection } from '../../services/licenseService';
+import ToastContainer from './ToastContainer';
 import './LicenseDownloadModal.css';
 
 const LicenseDownloadModal = ({
@@ -17,38 +20,98 @@ const LicenseDownloadModal = ({
   const [includeTxt, setIncludeTxt] = useState(true);
   const [licenseText, setLicenseText] = useState('');
   const [error, setError] = useState('');
+  const [toasts, setToasts] = useState([]);
+
+  // Synchroniser l'extension .txt avec l'état "Licence incluse"
+  useEffect(() => {
+    if (includeLicense) {
+      setIncludeTxt(true);
+    } else {
+      setIncludeTxt(false);
+    }
+  }, [includeLicense]);
 
   useEffect(() => {
     if (!isOpen) {
       return;
     }
 
-    setError('');
-    setIsLoading(true);
+    let isCancelled = false;
 
-    try {
-      const creatorName = user?.username
-        ? `${user.username}`
-        : 'Hifadhui';
+    const loadLicense = async () => {
+      setError('');
+      setIsLoading(true);
 
-      const { txtContent } = generateLicenseForSelection(selectedItems || [], {}, { creatorName });
-      const initialText = txtContent || '';
-      setLicenseText(initialText);
-    } catch (e) {
-      console.error('[LicenseDownloadModal] Erreur génération licence initiale', e);
-      setLicenseText('');
-      setError("Erreur lors de la génération automatique de la licence. Vous pouvez saisir un texte manuellement.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isOpen, selectedItems]);
+      try {
+        const creatorName = user?.username ? `${user.username}` : 'Hifadhui';
+
+        let effectiveTemplate = DEFAULT_MD_TEMPLATE;
+        try {
+          const response = await api.get('/auth/license-template');
+          const data = response.data && response.data.data ? response.data.data : {};
+          const valueFromApi = data.md || data.txt || '';
+          if (valueFromApi) {
+            effectiveTemplate = valueFromApi;
+          }
+        } catch (templateError) {
+          console.error('[LicenseDownloadModal] Erreur chargement template de licence, utilisation du template par défaut', templateError);
+        }
+
+        const { txtContent } = generateLicenseForSelection(
+          selectedItems || [],
+          { txtTemplate: effectiveTemplate },
+          { creatorName }
+        );
+
+        if (!isCancelled) {
+          const initialText = txtContent || '';
+          setLicenseText(initialText);
+        }
+      } catch (e) {
+        console.error('[LicenseDownloadModal] Erreur génération licence initiale', e);
+        if (!isCancelled) {
+          setLicenseText('');
+          setError("Erreur lors de la génération automatique de la licence. Vous pouvez saisir un texte manuellement.");
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadLicense();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, selectedItems, user]);
 
   const getSelectedCount = () => {
     return Array.isArray(selectedItems) ? selectedItems.length : 0;
   };
 
-  const handleToggleTxt = () => {
-    setIncludeTxt(!includeTxt);
+  const addToast = (message, type = 'success', duration = 3000) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  };
+
+  const handleCopyLicense = async () => {
+    if (!licenseText) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(licenseText);
+      addToast('Texte copié !', 'success', 2500);
+    } catch (e) {
+      console.error('[LicenseDownloadModal] Erreur lors de la copie du texte de licence', e);
+      addToast('Impossible de copier le texte.', 'error', 3000);
+    }
   };
 
   const handleSubmit = () => {
@@ -109,8 +172,8 @@ const LicenseDownloadModal = ({
               <label className="checkbox-inline">
                 <input
                   type="checkbox"
-                  checked={includeTxt}
-                  onChange={handleToggleTxt}
+                  checked={includeLicense}
+                  readOnly
                   disabled={!includeLicense}
                 />
                 <span> .txt</span>
@@ -125,6 +188,19 @@ const LicenseDownloadModal = ({
               <label className="form-label license-text-label">
                 Texte de la licence
               </label>
+              <p
+                className={`license-copy-text ${
+                  isLoading || !includeLicense || !licenseText ? 'license-copy-text--disabled' : ''
+                }`}
+                onClick={
+                  isLoading || !includeLicense || !licenseText
+                    ? undefined
+                    : handleCopyLicense
+                }
+              >
+                <FiCopy style={{ marginRight: 6 }} />
+                Copier la licence
+              </p>
             </div>
             <textarea
               value={licenseText}
@@ -158,6 +234,8 @@ const LicenseDownloadModal = ({
           Télécharger
         </button>
       </div>
+
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </Modal>
   );
 };

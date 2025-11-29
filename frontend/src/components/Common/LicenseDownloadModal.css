@@ -72,6 +72,25 @@
   gap: 0.5rem;
 }
 
+.license-download-modal .license-copy-text {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.license-download-modal .license-copy-text:hover {
+  color: var(--primary-color);
+}
+
+.license-download-modal .license-copy-text--disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .license-download-modal .license-badge-edited {
   padding: 0.1rem 0.4rem;
   border-radius: 999px;

@@ -1,5 +1,6 @@
 import React from 'react';
 import './Pagination.css';
+import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
 /**
  * Composant de pagination minimaliste
@@ -34,77 +35,85 @@ const Pagination = ({
     return null;
   }
 
-  // Logique de pagination minimaliste
-  const getMinimalistPaginationConfig = () => {
-    const prevPage = currentPage > 1 ? currentPage - 1 : null;
-    const nextPage = currentPage < totalPages ? currentPage + 1 : null;
-    
-    return {
-      prevPage,
-      nextPage,
-      showEllipsis: totalPages > 2 // Afficher ... seulement s'il y a plus de 2 pages
-    };
+  // Génère la liste des éléments de pagination (numéros + ellipses)
+  const getPageItems = () => {
+    // Cas simples: peu de pages, on les affiche toutes
+    if (totalPages <= 4) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const items = [];
+
+    // Début de liste (pages 1..4, puis ellipses, puis dernière)
+    if (currentPage <= 2) {
+      items.push(1, 2, 3, 4, 'ellipsis', totalPages);
+      return items;
+    }
+
+    // Fin de liste (première, ellipses, puis les 4 dernières)
+    if (currentPage >= totalPages - 1) {
+      items.push(1, 'ellipsis', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      return items;
+    }
+
+    // Milieu de liste (première, ellipses, voisinage de la page courante, ellipses, dernière)
+    items.push(1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis', totalPages);
+    return items;
   };
 
-  const paginationConfig = getMinimalistPaginationConfig();
+  const pageItems = getPageItems();
+
+  const handleSafePageChange = (page) => {
+    if (!onPageChange || page === currentPage || page < 1 || page > totalPages) return;
+    onPageChange(page);
+  };
 
   return (
     <div className="pagination-controls">
-      <div className="pagination-info">
-        <span>
-          Page {currentPage} sur {totalPages}
-          {totalItems && (
-            <> ({totalItems} {itemName} au total)</>
-          )}
-        </span>
-      </div>
-      
       <div className="pagination-buttons">
-        {/* Bouton Précédent */}
-        <button 
-          className="pagination-btn"
+        {/* Flèche précédente */}
+        <button
+          className="pagination-btn pagination-arrow"
           onClick={onPrevPage}
           disabled={!hasPrevPage}
           title="Page précédente"
         >
-          ← Précédent
+          <FiChevronLeft size={16} />
         </button>
-        
-        {/* Page précédente (si elle existe) */}
-        {paginationConfig.prevPage && (
-          <button
-            className="pagination-btn"
-            onClick={() => onPageChange(paginationConfig.prevPage)}
-            title={`Page ${paginationConfig.prevPage}`}
-          >
-            {paginationConfig.prevPage}
-          </button>
-        )}
-        
-        {/* Ellipse fixe (si plus de 2 pages) */}
-        {paginationConfig.showEllipsis && (
-          <span className="pagination-ellipsis">...</span>
-        )}
-        
-        {/* Page suivante (si elle existe) */}
-        {paginationConfig.nextPage && (
-          <button
-            className="pagination-btn"
-            onClick={() => onPageChange(paginationConfig.nextPage)}
-            title={`Page ${paginationConfig.nextPage}`}
-          >
-            {paginationConfig.nextPage}
-          </button>
-        )}
-        
-        {/* Bouton Suivant */}
-        <button 
-          className="pagination-btn"
+
+        {/* Boutons de page + ellipses */}
+        {pageItems.map((item, index) => {
+          if (item === 'ellipsis') {
+            return (
+              <span key={`ellipsis-${index}`} className="pagination-ellipsis">
+                ...
+              </span>
+            );
+          }
+
+          const pageNumber = item;
+          const isActive = pageNumber === currentPage;
+
+          return (
+            <button
+              key={pageNumber}
+              className={`pagination-btn pagination-page ${isActive ? 'active' : ''}`}
+              onClick={() => handleSafePageChange(pageNumber)}
+              title={`Page ${pageNumber}`}
+            >
+              {pageNumber}
+            </button>
+          );
+        })}
+
+        {/* Flèche suivante */}
+        <button
+          className="pagination-btn pagination-arrow"
           onClick={onNextPage}
           disabled={!hasNextPage}
           title="Page suivante"
         >
-          Suivant →
+          <FiChevronRight size={16} />
         </button>
       </div>
     </div>

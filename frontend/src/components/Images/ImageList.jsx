@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FaPlus, FaFolderOpen, FaUpload, FaCalendar, FaDatabase, FaDownload, FaSearch } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';
 import api from '../../services/api';
@@ -122,6 +122,7 @@ const ImageList = () => {
   const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
   const [pendingSelection, setPendingSelection] = useState([]);
   const [pendingWithWatermark, setPendingWithWatermark] = useState(false);
+  const bulkActionsRef = useRef(null);
 
   const handleDownload = async (image) => {
     try {
@@ -302,6 +303,10 @@ const ImageList = () => {
       onItemsUpdated={refresh}
       onSelectAll={handleSelectAll}
       totalItems={images.length}
+      onClearSelection={() => setSelectedImages([])}
+      onBindActions={(actions) => {
+        bulkActionsRef.current = actions;
+      }}
     >
       <div className="container">
         <div className="flex justify-between items-center mb-6">
@@ -425,21 +430,33 @@ const ImageList = () => {
               onBatchDownload={handleBatchDownload}
               isSelectionMode={isSelectionMode}
               selectedCount={selectedImages.length}
+              onBulkSelectAll={() => bulkActionsRef.current?.selectAll?.()}
+              onBulkMove={() => bulkActionsRef.current?.move?.()}
+              onBulkCancel={() => bulkActionsRef.current?.cancel?.()}
             />
           </div>
         </div>
 
         {images.length === 0 ? (
-          <div className="card-image">
-            <div className="text-center p-6">
-              <FaUpload size={48} className="text-secondary mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Aucune image</h3>
-              <p className="text-secondary mb-4">Vous n'avez pas encore uploadé d'images.</p>
-              <Link to="/upload" className="btn btn-primary">
-                <FaUpload /> Uploader votre première image
-              </Link>
+          searchTerm ? (
+            <div className="card-image">
+              <div className="text-center p-6">
+                <h3 className="text-lg font-semibold mb-2">Aucune image trouvée</h3>
+                <p className="text-secondary mb-2">Aucun résultat ne correspond à votre recherche.</p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="card-image">
+              <div className="text-center p-6">
+                <FaUpload size={48} className="text-secondary mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Aucune image</h3>
+                <p className="text-secondary mb-4">Vous n'avez pas encore uploadé d'images.</p>
+                <Link to="/upload" className="btn btn-primary">
+                  <FaUpload /> Uploader votre première image
+                </Link>
+              </div>
+            </div>
+          )
         ) : (
           <ItemList
             items={images}

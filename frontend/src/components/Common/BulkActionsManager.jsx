@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { FiMove, FiX } from 'react-icons/fi';
 import { FaCheck, FaDownload } from 'react-icons/fa';
 import MoveModal from './ModalMove';
@@ -14,6 +14,9 @@ const BulkActionsManager = ({
   onItemsUpdated,
   onSelectAll,
   totalItems = 0, // Nombre total d'éléments disponibles
+  onBindActions,
+  onClearSelection,
+  showBottomBar = false,
   children
 }) => {
   const [showMoveModal, setShowMoveModal] = useState(false);
@@ -28,13 +31,27 @@ const BulkActionsManager = ({
 
   const handleCancel = useCallback(() => {
     onSelectionModeChange(false);
-  }, [onSelectionModeChange]);
+    if (typeof onClearSelection === 'function') {
+      onClearSelection();
+    }
+  }, [onSelectionModeChange, onClearSelection]);
 
   const handleSelectAll = useCallback(() => {
     if (onSelectAll) {
       onSelectAll();
     }
   }, [onSelectAll]);
+
+  useEffect(() => {
+    if (typeof onBindActions === 'function') {
+      // On ne passe que des fonctions stables pour éviter une boucle de mises à jour
+      onBindActions({
+        move: handleMove,
+        cancel: handleCancel,
+        selectAll: handleSelectAll
+      });
+    }
+  }, [onBindActions, handleMove, handleCancel, handleSelectAll]);
 
   const onActionComplete = useCallback(() => {
     console.log('🔄 [BULK-MANAGER] Action terminée, rechargement des données...');
@@ -67,7 +84,7 @@ const BulkActionsManager = ({
     <>
       {children}
       
-      {isSelectionMode && selectedItems.length > 0 && (
+      {showBottomBar && isSelectionMode && selectedItems.length > 0 && (
         <div className="bulk-actions-bar">
           <div className="bulk-actions-info">
             <span className="selected-count">

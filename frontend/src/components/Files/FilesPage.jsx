@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { FaUpload, FaCalendar, FaDatabase, FaSearch } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';
@@ -59,6 +59,7 @@ const FilesPage = () => {
   const [fileToCertify, setFileToCertify] = useState(null);
   const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
   const [pendingSelection, setPendingSelection] = useState([]);
+  const bulkActionsRef = useRef(null);
 
   // États pour la pagination
   const [files, setFiles] = useState([]);
@@ -364,6 +365,10 @@ const FilesPage = () => {
       onSelectAll={handleSelectAll}
       totalItems={files.length}
       onBulkDownloadWithWatermark={handleBatchDownloadWithWatermark}
+      onClearSelection={() => setSelectedFiles([])}
+      onBindActions={(actions) => {
+        bulkActionsRef.current = actions;
+      }}
     >
       <div className="container">
         <div className="flex justify-between items-center mb-6">
@@ -469,6 +474,9 @@ const FilesPage = () => {
             onBatchDownload={handleBatchDownload}
             isSelectionMode={isSelectionMode}
             selectedCount={selectedFiles.length}
+            onBulkSelectAll={() => bulkActionsRef.current?.selectAll?.()}
+            onBulkMove={() => bulkActionsRef.current?.move?.()}
+            onBulkCancel={() => bulkActionsRef.current?.cancel?.()}
           />
         </div>
       </div>

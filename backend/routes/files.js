@@ -1210,10 +1210,10 @@ router.get('/', authenticateToken, async (req, res) => {
       }
     }
 
-    // Filtre par nom de fichier si un terme de recherche est fourni
+    // Filtre par nom de fichier si un terme de recherche est fourni (insensible à la casse avec ILIKE - Postgres)
     if (search && typeof search === 'string' && search.trim() !== '') {
       whereClause.filename = {
-        [Op.like]: `%${search.trim()}%`
+        [Op.iLike]: `%${search.trim()}%`
       };
     }
 
