@@ -14,11 +14,15 @@ import { body, validationResult } from 'express-validator';
 import { v2 as cloudinary } from 'cloudinary';
 import AdmZip from 'adm-zip';
 import fs from 'fs';
-import path from 'path';
+import path, { dirname } from 'path';
 import axios from 'axios';
 import Jimp from 'jimp';
+import { fileURLToPath } from 'url';
 
 const router = express.Router();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Route pour récupérer les informations de quota
 router.get('/quota', authenticateToken, getQuotaInfo);
@@ -189,9 +193,13 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
       // Créer des couches overlay pour ombre + texte (style proche de Sharp)
       const baseOverlay = new Jimp(width, height, 0x00000000);
 
-      // Utiliser uniquement les fontes 64 (les fontes 128 ne sont pas disponibles en production)
-      const fontWhite = await Jimp.loadFont(Jimp.FONT_SANS_64_WHITE);
-      const fontBlack = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
+      // Charger les fontes bitmap locales (open-sans-128) depuis backend/assets/fonts
+      const fontWhite = await Jimp.loadFont(
+        path.join(__dirname, '../assets/fonts/open-sans-128-white/open-sans-128-white.fnt')
+      );
+      const fontBlack = await Jimp.loadFont(
+        path.join(__dirname, '../assets/fonts/open-sans-128-black/open-sans-128-black.fnt')
+      );
 
       // Ombre sombre légèrement décalée
       const shadowOverlay = baseOverlay.clone();
