@@ -163,13 +163,6 @@ const downloadSingleFile = async (file, { withWatermark = false } = {}) => {
     const isImage = file.mimetype && file.mimetype.startsWith('image/');
     const productId = file.empreinte?.product_id;
 
-    console.log('[downloadService.downloadSingleFile] before watermark', {
-      filename: file.filename,
-      withWatermark,
-      isImage,
-      productId,
-      mimetype: file.mimetype
-    });
 
     let blob;
 
@@ -177,7 +170,7 @@ const downloadSingleFile = async (file, { withWatermark = false } = {}) => {
     if (withWatermark && isImage && productId) {
       try {
         blob = await downloadWatermarkedImageViaAPI(file.id, file.filename);
-        console.log(`✓ Watermark (sharp) téléchargé pour ${file.filename} (${productId})`);
+        // console.log(`✓ Watermark (sharp) téléchargé pour ${file.filename} (${productId})`);
       } catch (error) {
         console.warn(`Impossible de récupérer l'image filigranée pour ${file.filename}, fallback sans watermark:`, error);
         // Fallback : télécharger le fichier original sans watermark
@@ -262,12 +255,6 @@ export const downloadSelectedItemsAsZip = async (selectedItems, onProgress = nul
     }
   };
 
-  console.log('[downloadService.downloadSelectedItemsAsZip] start', {
-    count: selectedItems.length,
-    withWatermark,
-    hasExtraFiles: Array.isArray(extraFiles) && extraFiles.length > 0
-  });
-
   try {
     // Télécharger tous les fichiers en parallèle
     const downloadPromises = selectedItems.map(async (item) => {
@@ -280,7 +267,7 @@ export const downloadSelectedItemsAsZip = async (selectedItems, onProgress = nul
           // Utiliser directement l'endpoint backend qui applique le filigrane avec sharp
           try {
             blob = await downloadWatermarkedImageViaAPI(item.id, item.filename);
-            console.log(`✓ Watermark (sharp) téléchargé pour ${item.filename} (${productId})`);
+            // console.log(`✓ Watermark (sharp) téléchargé pour ${item.filename} (${productId})`);
           } catch (error) {
             console.warn(`Impossible de récupérer l'image filigranée pour ${item.filename}, fallback sans watermark:`, error);
             const cloudinaryUrl = getCloudinaryUrlForItem(item);
@@ -376,8 +363,8 @@ const exportUserData = async (userFiles = [], onProgress = null) => {
   const JSZip = (await import('jszip')).default;
   const zip = new JSZip();
   
-  console.log('🗂️ [DATA EXPORT] Début export données utilisateur');
-  console.log(`📁 Fichiers: ${userFiles.length}`);
+  // console.log('🗂️ [DATA EXPORT] Début export données utilisateur');
+  // console.log(`📁 Fichiers: ${userFiles.length}`);
   
   // Créer les dossiers principaux
   const imagesFolder = zip.folder('Images');
@@ -410,16 +397,16 @@ const exportUserData = async (userFiles = [], onProgress = null) => {
         switch (fileType) {
           case 'image':
             imagesFolder.file(file.filename, blob);
-            console.log(`📸 Image ajoutée: ${file.filename}`);
+            // console.log(`📸 Image ajoutée: ${file.filename}`);
             break;
           case 'pdf':
             pdfsFolder.file(file.filename, blob);
-            console.log(`📄 PDF ajouté: ${file.filename}`);
+            // console.log(`📄 PDF ajouté: ${file.filename}`);
             break;
           default:
             // Les autres fichiers vont dans le dossier PDFs par défaut
             pdfsFolder.file(file.filename, blob);
-            console.log(`📎 Fichier ajouté: ${file.filename}`);
+            // console.log(`📎 Fichier ajouté: ${file.filename}`);
             break;
         }
         
@@ -440,7 +427,7 @@ const exportUserData = async (userFiles = [], onProgress = null) => {
       });
     }
     
-    console.log('📦 Génération du fichier ZIP...');
+    // console.log('📦 Génération du fichier ZIP...');
     const zipBlob = await zip.generateAsync({ 
       type: 'blob',
       compression: 'DEFLATE',
@@ -467,8 +454,8 @@ const exportUserData = async (userFiles = [], onProgress = null) => {
       });
     }
     
-    console.log(`✅ [DATA EXPORT] Export terminé: ${fileName}`);
-    console.log(`📊 Statistiques: ${processedItems}/${totalItems} éléments traités`);
+    // console.log(`✅ [DATA EXPORT] Export terminé: ${fileName}`);
+    // console.log(`📊 Statistiques: ${processedItems}/${totalItems} éléments traités`);
     
     return {
       success: true,

@@ -358,41 +358,6 @@
   font-weight: 600;
 }
 
-/* Overlay de watermark (même style que SharedFilePage) */
-.watermark-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-}
-
-.watermark-text {
-  /* Taille responsive pour éviter un watermark trop grand sur les petites previews
-     et trop petit sur les grandes images. */
-  font-size: clamp(1.3rem, 3.2vw, 2.1rem);
-  font-weight: bold;
-  /* Légèrement plus transparent pour diminuer le contraste tout en restant lisible */
-  color: rgba(255, 255, 255, 0.7) !important;
-  text-shadow:
-    2px 2px 4px rgba(0, 0, 0, 0.8),
-    -2px -2px 4px rgba(0, 0, 0, 0.8),
-    2px -2px 4px rgba(0, 0, 0, 0.8),
-    -2px 2px 4px rgba(0, 0, 0, 0.8) !important;
-  transform: rotate(-45deg);
-  user-select: none;
-  white-space: nowrap;
-  text-transform: uppercase;
-  /* Espacement un peu plus large pour se rapprocher du rendu généré */
-  letter-spacing: 0.22em;
-  backdrop-filter: blur(1px);
-}
-
 .watermark {
   position: absolute;
   top: 50%;
@@ -402,7 +367,6 @@
   font-size: 1.75rem;
   font-weight: bold;
   pointer-events: none;
-  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.685);
 }
 
 .modal-details-container {

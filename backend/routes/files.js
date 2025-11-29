@@ -14,14 +14,10 @@ import { body, validationResult } from 'express-validator';
 import { v2 as cloudinary } from 'cloudinary';
 import AdmZip from 'adm-zip';
 import fs from 'fs';
-import path, { dirname } from 'path';
+import path from 'path';
 import axios from 'axios';
-import { fileURLToPath } from 'url';
 
 const router = express.Router();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Route pour récupérer les informations de quota
 router.get('/quota', authenticateToken, getQuotaInfo);
@@ -173,8 +169,6 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
 
     // Construction de l'URL Cloudinary avec overlay texte via le SDK
     // On utilise un texte blanc avec léger contour noir via deux overlays
-    const fontSpec = 'Arial_60_bold';
-
     const resourceType = file.mimetype.startsWith('image/') ? 'image' : 'raw';
 
     const cloudinaryUrl = cloudinary.url(publicId, {
@@ -208,13 +202,6 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
           angle: -30
         }
       ]
-    });
-
-    console.log('✅ [WATERMARK] URL Cloudinary générée', {
-      fileId: file.id,
-      filename: file.filename,
-      productId: displayProductId,
-      cloudinaryUrl
     });
 
     // Rediriger le client vers l'URL transformée (Cloudinary gère le rendu et le download)

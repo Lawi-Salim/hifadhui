@@ -666,6 +666,39 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-color-light);
 }
 
+/* Watermark global styles (used by image modals and shared file page) */
+.watermark-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.watermark-text {
+  /* Taille responsive proche du rendu Cloudinary (Poppins 130) */
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  font-weight: bold;
+  font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Blanc légèrement translucide + forte ombre noire pour lisibilité */
+  color: rgba(255, 255, 255, 0.466) !important;
+  text-shadow:
+    2px 2px 4px rgba(0, 0, 0, 0.171),
+    -2px -2px 4px rgba(0, 0, 0, 0.171),
+    2px -2px 4px rgba(0, 0, 0, 0.171),
+    -2px 2px 4px rgba(0, 0, 0, 0.171) !important;
+  transform: rotate(-30deg);
+  user-select: none;
+  white-space: nowrap;
+  text-transform: uppercase;
+  /* Espacement un peu plus large pour se rapprocher du rendu généré */
+  letter-spacing: 0.22em;
+}
 
 /* Responsive */
 @media (max-width: 768px) {
