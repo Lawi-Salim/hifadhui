@@ -533,6 +533,31 @@
   gap: 2rem;
 }
 
+/* ==========================
+   ActivityPage - Stats header
+   ========================== */
+
+/* Conteneur titre + filtre sur une seule ligne */
+.dashboard-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.dashboard-section-header .filters-section-activity {
+  margin-top: 0;
+  flex: 0 0 320px;
+}
+
+/* On neutralise la carte de filtre pour qu'elle reste simple et alignée */
+.filter-activity {
+    border: none;
+    padding: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.5rem;
+}
+
 .header-title {
   display: flex;
   align-items: center;

@@ -35,15 +35,41 @@ const UserActivityDetails = ({ userId }) => {
   const renderActivityDetails = (activity) => {
     const { actionType, details } = activity;
 
-    if (actionType === 'FOLDER_RENAME' && details) {
+    if (!details) {
+      return '—';
+    }
+
+    if (actionType === 'FOLDER_RENAME') {
       return <span>{fixEncoding(details.newDossierName)}</span>;
     }
 
-    if (actionType === 'FILE_RENAME' && details) {
+    if (actionType === 'FILE_RENAME') {
       return <span>{fixEncoding(details.newFileName)}</span>;
     }
 
-    if (actionType === 'ZIP_UPLOAD' && details) {
+    if (actionType === 'ZIP_DOWNLOAD') {
+      const extra = details.extra || {};
+      const zipName = fixEncoding(extra.zipFileName || details.zipFileName || 'Archive ZIP');
+      const imageCount = extra.imageCount ?? details.imageCount;
+      const pdfCount = extra.pdfCount ?? details.pdfCount;
+      const itemCount = extra.itemCount ?? details.itemCount;
+
+      const parts = [];
+      if (typeof imageCount === 'number' && imageCount > 0) {
+        parts.push(`${imageCount} image${imageCount > 1 ? 's' : ''}`);
+      }
+      if (typeof pdfCount === 'number' && pdfCount > 0) {
+        parts.push(`${pdfCount} PDF${pdfCount > 1 ? 's' : ''}`);
+      }
+      if (parts.length === 0 && typeof itemCount === 'number') {
+        parts.push(`${itemCount} fichier${itemCount > 1 ? 's' : ''}`);
+      }
+
+      const suffix = parts.length > 0 ? ` (${parts.join(', ')})` : '';
+      return <span>{zipName}{suffix}</span>;
+    }
+
+    if (actionType === 'ZIP_UPLOAD') {
       const { fileName, extractedImageCount, extractedPdfCount } = details;
       const parts = [];
       if (extractedImageCount > 0) {
@@ -66,7 +92,47 @@ const UserActivityDetails = ({ userId }) => {
         </span>
       );
     }
-    return fixEncoding(details?.dossierName || details?.fileName) || 'N/A';
+
+    // Événements de présence / navigation (tracker d'activité)
+    if (['active', 'inactive', 'session_end', 'page_visible', 'page_hidden'].includes(actionType)) {
+      const url = details.url || '';
+      let path = '';
+      try {
+        if (url) {
+          const parsed = new URL(url);
+          path = parsed.pathname;
+        }
+      } catch (e) {
+        path = url;
+      }
+
+      if (actionType === 'session_end') {
+        const reasonLabel = details.reason
+          ? `Fin de session (${details.reason.replace('_', ' ')})`
+          : 'Fin de session';
+        return path ? `${reasonLabel} sur ${path}` : reasonLabel;
+      }
+
+      if (actionType === 'page_visible') {
+        return path ? `Page visible : ${path}` : 'Page visible';
+      }
+
+      if (actionType === 'page_hidden') {
+        return path ? `Page cachée : ${path}` : 'Page cachée';
+      }
+
+      if (actionType === 'active') {
+        return path ? `Activité détectée sur ${path}` : 'Activité utilisateur';
+      }
+
+      if (actionType === 'inactive') {
+        return 'Utilisateur inactif';
+      }
+    }
+
+    // Détails génériques pour les autres actions (création/suppression)
+    const generic = fixEncoding(details.dossierName || details.fileName || details.name || '');
+    return generic || '—';
   };
 
   return (
@@ -74,19 +140,19 @@ const UserActivityDetails = ({ userId }) => {
       <div className="stats-container">
         <div className="stat-card">
           <h5>Uploads d'images</h5>
-          <p>{details.stats.imageUpload}</p>
+          <p>{Math.max(0, details.stats.imageUpload || 0)}</p>
         </div>
         <div className="stat-card">
           <h5>Uploads de PDFs</h5>
-          <p>{details.stats.pdfUpload}</p>
+          <p>{Math.max(0, details.stats.pdfUpload || 0)}</p>
         </div>
         <div className="stat-card">
           <h5>Uploads de ZIPs</h5>
-          <p>{details.stats.zipUpload}</p>
+          <p>{Math.max(0, details.stats.zipUpload || 0)}</p>
         </div>
         <div className="stat-card">
           <h5>Dossiers créés</h5>
-          <p>{details.stats.folderCreate}</p>
+          <p>{Math.max(0, details.stats.folderCreate || 0)}</p>
         </div>
       </div>
 

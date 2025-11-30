@@ -105,7 +105,12 @@ const ActivityList = () => {
         />
       )}
       {selectedUser && (
-        <Modal isOpen={!!selectedUser} onClose={() => setSelectedUser(null)} title={`Détails pour ${selectedUser.username}`}>
+        <Modal
+          isOpen={!!selectedUser}
+          onClose={() => setSelectedUser(null)}
+          title={`Détails pour ${selectedUser.username}`}
+          className="activity-details-modal"
+        >
           <UserActivityDetails userId={selectedUser.id} />
         </Modal>
       )}

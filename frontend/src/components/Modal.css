@@ -22,8 +22,8 @@
     border-radius: 12px;
     box-shadow: var(--shadow-lg);
     color: var(--text-primary);
-    width: 90%;
-    max-width: 900px;
+    width: 80%;
+    max-width: 1000px;
     max-height: 90vh; /* Limiter la hauteur */
     overflow-y: auto; /* Activer le défilement si nécessaire */
     position: relative; /* Pour positionner le bouton de fermeture */
@@ -31,6 +31,12 @@
     text-align: left; /* Aligner le texte à gauche */
   }
   
+  /* Modale agrandie pour les détails d'activités admin */
+  .modal-overlay.activity-details-modal .modal-content {
+    max-width: 1160px;
+    min-height: 60vh;
+  }
+
   .modal-close-button {
     position: absolute;
     top: 15px;
@@ -496,7 +502,7 @@
   }
 
   .modal-header {
-    padding-bottom: 1rem;
+    padding: 1rem;
     border-bottom: 1px solid var(--border-color);
   }
 

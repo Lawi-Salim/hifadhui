@@ -17,6 +17,10 @@ export const getUserActivityDetails = (userId) => {
   return api.get(`/admin/activities/user/${userId}`);
 };
 
+export const getActivityStats = (params) => {
+  return api.get('/admin/activities/stats', { params });
+};
+
 export const getAdminFiles = async (params) => {
   const response = await api.get('/admin/files', { params });
   return response;
@@ -27,6 +31,7 @@ const adminService = {
   getActivities,
   getActivitySummary,
   getUserActivityDetails,
+  getActivityStats,
   getAdminFiles,
 };
 

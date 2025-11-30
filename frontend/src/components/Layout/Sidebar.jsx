@@ -119,7 +119,7 @@ const Sidebar = () => {
       { path: '/admin/notifications', label: 'Notifications', icon: FiBell },
       { path: '/admin/files', label: 'Tous les PDFs', icon: FiFileText },
       { path: '/admin/images', label: 'Toutes les Images', icon: FiImage },
-      { path: '/admin/activity', label: 'Logs d\'activité', icon: FiActivity },
+      { path: '/admin/activity', label: 'Activités', icon: FiActivity },
       { path: '/admin/system', label: 'Système', icon: FiServer },
       { path: '/admin/analytics', label: 'Analytics', icon: FiPieChart },
       { path: '/admin/risk', label: 'Surveillance Risques', icon: FiShield },

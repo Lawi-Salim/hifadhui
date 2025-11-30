@@ -82,7 +82,7 @@
 }
 
 .activities-table-container {
-  max-height: 300px; /* Hauteur maximale avant que le scroll n'apparaisse */
+  max-height: 400px; /* Hauteur maximale avant que le scroll n'apparaisse */
   overflow-y: auto; /* Active le scroll vertical si nécessaire */
   border-radius: 4px;
   border: 1px solid #34495e;

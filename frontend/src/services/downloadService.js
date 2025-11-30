@@ -60,6 +60,24 @@ const ensureFilenameHasExtension = (filename = 'fichier', mimetype = '') => {
   return filename;
 };
 
+// Envoie une activité personnalisée au backend pour le suivi admin
+const sendDownloadActivity = async (type, extra = {}) => {
+  try {
+    await api.post('/user/activity', {
+      type,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      extra,
+    });
+  } catch (error) {
+    // Ne pas bloquer l'UX si le log échoue
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[downloadService] Échec envoi activité de téléchargement', error);
+    }
+  }
+};
+
 /**
  * Génère le nom du fichier ZIP basé sur les types de fichiers sélectionnés
  * @param {Array} selectedItems - Liste des éléments sélectionnés
@@ -203,6 +221,19 @@ const downloadSingleFile = async (file, { withWatermark = false } = {}) => {
 
     // Déclencher le téléchargement côté client
     saveAs(blob, file.filename);
+
+    // Enregistrer l'activité côté backend pour les stats admin
+    const fileType = getFileType(file.mimetype || '');
+    let actionType = 'FILE_DOWNLOAD';
+    if (fileType === 'image') actionType = 'IMAGE_DOWNLOAD';
+    else if (fileType === 'pdf') actionType = 'PDF_DOWNLOAD';
+
+    sendDownloadActivity(actionType, {
+      fileId: file.id,
+      fileName: file.filename,
+      mimetype: file.mimetype,
+      source: 'single_download',
+    });
   } catch (error) {
     console.error('Erreur lors du téléchargement du fichier:', error);
     throw error;
@@ -246,6 +277,16 @@ export const downloadSelectedItemsAsZip = async (selectedItems, onProgress = nul
   
   let completed = 0;
   const total = selectedItems.length;
+
+  // Compter le nombre d'images et de PDFs dans le ZIP pour les stats admin
+  let imageCountInZip = 0;
+  let pdfCountInZip = 0;
+
+  selectedItems.forEach((item) => {
+    const type = getFileType(item.mimetype || '');
+    if (type === 'image') imageCountInZip++;
+    else if (type === 'pdf') pdfCountInZip++;
+  });
 
   // Fonction pour mettre à jour le progrès
   const updateProgress = () => {
@@ -340,6 +381,14 @@ export const downloadSelectedItemsAsZip = async (selectedItems, onProgress = nul
 
     // Télécharger le fichier ZIP
     saveAs(zipBlob, zipFileName);
+
+    // Enregistrer une activité ZIP_DOWNLOAD côté backend pour les stats admin
+    sendDownloadActivity('ZIP_DOWNLOAD', {
+      zipFileName,
+      itemCount: selectedItems.length,
+      imageCount: imageCountInZip,
+      pdfCount: pdfCountInZip,
+    });
     
     return {
       success: true,
