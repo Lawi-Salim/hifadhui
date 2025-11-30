@@ -29,9 +29,7 @@ router.get('/quota', authenticateToken, getQuotaInfo);
 router.get('/by-empreinte/:hash', async (req, res) => {
   try {
     const { hash } = req.params;
-
-    console.log(`🔍 [FILE BY EMPREINTE] Recherche fichier avec hash: ${hash}`);
-
+    
     // Trouver l'empreinte
     const empreinte = await Empreinte.findOne({
       where: { hash_pregenere: hash }
@@ -80,9 +78,7 @@ router.get('/by-empreinte/:hash', async (req, res) => {
     if (file.fileDossier) {
       fullPath = await file.fileDossier.getFullPath();
     }
-
-    console.log(`✅ [FILE BY EMPREINTE] Fichier trouvé: ${file.filename}`);
-
+    
     res.json({
       success: true,
       data: {
@@ -326,9 +322,7 @@ router.post('/zip-cloudinary', authenticateToken, checkUploadQuota, behaviorMoni
           code: 'ZIP_FILE_TOO_LARGE'
         });
       }
-
-      console.log(`🔍 [ZIP-CLOUDINARY] Téléchargement du ZIP depuis Cloudinary: ${secure_url}`);
-
+      
       const zipResponse = await axios.get(secure_url, {
         responseType: 'arraybuffer',
         timeout: 120000
@@ -354,14 +348,11 @@ router.post('/zip-cloudinary', authenticateToken, checkUploadQuota, behaviorMoni
           code: 'NO_SUPPORTED_FILES_IN_ZIP'
         });
       }
-
-      console.log(`🔍 [ZIP-CLOUDINARY] ${validFileCount} fichier(s) valide(s) détecté(s) dans le ZIP`);
-
+      
       // Vérifier qu'il y a assez d'empreintes disponibles
       const empreintesDisponibles = await Empreinte.getAvailableEmpreintes(req.user.id, validFileCount);
 
       if (empreintesDisponibles.length < validFileCount) {
-        console.log(`⚠️ [ZIP-CLOUDINARY] Empreintes insuffisantes: ${empreintesDisponibles.length}/${validFileCount}`);
         return res.status(400).json({
           error: 'Empreintes insuffisantes',
           message: `Le ZIP contient ${validFileCount} fichier(s) mais vous n\'avez que ${empreintesDisponibles.length} empreinte(s) disponible(s)` ,
@@ -370,9 +361,7 @@ router.post('/zip-cloudinary', authenticateToken, checkUploadQuota, behaviorMoni
           code: 'INSUFFICIENT_EMPREINTES'
         });
       }
-
-      console.log(`✅ [ZIP-CLOUDINARY] ${empreintesDisponibles.length} empreinte(s) disponible(s) - Traitement autorisé`);
-
+      
       // Créer un dossier basé sur le nom du ZIP dans le dossier système
       const systemRoot = await Dossier.getSystemRoot();
       const originalDossierName = path.basename(originalname, path.extname(originalname));
@@ -411,7 +400,6 @@ router.post('/zip-cloudinary', authenticateToken, checkUploadQuota, behaviorMoni
             extractedImageCount++;
             break;
           default:
-            console.log(`Type non supporté ignoré (ZIP-CLOUDINARY) : ${entryName}`);
             continue; // On ignore les autres types de fichiers
         }
 
@@ -455,9 +443,7 @@ router.post('/zip-cloudinary', authenticateToken, checkUploadQuota, behaviorMoni
         // Utiliser l'empreinte correspondante
         const currentEmpreinte = empreintesDisponibles[empreinteIndex];
         empreinteIndex++;
-
-        console.log(`🔖 [ZIP-CLOUDINARY] Fichier ${empreinteIndex}/${validFileCount} - Empreinte: ${currentEmpreinte.product_id}`);
-
+        
         // Traiter le fichier avec l'empreinte
         const processedFile = await processSingleFile(fileDataObject, req.user, req, newDossier.id, {
           logActivity: false,
@@ -622,8 +608,6 @@ const processSingleFile = async (fileData, user, req, dossierId = null, options 
     fileHash = File.generateFileHash(fileBuffer);
     const signatureData = `${originalname}-${user.id}-${timestamp}`;
     signature = crypto.createHash('sha256').update(signatureData).digest('hex');
-    
-    console.log('⚠️ [UPLOAD] Aucune empreinte disponible - Génération hash/signature temporaire');
   }
 
   const file = await File.create({
@@ -641,7 +625,6 @@ const processSingleFile = async (fileData, user, req, dossierId = null, options 
   // Si une empreinte a été utilisée, la marquer comme utilisée
   if (options.empreinte) {
     await Empreinte.markAsUsed(options.empreinte.id, file.id);
-    console.log(`✅ [UPLOAD] Empreinte ${options.empreinte.product_id} associée au fichier ${file.id}`);
   }
 
 
@@ -699,11 +682,9 @@ router.post('/upload', authenticateToken, checkUploadQuota, behaviorMonitor, upl
     }
 
     // Vérifier les empreintes disponibles
-    console.log(`🔍 [UPLOAD] Vérification empreintes disponibles pour user ${req.user.id}`);
     const empreintesDisponibles = await Empreinte.getAvailableEmpreintes(req.user.id, 1);
     
     if (empreintesDisponibles.length === 0) {
-      console.log('⚠️ [UPLOAD] Aucune empreinte disponible - Upload refusé');
       return res.status(400).json({
         error: 'Aucune empreinte disponible',
         message: 'Vous devez générer des empreintes avant d\'uploader des fichiers',
@@ -713,7 +694,6 @@ router.post('/upload', authenticateToken, checkUploadQuota, behaviorMonitor, upl
 
     // Utiliser la première empreinte disponible
     const empreinte = empreintesDisponibles[0];
-    console.log(`✅ [UPLOAD] Empreinte disponible trouvée: ${empreinte.product_id}`);
 
     // Fichier individuel - traiter directement avec l'empreinte
     const { dossier_id } = req.body;
@@ -872,11 +852,9 @@ router.post('/upload-cloudinary', authenticateToken, checkUploadQuota, behaviorM
       }
 
       // Vérifier les empreintes disponibles
-      console.log(`🔍 [UPLOAD-CLOUDINARY] Vérification empreintes disponibles pour user ${req.user.id}`);
       const empreintesDisponibles = await Empreinte.getAvailableEmpreintes(req.user.id, 1);
       
       if (empreintesDisponibles.length === 0) {
-        console.log('⚠️ [UPLOAD-CLOUDINARY] Aucune empreinte disponible - Enregistrement refusé');
         return res.status(400).json({
           error: 'Aucune empreinte disponible',
           message: 'Vous devez générer des empreintes avant d\'uploader des fichiers',
@@ -885,7 +863,6 @@ router.post('/upload-cloudinary', authenticateToken, checkUploadQuota, behaviorM
       }
 
       const empreinte = empreintesDisponibles[0];
-      console.log(`✅ [UPLOAD-CLOUDINARY] Empreinte disponible trouvée: ${empreinte.product_id}`);
 
       const fileData = {
         originalname,
@@ -1014,13 +991,10 @@ router.post('/upload-zip', authenticateToken, checkUploadQuota, behaviorMonitor,
       }
     }
     
-    console.log(`🔍 [UPLOAD-ZIP] ${validFileCount} fichier(s) valide(s) détecté(s) dans le ZIP`);
-    
     // Vérifier qu'il y a assez d'empreintes disponibles
     const empreintesDisponibles = await Empreinte.getAvailableEmpreintes(req.user.id, validFileCount);
     
     if (empreintesDisponibles.length < validFileCount) {
-      console.log(`⚠️ [UPLOAD-ZIP] Empreintes insuffisantes: ${empreintesDisponibles.length}/${validFileCount}`);
       return res.status(400).json({
         error: 'Empreintes insuffisantes',
         message: `Le ZIP contient ${validFileCount} fichier(s) mais vous n'avez que ${empreintesDisponibles.length} empreinte(s) disponible(s)`,
@@ -1030,8 +1004,6 @@ router.post('/upload-zip', authenticateToken, checkUploadQuota, behaviorMonitor,
       });
     }
     
-    console.log(`✅ [UPLOAD-ZIP] ${empreintesDisponibles.length} empreinte(s) disponible(s) - Upload autorisé`);
-
     // Créer un dossier basé sur le nom du ZIP dans le dossier système
     const systemRoot = await Dossier.getSystemRoot();
     const originalDossierName = path.basename(req.file.originalname, path.extname(req.file.originalname));
@@ -1075,7 +1047,6 @@ router.post('/upload-zip', authenticateToken, checkUploadQuota, behaviorMonitor,
             extractedImageCount++;
             break;
           default:
-            console.log(`Type non supporté ignoré : ${entryName}`);
             continue; // On ignore les autres types de fichiers
         }
 
@@ -1119,8 +1090,6 @@ router.post('/upload-zip', authenticateToken, checkUploadQuota, behaviorMonitor,
         // Utiliser l'empreinte correspondante
         const currentEmpreinte = empreintesDisponibles[empreinteIndex];
         empreinteIndex++;
-        
-        console.log(`🔖 [UPLOAD-ZIP] Fichier ${empreinteIndex}/${validFileCount} - Empreinte: ${currentEmpreinte.product_id}`);
 
         // Traiter le fichier avec l'empreinte
         const processedFile = await processSingleFile(fileDataObject, req.user, req, newDossier.id, { 
@@ -1399,6 +1368,29 @@ router.get('/:id/download', authenticateToken, async (req, res) => {
       downloadUrl = `${cloudinaryBaseUrl}/${resourceType}/upload/${file.file_url}`;
     }
     
+    // Enregistrer l'activité de téléchargement
+    try {
+      let actionType = 'FILE_DOWNLOAD';
+      if (file.mimetype && file.mimetype.startsWith('image/')) {
+        actionType = 'IMAGE_DOWNLOAD';
+      } else if (file.mimetype === 'application/pdf') {
+        actionType = 'PDF_DOWNLOAD';
+      }
+
+      await ActivityLog.create({
+        userId: req.user.id,
+        actionType,
+        details: {
+          fileId: file.id,
+          fileName: file.filename,
+          fileType: file.mimetype,
+          source: 'single_download'
+        }
+      });
+    } catch (logError) {
+      console.warn('Erreur lors de l\'enregistrement du log de téléchargement:', logError);
+    }
+
     // Redirection vers l'URL Cloudinary
     res.redirect(downloadUrl);
     
@@ -1504,13 +1496,9 @@ router.delete('/batch-delete', authenticateToken, async (req, res) => {
     // Pas besoin de suppression manuelle
 
     for (const file of filesToDelete) {
-      console.log(`🗑️ [FILE DELETE] Début suppression fichier ${file.id} (${file.filename})`);
-      
       // Supprimer de Cloudinary en utilisant la fonction utilitaire
       try {
-        console.log(`🗑️ [FILE DELETE] Suppression Cloudinary du fichier: ${file.file_url}`);
         const deleteResult = await deleteCloudinaryFile(file.file_url, file.mimetype);
-        console.log(`✅ [FILE DELETE] Fichier supprimé de Cloudinary:`, deleteResult);
       } catch (cloudinaryError) {
         console.error(`❌ [FILE DELETE] Erreur lors de la suppression Cloudinary pour le fichier ${file.id}:`, cloudinaryError);
         // On continue même si la suppression Cloudinary échoue pour ne pas bloquer le processus
@@ -1540,7 +1528,6 @@ router.delete('/batch-delete', authenticateToken, async (req, res) => {
       },
       transaction: t
     });
-    console.log(`✅ [BATCH DELETE] Tous les fichiers supprimés de la BDD`);
 
     await t.commit();
     res.status(200).json({ message: `${filesToDelete.length} fichier(s) supprimé(s) avec succès.` });
@@ -1692,8 +1679,6 @@ router.get('/pdf/:fileId', authenticateToken, async (req, res) => {
     // Construire l'URL Cloudinary raw
     const cloudName = process.env.NODE_ENV === 'production' ? 'ddxypgvuh' : 'drpbnhwh6';
     const pdfUrl = `https://res.cloudinary.com/${cloudName}/raw/upload/${file.file_url}`;
-    
-    console.log('Serving PDF from:', pdfUrl);
     
     // Rediriger vers l'URL Cloudinary
     res.redirect(pdfUrl);

@@ -29,8 +29,6 @@ export const addSystemError = (type, message, details = {}) => {
   if (systemErrors.length > MAX_ERRORS) {
     systemErrors.splice(MAX_ERRORS);
   }
-  
-  console.log(`🚨 [SYSTEM-ERROR] ${type}: ${message}`);
 };
 
 const router = express.Router();
@@ -251,6 +249,130 @@ router.get('/activities/user/:userId', [authenticateToken, authorizeAdmin], asyn
 
   } catch (error) {
     console.error(`Erreur lors de la récupération des détails d'activité pour l'utilisateur ${req.params.userId}:`, error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+/**
+ * @route   GET /api/admin/activities/stats
+ * @desc    Statistiques globales d'activité (téléchargements)
+ * @access  Private (Admin)
+ */
+router.get('/activities/stats', [authenticateToken, authorizeAdmin], async (req, res) => {
+  try {
+    const { range } = req.query; // 'week', 'month', 'year', 'all' (par défaut: week/7j)
+
+    let createdAtFilter = {};
+    const now = new Date();
+
+    switch (range) {
+      case 'month': {
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        createdAtFilter = { [Op.gte]: monthAgo };
+        break;
+      }
+      case 'year': {
+        const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        createdAtFilter = { [Op.gte]: yearAgo };
+        break;
+      }
+      case 'all': {
+        // pas de filtre de date
+        createdAtFilter = {};
+        break;
+      }
+      case 'week':
+      default: {
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        createdAtFilter = { [Op.gte]: sevenDaysAgo };
+        break;
+      }
+    }
+
+    const baseWhere = Object.keys(createdAtFilter).length
+      ? { created_at: createdAtFilter }
+      : {};
+
+    // Téléchargements individuels par type
+    const individualImageDownloads = await ActivityLog.count({
+      where: {
+        ...baseWhere,
+        actionType: 'IMAGE_DOWNLOAD'
+      }
+    });
+
+    const individualPdfDownloads = await ActivityLog.count({
+      where: {
+        ...baseWhere,
+        actionType: 'PDF_DOWNLOAD'
+      }
+    });
+
+    const otherFileDownloads = await ActivityLog.count({
+      where: {
+        ...baseWhere,
+        actionType: 'FILE_DOWNLOAD'
+      }
+    });
+
+    const individualDownloads = individualImageDownloads + individualPdfDownloads + otherFileDownloads;
+
+    const zipDownloads = await ActivityLog.count({
+      where: {
+        ...baseWhere,
+        actionType: 'ZIP_DOWNLOAD'
+      }
+    });
+
+    // Compteurs image/pdf agrégés pour les téléchargements ZIP
+    const zipDownloadLogs = await ActivityLog.findAll({
+      where: {
+        ...baseWhere,
+        actionType: 'ZIP_DOWNLOAD'
+      },
+      attributes: ['details']
+    });
+
+    let zipImageDownloads = 0;
+    let zipPdfDownloads = 0;
+
+    zipDownloadLogs.forEach((log) => {
+      const details = log.details || {};
+      const extra = details.extra || {};
+      if (typeof extra.imageCount === 'number') {
+        zipImageDownloads += extra.imageCount;
+      }
+      if (typeof extra.pdfCount === 'number') {
+        zipPdfDownloads += extra.pdfCount;
+      }
+    });
+
+    const totalDownloads = individualDownloads + zipDownloads;
+
+    const activeDownloadUsers = await ActivityLog.count({
+      distinct: true,
+      col: 'user_id',
+      where: {
+        ...baseWhere,
+        actionType: {
+          [Op.in]: ['IMAGE_DOWNLOAD', 'PDF_DOWNLOAD', 'FILE_DOWNLOAD', 'ZIP_DOWNLOAD']
+        }
+      }
+    });
+
+    res.json({
+      period: '7d',
+      individualDownloads,
+      individualImageDownloads,
+      individualPdfDownloads,
+      zipDownloads,
+      zipImageDownloads,
+      zipPdfDownloads,
+      totalDownloads,
+      activeDownloadUsers
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des statistiques d\'activité:', error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -748,15 +870,9 @@ router.get('/dashboard/alerts', [authenticateToken, authorizeAdmin], async (req,
 router.get('/reports/data', [authenticateToken, authorizeAdmin], async (req, res) => {
   try {
     const { type = 'usage', period = 'daily', startDate, endDate } = req.query;
-    
-    console.log(`🔍 [REPORTS] Requête reçue - Type: ${type}, Période: ${period}, Start: ${startDate}, End: ${endDate}`);
-    
     // Calculer les dates par défaut si non fournies
     const end = endDate ? new Date(endDate + 'T23:59:59.999Z') : new Date(); // Inclure toute la journée de fin
     const start = startDate ? new Date(startDate + 'T00:00:00.000Z') : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000); // 90 jours par défaut pour capturer plus de données
-    
-    console.log(`📅 [REPORTS] Dates calculées - Start: ${start.toISOString()}, End: ${end.toISOString()}`);
-    
     
     let dateFormat, groupByClause;
     
@@ -1034,10 +1150,7 @@ router.get('/reports/data', [authenticateToken, authorizeAdmin], async (req, res
       data: reportData,
       totalRecords: reportData.length
     };
-
-    console.log(`✅ [REPORTS] Réponse envoyée - ${reportData.length} enregistrements, Type: ${type}`);
-    console.log(`📊 [REPORTS] Summary:`, summary);
-
+    
     res.json(responseData);
 
   } catch (error) {
@@ -1170,8 +1283,7 @@ router.get('/cleanup/stats', authenticateToken, authorizeAdmin, async (req, res)
     if (!stats) {
       return res.status(500).json({ error: 'Erreur lors de la récupération des statistiques' });
     }
-
-    console.log('📊 [CLEANUP] Statistiques demandées:', stats);
+    
     res.json(stats);
 
   } catch (error) {
@@ -1187,8 +1299,6 @@ router.get('/cleanup/stats', authenticateToken, authorizeAdmin, async (req, res)
  */
 router.post('/cleanup/manual', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
-    console.log('🧹 [CLEANUP] Nettoyage manuel déclenché par admin');
-    
     const result = await manualCleanup();
     
     res.json({
@@ -1211,9 +1321,6 @@ router.post('/cleanup/manual', authenticateToken, authorizeAdmin, async (req, re
 router.delete('/cleanup/user/:userId', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
     const { userId } = req.params;
-    
-    console.log(`🧹 [CLEANUP] Suppression sessions utilisateur ${userId} (demande RGPD)`);
-    
     const deleted = await cleanupUserSessions(userId);
     
     res.json({
@@ -1252,8 +1359,6 @@ router.get('/reports', authenticateToken, authorizeAdmin, async (req, res) => {
     if (source !== 'all') {
       whereConditions.source = source;
     }
-    
-    console.log('📋 [REPORTS] Demande de signalements:', { status, type, source, page, limit });
     
     const { count, rows: reports } = await Report.findAndCountAll({
       where: whereConditions,
@@ -1363,9 +1468,7 @@ router.put('/reports/:id', authenticateToken, authorizeAdmin, async (req, res) =
   try {
     const { id } = req.params;
     const { status, adminNotes } = req.body;
-    
-    console.log(`📋 [REPORTS] Mise à jour signalement ${id}:`, { status, adminNotes });
-    
+
     // Pour l'instant, simuler une mise à jour réussie
     res.json({
       message: 'Signalement mis à jour avec succès',
@@ -1391,8 +1494,6 @@ router.put('/reports/:id', authenticateToken, authorizeAdmin, async (req, res) =
 router.delete('/reports/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    
-    console.log(`📋 [REPORTS] Suppression signalement ${id}`);
     
     // Pour l'instant, simuler une suppression réussie
     res.json({
@@ -1625,13 +1726,8 @@ router.post('/scheduler/trigger/:task', [authenticateToken, authorizeAdmin], asy
  * @access  Admin
  */
 router.get('/technical', authenticateToken, authorizeAdmin, async (req, res) => {
-  console.log(`🚀 [TECHNICAL-ROUTE] Route /technical appelée !`);
-  console.log(`🚀 [TECHNICAL-ROUTE] Query params:`, req.query);
-  
   try {
     const { filter = 'all', timeRange = '24h', page = 1, limit = 10 } = req.query;
-    
-    console.log(`🔍 [TECHNICAL] Requête données techniques: filter=${filter}, timeRange=${timeRange}, page=${page}`);
     
     // Calculer la période selon timeRange
     const now = new Date();
@@ -1678,11 +1774,6 @@ router.get('/technical', authenticateToken, authorizeAdmin, async (req, res) => 
       limit: 20
     });
     
-    console.log(`🔍 [TECHNICAL] Notifications de sécurité trouvées: ${allSecurityNotifications.length}`);
-    allSecurityNotifications.forEach(notif => {
-      console.log(`📋 [TECHNICAL] Notification: ID=${notif.id}, Title="${notif.title}", Type=${notif.type}`);
-    });
-
     // Récupérer les tentatives d'emails non autorisés depuis les notifications
     // Utiliser les métadonnées pour une recherche plus fiable
     const unauthorizedAttempts = await Notification.findAll({
@@ -1732,8 +1823,6 @@ router.get('/technical', authenticateToken, authorizeAdmin, async (req, res) => 
       }
     });
 
-    console.log(`📊 [TECHNICAL] Tentatives non autorisées trouvées: ${totalUnauthorizedAttempts}`);
-
     const uniqueUnauthorizedEmails = await Notification.count({
       distinct: true,
       col: 'message',
@@ -1774,35 +1863,6 @@ router.get('/technical', authenticateToken, authorizeAdmin, async (req, res) => 
         .map(notif => notif.metadata?.ipAddress || notif.metadata?.ip)
         .filter(ip => ip && ip !== 'IP inconnue')
     )].length;
-
-    console.log(`📊 [TECHNICAL] IPs uniques trouvées: ${uniqueUnauthorizedIPs}`);
-    console.log(`📊 [TECHNICAL] Connexions trouvées: ${connections.length}`);
-    
-    // Debug: Afficher les données brutes des connexions
-    connections.forEach((conn, index) => {
-      const data = conn.dataValues || conn;
-      console.log(`🔍 [TECHNICAL] Connexion ${index + 1}:`, {
-        id: data.id,
-        user_id: data.userId,
-        ipAddress: data.ipAddress,              // ✅ Utilise les alias Sequelize
-        userAgent: data.userAgent?.substring(0, 50) + '...',  // ✅ Utilise les alias Sequelize
-        sessionStart: data.sessionStart,       // ✅ Utilise les alias Sequelize
-        browser: data.browser,
-        browserVersion: data.browserVersion,    // ✅ Ajouté pour debug
-        os: data.os,
-        city: data.city,                       // ✅ Ajouté pour debug
-        country: data.country,
-        countryCode: data.countryCode,         // ✅ Ajouté pour debug
-        isp: data.isp,                         // ✅ Ajouté pour debug
-        timezone: data.timezone,               // ✅ Ajouté pour debug
-        isActive: data.isActive,               // ✅ Ajouté pour debug
-        sessionEnd: data.sessionEnd,           // ✅ Ajouté pour debug
-        user: conn.user ? {
-          username: conn.user.dataValues?.username || conn.user.username,
-          email: conn.user.dataValues?.email || conn.user.email
-        } : 'PAS D\'UTILISATEUR'
-      });
-    });
     
     // Connexions récupérées avec succès
 
@@ -1829,10 +1889,7 @@ router.get('/technical', authenticateToken, authorizeAdmin, async (req, res) => 
     const operatingSystems = Object.entries(osStats)
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count);
-
-    console.log(`📊 [TECHNICAL] Navigateurs trouvés:`, browsers);
-    console.log(`📊 [TECHNICAL] OS trouvés:`, operatingSystems);
-
+      
     // Formater les tentatives d'emails non autorisés
     const formattedUnauthorizedAttempts = unauthorizedAttempts.map(notification => {
       const metadata = notification.metadata || {};
@@ -1884,27 +1941,7 @@ router.get('/technical', authenticateToken, authorizeAdmin, async (req, res) => 
           suspiciousReason: data.suspiciousReason    // ✅ Ajouté : Raison suspicion pour SessionDetailModal
         };
     });
-
-    // Debug: Afficher les connexions formatées
-    console.log(`🔍 [TECHNICAL] Connexions formatées pour le frontend:`, formattedConnections.map(conn => ({
-      id: conn.id,
-      userEmail: conn.userEmail,
-      ipAddress: conn.ipAddress,
-      timestamp: conn.timestamp,
-      location: conn.location,      // ✅ Ajouté pour debug
-      browser: conn.browser,
-      browserVersion: conn.browserVersion,  // ✅ Ajouté pour debug
-      os: conn.os,
-      city: conn.city,              // ✅ Ajouté pour debug
-      country: conn.country,        // ✅ Ajouté pour debug
-      countryCode: conn.countryCode, // ✅ Ajouté pour debug
-      userId: conn.userId,          // ✅ Ajouté pour debug
-      isp: conn.isp,                // ✅ Ajouté pour debug
-      timezone: conn.timezone,      // ✅ Ajouté pour debug
-      isActive: conn.isActive,      // ✅ Ajouté pour debug
-      sessionEnd: conn.sessionEnd   // ✅ Ajouté pour debug
-    })));
-
+    
     res.json({
       connections: formattedConnections,
       unauthorizedAttempts: formattedUnauthorizedAttempts,
@@ -2152,12 +2189,6 @@ router.get('/moderation/deletions', authenticateToken, authorizeAdmin, async (re
  */
 router.post('/moderation/warn', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
-    console.log('🚀 [WARN] Début de l\'avertissement:', {
-      body: req.body,
-      adminId: req.user.id,
-      adminUsername: req.user.username
-    });
-
     const { userId, reason, reportId } = req.body;
     
     if (!userId || !reason) {
@@ -2172,12 +2203,6 @@ router.post('/moderation/warn', authenticateToken, authorizeAdmin, async (req, r
       return res.status(404).json({ error: 'Utilisateur non trouvé' });
     }
     
-    console.log('👤 [WARN] Utilisateur trouvé:', {
-      id: user.id,
-      username: user.username,
-      email: user.email
-    });
-    
     // Vérifier que le signalement existe si reportId est fourni
     let validReportId = null;
     if (reportId) {
@@ -2186,17 +2211,11 @@ router.post('/moderation/warn', authenticateToken, authorizeAdmin, async (req, r
         console.warn('⚠️ [WARN] Signalement non trouvé, action sans lien au signalement:', reportId);
         validReportId = null;
       } else {
-        console.log('📋 [WARN] Signalement trouvé:', {
-          id: report.id,
-          type: report.type,
-          status: report.status
-        });
         validReportId = reportId;
       }
     }
     
     // Créer l'action de modération
-    console.log('📝 [WARN] Création de l\'action de modération...');
     const warning = await ModerationAction.create({
       user_id: userId,
       admin_id: req.user.id,
@@ -2204,12 +2223,6 @@ router.post('/moderation/warn', authenticateToken, authorizeAdmin, async (req, r
       action_type: 'warning',
       reason,
       is_active: true
-    });
-    
-    console.log('✅ [WARN] Action de modération créée:', {
-      id: warning.id,
-      userId,
-      reason: reason.substring(0, 100) + '...'
     });
     
     // Si lié à un signalement, le marquer comme résolu
@@ -2226,34 +2239,9 @@ router.post('/moderation/warn', authenticateToken, authorizeAdmin, async (req, r
     }
     
     // Envoyer une notification par email à l'utilisateur
-    console.log('📧 [WARN] Tentative d\'envoi d\'email...');
     try {
       const { emailService } = req.app.locals;
-      console.log('🔧 [WARN] EmailService disponible:', !!emailService);
-      console.log('📮 [WARN] Email utilisateur:', user.email);
-      
       if (emailService && user.email) {
-        console.log('📤 [WARN] Envoi de l\'email en cours...');
-        
-        // Récupérer les détails du signalement pour un message plus précis
-        let reportReason = 'Non spécifié';
-        if (validReportId) {
-          const report = await Report.findByPk(validReportId);
-          if (report) {
-            const typeTranslations = {
-              'failed_login_attempts': 'Tentatives de connexion suspectes',
-              'mass_upload': 'Upload massif suspect',
-              'suspicious_file': 'Fichier suspect',
-              'inappropriate': 'Contenu inapproprié',
-              'spam': 'Spam',
-              'copyright': 'Violation de droits d\'auteur',
-              'harassment': 'Harcèlement'
-            };
-            reportReason = typeTranslations[report.type] || report.type || 'Non spécifié';
-          }
-        }
-
-        // Créer un message d'email plus clair
         const emailContent = `Bonjour ${user.username},
 
 Nous avons détecté des tentatives de connexion suspectes sur votre compte suite à : ${reportReason}.
@@ -2274,11 +2262,6 @@ L'équipe Hifadhui`;
           content: emailContent,
           htmlContent: emailContent.replace(/\n/g, '<br>')
         });
-        console.log('✅ [WARN] Email d\'avertissement envoyé:', {
-          to: user.email,
-          messageId: emailResult.messageId,
-          success: emailResult.success
-        });
       } else {
         console.warn('⚠️ [WARN] Email non envoyé:', {
           emailServiceAvailable: !!emailService,
@@ -2289,8 +2272,6 @@ L'équipe Hifadhui`;
       console.error('❌ [WARN] Erreur envoi email avertissement:', emailError);
       // Ne pas faire échouer l'avertissement si l'email échoue
     }
-    
-    console.log(`⚠️ [MODERATION] Avertissement créé pour l'utilisateur ${userId} par admin ${req.user.id}`);
     
     res.json({
       message: 'Avertissement envoyé avec succès',
@@ -2317,13 +2298,6 @@ router.post('/moderation/suspend', authenticateToken, authorizeAdmin, async (req
   try {
     const { userId, reason, duration = 14, reportId } = req.body;
     
-    console.log('🚫 [SUSPEND] Données reçues:', {
-      userId,
-      reason: reason?.substring(0, 50) + '...',
-      duration,
-      reportId
-    });
-    
     if (!userId || !reason) {
       return res.status(400).json({ error: 'userId et reason sont requis' });
     }
@@ -2342,11 +2316,6 @@ router.post('/moderation/suspend', authenticateToken, authorizeAdmin, async (req
         console.warn('⚠️ [SUSPEND] Signalement non trouvé, action sans lien au signalement:', reportId);
         validReportId = null;
       } else {
-        console.log('📋 [SUSPEND] Signalement trouvé:', {
-          id: report.id,
-          type: report.type,
-          status: report.status
-        });
         validReportId = reportId;
       }
     }
@@ -2367,9 +2336,6 @@ router.post('/moderation/suspend', authenticateToken, authorizeAdmin, async (req
       is_active: true
     });
     
-    // Marquer l'utilisateur comme suspendu (vous pouvez ajouter un champ suspended_until dans le modèle Utilisateur)
-    // await user.update({ suspended_until: endDate });
-    
     // Si lié à un signalement, le marquer comme résolu
     if (validReportId) {
       await Report.update(
@@ -2387,10 +2353,7 @@ router.post('/moderation/suspend', authenticateToken, authorizeAdmin, async (req
     try {
       const { emailService } = req.app.locals;
       if (emailService && user.email) {
-        // Récupérer les détails du signalement pour un message plus précis
-        let reportReason = 'Non spécifié';
-        
-        // Essayer plusieurs méthodes pour récupérer le type de signalement
+        const reportReason = 'Non spécifié';
         if (validReportId) {
           const report = await Report.findByPk(validReportId);
           if (report) {
@@ -2404,32 +2367,15 @@ router.post('/moderation/suspend', authenticateToken, authorizeAdmin, async (req
               'harassment': 'Harcèlement'
             };
             reportReason = typeTranslations[report.type] || report.type || 'Non spécifié';
-            console.log('📋 [SUSPEND] Signalement trouvé:', { type: report.type, reason: reportReason });
-          }
-        } else {
-          // Si pas de reportId, essayer de détecter depuis le message de raison
-          if (reason.includes('Tentatives de connexion suspectes') || reason.includes('5 tentatives de connexion')) {
-            reportReason = 'Tentatives de connexion suspectes';
-            console.log('📋 [SUSPEND] Type détecté depuis le message:', reportReason);
-          } else if (reason.includes('Upload')) {
-            reportReason = 'Upload massif suspect';
-          } else if (reason.includes('Fichier suspect')) {
-            reportReason = 'Fichier suspect';
           }
         }
-        
-        console.log('📧 [SUSPEND] Raison finale pour email:', reportReason);
 
-        // Calculer la date de fin de suspension
-        const endDate = new Date();
-        endDate.setDate(endDate.getDate() + parseInt(duration));
         const endDateStr = endDate.toLocaleDateString('fr-FR', {
           day: '2-digit',
           month: '2-digit', 
           year: 'numeric'
         });
 
-        // Créer un message d'email plus clair
         const emailContent = `Bonjour ${user.username},
 
 Votre compte a été temporairement suspendu suite à : ${reportReason}.
@@ -2450,14 +2396,11 @@ L'équipe Hifadhui`;
           content: emailContent,
           htmlContent: emailContent.replace(/\n/g, '<br>')
         });
-        console.log(`📧 [EMAIL] Email de suspension envoyé à ${user.email}`);
       }
     } catch (emailError) {
       console.error('❌ [EMAIL] Erreur envoi email suspension:', emailError);
       // Ne pas faire échouer la suspension si l'email échoue
     }
-    
-    console.log(`🚫 [MODERATION] Suspension créée pour l'utilisateur ${userId} par admin ${req.user.id} (${duration} jours)`);
     
     res.json({
       message: `Utilisateur suspendu pour ${duration} jours`,
@@ -2505,11 +2448,6 @@ router.post('/moderation/delete', authenticateToken, authorizeAdmin, async (req,
         validReportId = null;
       } else {
         validReportId = reportId;
-        console.log('📋 [DELETE] Signalement trouvé:', {
-          id: report.id,
-          type: report.type,
-          reason: report.reason
-        });
       }
     }
     
@@ -2544,7 +2482,6 @@ router.post('/moderation/delete', authenticateToken, authorizeAdmin, async (req,
           content: reason,
           htmlContent: reason.replace(/\n/g, '<br>')
         });
-        console.log(`📧 [EMAIL] Email de suppression envoyé à ${user.email}`);
       }
     } catch (emailError) {
       console.error('❌ [EMAIL] Erreur envoi email suppression:', emailError);
@@ -2570,8 +2507,6 @@ router.post('/moderation/delete', authenticateToken, authorizeAdmin, async (req,
         { where: { id: validReportId } }
       );
     }
-    
-    console.log(`💀 [MODERATION] Suppression définitive de l'utilisateur ${userId} par admin ${req.user.id}`);
     
     res.json({
       message: 'Compte utilisateur supprimé définitivement',
@@ -2621,8 +2556,6 @@ router.post('/moderation/lift-suspension/:userId', authenticateToken, authorizeA
     });
     
     // TODO: Réactiver l'utilisateur si vous avez un champ suspended_until
-    
-    console.log(`✅ [MODERATION] Suspension levée pour l'utilisateur ${userId} par admin ${req.user.id}`);
     
     res.json({
       message: 'Suspension levée avec succès',
@@ -2677,8 +2610,6 @@ router.post('/reports/:id/action', authenticateToken, authorizeAdmin, async (req
       admin_action: adminAction,
       resolved_at: new Date()
     });
-    
-    console.log(`📋 [REPORTS] Action '${action}' effectuée sur le signalement ${id} par admin ${req.user.id}`);
     
     res.json({
       message: 'Action effectuée avec succès',
@@ -2978,19 +2909,15 @@ router.get('/users/by-email/:email', [authenticateToken, authorizeAdmin], async 
     // Décoder l'email (au cas où il serait encodé)
     const decodedEmail = decodeURIComponent(email);
     
-    console.log(`🔍 [ADMIN] Recherche utilisateur par email: ${decodedEmail}`);
-
     const user = await Utilisateur.findOne({
       where: { email: decodedEmail },
       attributes: ['id', 'username', 'email', 'role', 'created_at', 'deleted_at', 'provider', 'avatar_url']
     });
 
     if (!user) {
-      console.log(`❌ [ADMIN] Utilisateur non trouvé pour l'email: ${decodedEmail}`);
       return res.status(404).json({ error: 'Utilisateur non trouvé' });
     }
 
-    console.log(`✅ [ADMIN] Utilisateur trouvé: ${user.username} (${user.id})`);
     res.json(user);
 
   } catch (error) {
@@ -3008,8 +2935,6 @@ router.get('/users/:id/stats', [authenticateToken, authorizeAdmin], async (req, 
   try {
     const { id } = req.params;
     
-    console.log(`📊 [ADMIN] Récupération des stats pour l'utilisateur: ${id}`);
-
     // Vérifier que l'utilisateur existe
     const user = await Utilisateur.findByPk(id);
     if (!user) {
@@ -3108,7 +3033,6 @@ router.get('/users/:id/stats', [authenticateToken, authorizeAdmin], async (req, 
       moderationActions: moderationStats
     };
 
-    console.log(`✅ [ADMIN] Stats récupérées pour ${user.username}:`, stats);
     res.json(stats);
 
   } catch (error) {

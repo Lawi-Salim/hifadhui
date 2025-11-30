@@ -21,7 +21,8 @@ export const cleanupOldSessions = async (days = 90) => {
 
     const deletedCount = await UserSession.destroy({
       where: {
-        createdAt: {
+        // Utiliser la colonne réelle en base (created_at)
+        created_at: {
           [Op.lt]: cutoffDate
         }
       }
@@ -77,7 +78,8 @@ export const getCleanupStats = async () => {
     
     const oldSessions = await UserSession.count({
       where: {
-        createdAt: {
+        // Utiliser la colonne réelle en base (created_at)
+        created_at: {
           [Op.lt]: cutoffDate
         }
       }

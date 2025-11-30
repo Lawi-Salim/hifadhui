@@ -10,13 +10,7 @@ const router = express.Router();
 // POST /api/v1/user/activity - Enregistrer l'activité utilisateur
 router.post('/activity', authenticateToken, async (req, res) => {
   try {
-    // console.log('📊 [ACTIVITY] Réception activité utilisateur:', {
-    //   userId: req.user.id,
-    //   type: req.body.type,
-    //   timestamp: req.body.timestamp
-    // });
-    
-    const { type, timestamp, userAgent, url, reason } = req.body;
+    const { type, timestamp, userAgent, url, reason, extra } = req.body;
     const userId = req.user.id;
     const ipAddress = req.ip || req.connection.remoteAddress;
 
@@ -29,7 +23,9 @@ router.post('/activity', authenticateToken, async (req, res) => {
         userAgent,
         url,
         ipAddress,
-        reason: reason || null
+        reason: reason || null,
+        // Champ générique pour des métadonnées supplémentaires (ex: stats de téléchargements)
+        extra: extra || null
       }
     });
 
@@ -52,8 +48,6 @@ router.post('/activity', authenticateToken, async (req, res) => {
         }
       );
     }
-
-    // console.log('✅ [ACTIVITY] Activité enregistrée avec succès pour:', req.user.username);
     
     res.json({ 
       success: true, 
