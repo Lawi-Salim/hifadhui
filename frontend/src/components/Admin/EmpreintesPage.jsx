@@ -19,6 +19,7 @@ import {
 import { FaCalendar } from 'react-icons/fa';
 import { FaFingerprint } from 'react-icons/fa';
 import LoadingSpinner from '../Common/LoadingSpinner';
+import Pagination from '../Common/Pagination';
 import empreinteAdminService from '../../services/empreinteAdminService';
 import './AdminDashboard.css';
 import '../../pages/GenerateEmpreintes.css';
@@ -437,27 +438,6 @@ const EmpreintesPage = () => {
                     </tbody>
                   </table>
                 </div>
-
-                {/* Pagination */}
-                {pagination.totalPages > 1 && (
-                  <div className="pagination">
-                    <button
-                      disabled={pagination.page === 1}
-                      onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                    >
-                      Précédent
-                    </button>
-                    <span>
-                      Page {pagination.page} sur {pagination.totalPages}
-                    </span>
-                    <button
-                      disabled={pagination.page === pagination.totalPages}
-                      onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                    >
-                      Suivant
-                    </button>
-                  </div>
-                )}
               </>
             )}
           </div>
@@ -637,6 +617,29 @@ const EmpreintesPage = () => {
           </div>
         )}
       </section>
+
+      {/* Pagination */}
+                <Pagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.totalPages}
+                  totalItems={pagination.total}
+                  itemsPerPage={pagination.limit}
+                  hasPrevPage={pagination.page > 1}
+                  hasNextPage={pagination.page < pagination.totalPages}
+                  onPrevPage={() =>
+                    setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))
+                  }
+                  onNextPage={() =>
+                    setPagination(prev => ({
+                      ...prev,
+                      page: Math.min(prev.totalPages, prev.page + 1),
+                    }))
+                  }
+                  onPageChange={(page) =>
+                    setPagination(prev => ({ ...prev, page }))
+                  }
+                  itemName="empreintes"
+                />
 
       {/* Modal de détails */}
       {detailsModal && selectedEmpreinte && (

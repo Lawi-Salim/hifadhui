@@ -104,7 +104,7 @@ const ActivityPage = () => {
               </div>
               <div className="metric-content">
                 <h3>Fichiers téléchargés</h3>
-                <div className="metric-value">{stats.individualDownloads}</div>
+                <div className="metric-value">{stats.individualDownloads || 0}</div>
                 <div className="metric-subtitle">
                   {`Images ${stats.individualImageDownloads || 0} et PDFs ${stats.individualPdfDownloads || 0}`}
                 </div>
@@ -117,7 +117,7 @@ const ActivityPage = () => {
               </div>
               <div className="metric-content">
                 <h3>Téléchargements ZIP</h3>
-                <div className="metric-value">{stats.zipDownloads}</div>
+                <div className="metric-value">{stats.zipDownloads || 0}</div>
                 <div className="metric-subtitle">
                   {`Images ${stats.zipImageDownloads || 0} et PDFs ${stats.zipPdfDownloads || 0}`}
                 </div>
@@ -130,7 +130,7 @@ const ActivityPage = () => {
               </div>
               <div className="metric-content">
                 <h3>Téléchargements totaux</h3>
-                <div className="metric-value">{stats.totalDownloads}</div>
+                <div className="metric-value">{stats.totalDownloads || 0}</div>
                 <div className="metric-subtitle">Individuel + ZIP</div>
               </div>
             </div>
@@ -141,7 +141,7 @@ const ActivityPage = () => {
               </div>
               <div className="metric-content">
                 <h3>Téléchargement par user</h3>
-                <div className="metric-value">{stats.activeDownloadUsers}</div>
+                <div className="metric-value">{stats.activeDownloadUsers || 0}</div>
                 <div className="metric-subtitle">Distincts sur 7 jours</div>
               </div>
             </div>

@@ -14,6 +14,7 @@ import { FaFingerprint, FaTrash, FaEye } from 'react-icons/fa';
 import api from '../services/api';
 import QRCodeDisplay from '../components/Common/QRCodeDisplay';
 import EmpreinteCard from '../components/Empreintes/EmpreinteCard';
+import Pagination from '../components/Common/Pagination';
 import { useToast } from '../hooks/useToast';
 import ToastContainer from '../components/Common/ToastContainer';
 import './GenerateEmpreintes.css';
@@ -39,6 +40,8 @@ const GenerateEmpreintes = () => {
   const [selectedEmpreintes, setSelectedEmpreintes] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [empreinteToDelete, setEmpreinteToDelete] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(30);
 
   // Charger les empreintes et statistiques
   useEffect(() => {
@@ -52,12 +55,12 @@ const GenerateEmpreintes = () => {
       const response = await api.get('/empreintes', {
         params: { 
           status: filter === 'all' ? undefined : filter,
-          limit: 30,
           sortBy: 'sequence_number',
           sortOrder: 'DESC'
         }
       });
-      setEmpreintes(response.data.data);
+      setEmpreintes(response.data.data || []);
+      setCurrentPage(1);
     } catch (error) {
       console.error('Erreur chargement empreintes:', error);
     } finally {
@@ -224,6 +227,14 @@ const GenerateEmpreintes = () => {
       minute: '2-digit'
     });
   };
+
+  // Pagination côté client sur les empreintes chargées
+  const totalItems = empreintes.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedEmpreintes = empreintes.slice(startIndex, endIndex);
 
   return (
     <div className="empreintes-page">
@@ -392,6 +403,7 @@ const GenerateEmpreintes = () => {
             <p>Générez vos premières empreintes pour commencer</p>
           </div>
         ) : (
+          <>
           <table className="empreintes-table">
             <thead>
               <tr>
@@ -414,7 +426,7 @@ const GenerateEmpreintes = () => {
               </tr>
             </thead>
             <tbody>
-              {empreintes.map((empreinte) => (
+              {paginatedEmpreintes.map((empreinte) => (
                 <tr key={empreinte.id} className={selectedEmpreintes.includes(empreinte.id) ? 'selected' : ''}>
                   <td className="checkbox-cell">
                     {empreinte.status === 'disponible' && (
@@ -480,8 +492,22 @@ const GenerateEmpreintes = () => {
               ))}
             </tbody>
           </table>
+          </>
         )}
       </div>
+
+      <Pagination
+        currentPage={safeCurrentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        itemsPerPage={itemsPerPage}
+        hasPrevPage={safeCurrentPage > 1}
+        hasNextPage={safeCurrentPage < totalPages}
+        onPrevPage={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+        onNextPage={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+        onPageChange={(page) => setCurrentPage(page)}
+        itemName="empreintes"
+      />
 
       {/* Modal de détails */}
       {showModal && selectedEmpreinte && (

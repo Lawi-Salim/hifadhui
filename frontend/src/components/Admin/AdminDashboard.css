@@ -977,43 +977,6 @@
   font-size: 0.875rem;
 }
 
-/* Pagination */
-.pagination-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 2rem;
-  padding: 1rem 0;
-  border-top: 1px solid var(--border-color);
-}
-
-.pagination-info {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-}
-
-.pagination-controls {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.pagination-controls .btn {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-}
-
-.pagination-controls .btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pagination-controls .btn:disabled:hover {
-  background: var(--surface-color);
-  color: var(--text-secondary);
-  transform: none;
-}
-
 /* Modal Styles */
 .modal-overlay {
   position: fixed;
