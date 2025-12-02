@@ -154,10 +154,8 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
       });
     }
 
-    // Texte du filigrane : deux dernières parties du product_id
-    const displayProductId = productId.includes('-')
-      ? productId.split('-').slice(-2).join('-')
-      : productId;
+    // Texte du filigrane : utiliser le product_id complet (incluant le préfixe HFD-LW-)
+    const displayProductId = productId;
 
     // Récupérer le public_id Cloudinary à partir de file_url
     // file_url est déjà de la forme "<public_id>" ou "<folder>/<public_id>"
@@ -174,7 +172,7 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
         {
           overlay: {
             font_family: 'Poppins',
-            font_size: 130,
+            font_size: 70,
             font_weight: 'bold',
             text: displayProductId
           },
@@ -188,7 +186,7 @@ router.get('/:id/watermarked', authenticateToken, async (req, res) => {
         {
           overlay: {
             font_family: 'Poppins',
-            font_size: 130,
+            font_size: 70,
             font_weight: 'bold',
             text: displayProductId
           },
