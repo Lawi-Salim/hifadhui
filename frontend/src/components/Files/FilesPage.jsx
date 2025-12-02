@@ -29,8 +29,9 @@ const FilesPage = () => {
   const [activeMenu, setActiveMenu] = useState(null);
   const [periodFilter, setPeriodFilter] = useState('');
   const [sizeFilter, setSizeFilter] = useState('');
-  const [searchTerm, setSearchTerm] = useState(''); // valeur réellement envoyée à l’API
+  // Recherche : searchInput = saisie, searchApplied = valeur utilisée pour l'API
   const [searchInput, setSearchInput] = useState(''); // valeur tapée dans le champ
+  const [searchApplied, setSearchApplied] = useState(''); // valeur réellement envoyée à l’API
 
   // Fonction pour calculer la position du menu avec hauteur dynamique
   const getMenuPosition = (buttonElement, optionsCount = 5) => {
@@ -64,6 +65,7 @@ const FilesPage = () => {
   // États pour la pagination
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
@@ -80,7 +82,7 @@ const FilesPage = () => {
         limit: itemsPerPage,
         period: periodFilter || undefined,
         sizeRange: sizeFilter || undefined,
-        search: searchTerm || undefined
+        search: searchApplied || undefined
       });
 
       const data = response.data || {};
@@ -90,6 +92,9 @@ const FilesPage = () => {
       setFiles(filesData);
       setTotalCount(pagination.total || pagination.totalItems || filesData.length || 0);
       setTotalPages(pagination.totalPages || 1);
+      if (!initialLoadDone) {
+        setInitialLoadDone(true);
+      }
     } catch (err) {
       console.error('Erreur lors du chargement des fichiers:', err);
       setError('Erreur lors du chargement des fichiers');
@@ -101,12 +106,12 @@ const FilesPage = () => {
   // Recharger les fichiers quand la page ou les filtres changent
   useEffect(() => {
     loadFiles(currentPage);
-  }, [currentPage, periodFilter, sizeFilter, searchTerm]);
+  }, [currentPage, periodFilter, sizeFilter, searchApplied]);
 
-  // Mettre à jour searchTerm avec un petit délai pour éviter les rechargements à chaque frappe
+  // Mettre à jour automatiquement le critère de recherche avec un petit délai
   useEffect(() => {
     const handler = setTimeout(() => {
-      setSearchTerm(searchInput.trim() || '');
+      setSearchApplied(searchInput.trim() || '');
       setCurrentPage(1);
     }, 300);
 
@@ -318,7 +323,7 @@ const FilesPage = () => {
     }
   };
 
-  if (loading && files.length === 0) return <LoadingSpinner message="Chargement des PDFs..." />;
+  if (loading && !initialLoadDone) return <LoadingSpinner message="Chargement des PDFs..." />;
   if (error) return <div className="files-error">{error}</div>;
 
   const handleConfirmLicenseDownload = async (options) => {

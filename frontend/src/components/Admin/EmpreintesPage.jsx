@@ -32,6 +32,7 @@ const EmpreintesPage = () => {
   // États pour la liste des empreintes (onglet 1)
   const [empreintes, setEmpreintes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 30,
@@ -45,9 +46,9 @@ const EmpreintesPage = () => {
     userId: '',
     period: ''
   });
-  // Recherche debouncée (comme sur Fichiers/Images)
+  // Recherche : searchInput = saisie en cours, searchApplied = valeur appliquée à l'API
   const [searchInput, setSearchInput] = useState(''); // valeur tapée
-  const [searchTerm, setSearchTerm] = useState('');   // valeur réellement envoyée à l'API
+  const [searchApplied, setSearchApplied] = useState('');   // valeur réellement envoyée à l'API
   
   // États pour les statistiques (onglet 2)
   const [stats, setStats] = useState({
@@ -80,7 +81,7 @@ const EmpreintesPage = () => {
     fetchUsers(); // Charger les users pour avoir le bon compteur
   }, []);
 
-  // Charger les données quand onglet / filtres / page / terme de recherche changent
+  // Charger les données quand onglet / filtres / page / terme de recherche appliqué changent
   useEffect(() => {
     if (activeTab === 'all') {
       fetchEmpreintes();
@@ -89,12 +90,12 @@ const EmpreintesPage = () => {
     } else if (activeTab === 'users') {
       fetchUsers();
     }
-  }, [activeTab, filters, pagination.page, searchTerm]);
+  }, [activeTab, filters, pagination.page, searchApplied]);
 
-  // Debounce pour la recherche (stabilise la saisie)
+  // Mettre à jour automatiquement le critère de recherche avec un petit délai
   useEffect(() => {
     const handler = setTimeout(() => {
-      setSearchTerm(searchInput.trim() || '');
+      setSearchApplied(searchInput.trim() || '');
       setPagination(prev => ({ ...prev, page: 1 }));
     }, 300);
 
@@ -106,7 +107,7 @@ const EmpreintesPage = () => {
       setLoading(true);
       const data = await empreinteAdminService.getAllEmpreintes({
         ...filters,
-        search: searchTerm,
+        search: searchApplied,
         page: pagination.page,
         limit: pagination.limit
       });
@@ -117,6 +118,9 @@ const EmpreintesPage = () => {
         total: data.data.pagination.total,
         totalPages: data.data.pagination.totalPages
       }));
+      if (!initialLoadDone) {
+        setInitialLoadDone(true);
+      }
     } catch (error) {
       console.error('Erreur chargement empreintes:', error);
     } finally {
@@ -200,7 +204,7 @@ const EmpreintesPage = () => {
     );
   };
 
-  if (loading && activeTab === 'all' && empreintes.length === 0) {
+  if (loading && activeTab === 'all' && !initialLoadDone) {
     return (
       <div className="admin-dashboard">
         <LoadingSpinner message="Chargement des empreintes..." />
@@ -364,7 +368,9 @@ const EmpreintesPage = () => {
                     type="text"
                     placeholder="Product ID, Email, Nom d'utilisateur..."
                     value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
+                    onChange={(e) => {
+                      setSearchInput(e.target.value);
+                    }}
                     className="filter-select"
                   />
                 </div>

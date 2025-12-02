@@ -26,8 +26,9 @@ const ImageList = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [periodFilter, setPeriodFilter] = useState('');
   const [sizeFilter, setSizeFilter] = useState('');
-  const [searchTerm, setSearchTerm] = useState(''); // valeur réellement envoyée à l’API
+  // Recherche : searchInput = saisie, searchApplied = valeur utilisée pour l'API
   const [searchInput, setSearchInput] = useState(''); // valeur tapée dans le champ
+  const [searchApplied, setSearchApplied] = useState(''); // valeur réellement envoyée à l’API
 
   // Fonction pour calculer la position du menu avec hauteur dynamique
   const getMenuPosition = (buttonElement, optionsCount = 5) => {
@@ -44,6 +45,7 @@ const ImageList = () => {
   // États pour la pagination
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
@@ -62,7 +64,7 @@ const ImageList = () => {
           type: 'image',
           period: periodFilter || undefined,
           sizeRange: sizeFilter || undefined,
-          search: searchTerm || undefined
+          search: searchApplied || undefined
         }
       });
 
@@ -73,6 +75,9 @@ const ImageList = () => {
       setImages(imagesData);
       setTotalCount(pagination.total || pagination.totalItems || imagesData.length || 0);
       setTotalPages(pagination.totalPages || 1);
+      if (!initialLoadDone) {
+        setInitialLoadDone(true);
+      }
     } catch (err) {
       console.error('Erreur lors du chargement des images:', err);
       setError('Erreur lors du chargement des images');
@@ -83,13 +88,12 @@ const ImageList = () => {
 
   useEffect(() => {
     loadImages(currentPage);
-  }, [currentPage, periodFilter, sizeFilter, searchTerm]);
+  }, [currentPage, periodFilter, sizeFilter, searchApplied]);
 
-  // Mettre à jour searchTerm avec un petit délai pour éviter les rechargements à chaque frappe
+  // Mettre à jour automatiquement le critère de recherche avec un petit délai
   useEffect(() => {
     const handler = setTimeout(() => {
-      setSearchTerm(searchInput.trim() || '');
-      // Quand on change réellement le critère de recherche, repartir de la page 1
+      setSearchApplied(searchInput.trim() || '');
       setCurrentPage(1);
     }, 300);
 
@@ -290,7 +294,7 @@ const ImageList = () => {
     }
   };
 
-  if (loading && images.length === 0) {
+  if (loading && !initialLoadDone) {
     return <LoadingSpinner message="Chargement des images..." />;
   }
 
@@ -438,7 +442,7 @@ const ImageList = () => {
         </div>
 
         {images.length === 0 ? (
-          searchTerm ? (
+          searchApplied ? (
             <div className="card-image">
               <div className="text-center p-6">
                 <h3 className="text-lg font-semibold mb-2">Aucune image trouvée</h3>
